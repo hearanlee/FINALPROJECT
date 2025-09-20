@@ -923,9 +923,7 @@
             handleDirectMenuCommand(command) {
                 // 메뉴 데이터가 로드되지 않았다면 먼저 로드
                 if (categories.length === 0 || Object.keys(menuItems).length === 0) {
-                    this.speak('메뉴를 불러오는 중입니다. 잠시만 기다려주세요.', () => {
-                        this.loadMenuDataAndProcess(command);
-                    });
+                    this.loadMenuDataAndProcess(command);
                 } else {
                     this.processDirectMenuCommand(command);
                 }
@@ -971,15 +969,8 @@
 
                 if (matchedItem && matchedCategory) {
                     console.log('메뉴 매칭 성공, 주문 과정 설명 시작');
-                    // 메뉴 페이지로 이동하고 바로 주문 과정 설명
-                    this.speak('메뉴 페이지로 이동합니다.', () => {
-                        this.showMenuModal();
-                        // 메뉴 모달이 표시된 후 주문 과정 설명
-                        setTimeout(() => {
-                            console.log('processMenuAfterGuide 호출');
-                            this.processMenuAfterGuide(matchedItem, matchedCategory);
-                        }, 2000);
-                    });
+                    // 메뉴 설명 과정 생략하고 바로 주문 프로세스 설명
+                    this.processMenuAfterGuide(matchedItem, matchedCategory);
                 } else {
                     console.log('메뉴 매칭 실패, 일반 메뉴 페이지로 이동');
                     // 매칭되지 않은 경우 일반적인 메뉴 페이지로 이동
@@ -1012,7 +1003,7 @@
                 if (window.speechSynthesis) {
                     const utterance = new SpeechSynthesisUtterance(guideMessage);
                     utterance.lang = 'ko-KR';
-                    utterance.rate = 0.8;
+                    utterance.rate = 0.6;  // 더 천천히 말하기
                     utterance.pitch = 1;
                     utterance.volume = 1;
                     
@@ -1025,10 +1016,8 @@
                     }
                     
                     utterance.onend = () => {
-                        // 가이드 완료 후 해당 메뉴 처리
-                        setTimeout(() => {
-                            this.processMatchedMenu(matchedItem, matchedCategory);
-                        }, 1000);
+                        // 가이드 완료 후 더 이상 말하지 않음
+                        console.log('주문 프로세스 설명 완료');
                     };
                     
                     speechSynthesis.speak(utterance);
@@ -1069,8 +1058,7 @@
                         showOptionModal(item, category);
                     });
                 } else {
-                    // 옵션이 없는 메뉴는 바로 주문 추가
-                    addToOrder(item.id, item.name, item.price);
+                    // 옵션이 없는 메뉴는 음성 가이드만 제공 (주문 추가하지 않음)
                     this.speak(`${category.name} 탭을 누르시고 ${item.name}을 눌러주세요. 그 다음에 결제하기 버튼을 눌러주세요. 카드를 넣어주세요.`, () => {
                         // 마이크 종료
                         if (recognition) {
@@ -1402,27 +1390,21 @@
                     voiceInputDisplay.style.color = '#28a745';
                 }
                 
-                // 옵션 선택 프로세스 음성 안내
-                let optionGuideMessage = '';
+                // 주문 프로세스 음성 안내 (천천히)
+                let guideMessage = '';
                 
                 if (matchedCategory.name === '돈카츠,카레') {
-                    optionGuideMessage = `${matchedItem.name}을 선택하셨습니다. 옵션을 선택하시고 하단에 주문담기 버튼을 눌러주세요.`;
-                    // 옵션 모달 표시
-                    showOptionModal(matchedItem, matchedCategory);
+                    guideMessage = `${matchedCategory.name} 탭을 누르시고 ${matchedItem.name}을 눌러주세요. 옵션을 선택한 후 주문담기 버튼을 눌러주세요. 그 다음에 결제하기 버튼을 눌러주세요. 카드를 넣어주세요.`;
                 } else if (matchedCategory.name === '1인정식') {
-                    optionGuideMessage = `${matchedItem.name}을 선택하셨습니다. 옵션을 선택하시고 하단에 주문담기 버튼을 눌러주세요.`;
-                    // 옵션 모달 표시
-                    showOptionModal(matchedItem, matchedCategory);
+                    guideMessage = `${matchedCategory.name} 탭을 누르시고 ${matchedItem.name}을 눌러주세요. 옵션을 선택한 후 주문담기 버튼을 눌러주세요. 그 다음에 결제하기 버튼을 눌러주세요. 카드를 넣어주세요.`;
                 } else {
-                    // 다른 카테고리는 바로 주문 추가
-                    addToOrder(matchedItem.id, matchedItem.name, matchedItem.price);
-                    optionGuideMessage = `${matchedItem.name}이 주문에 추가되었습니다. 하단의 결제하기 버튼을 눌러주세요.`;
+                    guideMessage = `${matchedCategory.name} 탭을 누르시고 ${matchedItem.name}을 눌러주세요. 그 다음에 결제하기 버튼을 눌러주세요. 카드를 넣어주세요.`;
                 }
                 
                 if (window.speechSynthesis) {
-                    const utterance = new SpeechSynthesisUtterance(optionGuideMessage);
+                    const utterance = new SpeechSynthesisUtterance(guideMessage);
                     utterance.lang = 'ko-KR';
-                    utterance.rate = 0.8;
+                    utterance.rate = 0.6;  // 천천히 말하기
                     utterance.pitch = 1;
                     utterance.volume = 1;
                     
@@ -1435,7 +1417,9 @@
                     }
                     
                     utterance.onend = () => {
-                        // 모든 메뉴는 마이크 종료 (옵션은 모달에서 처리)
+                        // 가이드 완료 후 더 이상 말하지 않음
+                        console.log('주문 프로세스 설명 완료');
+                        // 마이크 종료
                         if (recognition) {
                             recognition.stop();
                         }
