@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>음성 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 50px;
+            text-align: center;
+        }
+        button {
+            padding: 20px 40px;
+            font-size: 18px;
+            margin: 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>음성 합성 테스트</h1>
+    
+    <button onclick="testSpeech()">음성 테스트</button>
+    <button onclick="testKorean()">한국어 테스트</button>
+    <button onclick="testEnglish()">영어 테스트</button>
+    <button onclick="clearLog()">로그 지우기</button>
+    
+    <div class="log" id="log"></div>
+    
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        function testSpeech() {
+            log('=== 음성 합성 테스트 시작 ===');
+            log('SpeechSynthesis 지원 여부: ' + ('speechSynthesis' in window));
+            log('사용 가능한 음성 수: ' + speechSynthesis.getVoices().length);
+            
+            const voices = speechSynthesis.getVoices();
+            log('전체 음성 목록:');
+            voices.forEach((voice, index) => {
+                log(`${index}: ${voice.name} (${voice.lang})`);
+            });
+            
+            const utterance = new SpeechSynthesisUtterance('Hello, this is a test.');
+            utterance.lang = 'en-US';
+            utterance.rate = 0.8;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+            
+            utterance.onstart = () => log('음성 재생 시작');
+            utterance.onend = () => log('음성 재생 완료');
+            utterance.onerror = (event) => log('음성 재생 오류: ' + event.error);
+            
+            log('음성 재생 시도 중...');
+            speechSynthesis.speak(utterance);
+        }
+        
+        function testKorean() {
+            log('=== 한국어 음성 테스트 ===');
+            const utterance = new SpeechSynthesisUtterance('안녕하세요. 한국어 음성 테스트입니다.');
+            utterance.lang = 'ko-KR';
+            utterance.rate = 0.8;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+            
+            const voices = speechSynthesis.getVoices();
+            const koreanVoice = voices.find(voice => 
+                voice.lang.includes('ko') || voice.lang.includes('KR')
+            );
+            if (koreanVoice) {
+                utterance.voice = koreanVoice;
+                log('한국어 음성 선택됨: ' + koreanVoice.name);
+            } else {
+                log('한국어 음성을 찾을 수 없음, 기본 음성 사용');
+            }
+            
+            utterance.onstart = () => log('한국어 음성 재생 시작');
+            utterance.onend = () => log('한국어 음성 재생 완료');
+            utterance.onerror = (event) => log('한국어 음성 재생 오류: ' + event.error);
+            
+            log('한국어 음성 재생 시도 중...');
+            speechSynthesis.speak(utterance);
+        }
+        
+        function testEnglish() {
+            log('=== 영어 음성 테스트 ===');
+            const utterance = new SpeechSynthesisUtterance('Hello, this is an English test.');
+            utterance.lang = 'en-US';
+            utterance.rate = 0.8;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+            
+            utterance.onstart = () => log('영어 음성 재생 시작');
+            utterance.onend = () => log('영어 음성 재생 완료');
+            utterance.onerror = (event) => log('영어 음성 재생 오류: ' + event.error);
+            
+            log('영어 음성 재생 시도 중...');
+            speechSynthesis.speak(utterance);
+        }
+        
+        // 페이지 로드 시 초기 정보 표시
+        window.addEventListener('load', () => {
+            log('페이지 로드 완료');
+            log('SpeechSynthesis 지원 여부: ' + ('speechSynthesis' in window));
+            
+            // 음성 목록이 비동기적으로 로드될 수 있으므로 잠시 후 다시 확인
+            setTimeout(() => {
+                log('사용 가능한 음성 수: ' + speechSynthesis.getVoices().length);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

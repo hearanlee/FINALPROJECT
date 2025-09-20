@@ -1,0 +1,1990 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>음성 주문 시스템</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .voice-interface {
+            margin: 30px 0;
+        }
+
+        .speaker-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* 메뉴 페이지 스타일 */
+        .menu-categories {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .category-btn {
+            padding: 15px 25px;
+            border: 3px solid #007bff;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            color: #007bff;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .category-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .category-btn:hover::before {
+            left: 100%;
+        }
+
+        .category-btn:hover {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+        }
+
+        .category-btn.active {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+        }
+
+        .menu-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            padding: 20px 0;
+        }
+
+        .menu-item {
+            border: 2px solid #e9ecef;
+            border-radius: 20px;
+            padding: 25px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #007bff, #28a745, #ffc107, #dc3545);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .menu-item:hover::before {
+            transform: scaleX(1);
+        }
+
+        .menu-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            border-color: #007bff;
+        }
+
+        .menu-item h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .menu-item p {
+            color: #6c757d;
+            line-height: 1.5;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .menu-item .price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            margin: 15px 0;
+            text-align: center;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .menu-item button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-item button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .menu-item button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .menu-item button:hover {
+            background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .menu-item button:active {
+            transform: translateY(0);
+        }
+
+        /* 옵션 모달 스타일 */
+        .selected-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .selected-item h3 {
+            margin: 0 0 5px 0;
+            color: #2c3e50;
+        }
+
+        .selected-item p {
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .option-section {
+            margin-bottom: 20px;
+        }
+
+        .option-section h4 {
+            margin: 0 0 10px 0;
+            color: #495057;
+            font-size: 16px;
+        }
+
+        .option-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin: 5px 0;
+            background: #ffffff;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .option-item:hover {
+            border-color: #007bff;
+            background: #f8f9fa;
+        }
+
+        .option-item.selected {
+            border-color: #007bff;
+            background: #e3f2fd;
+            color: #007bff;
+        }
+
+        .option-item span:first-child {
+            font-weight: 500;
+        }
+
+        .option-item span:last-child {
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .selected-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin: 3px 0;
+            background: #e3f2fd;
+            border: 1px solid #007bff;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .selected-option span:first-child {
+            color: #007bff;
+            font-weight: 500;
+        }
+
+        .selected-option span:last-child {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .option-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .option-actions button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .option-actions button:first-child {
+            background: #6c757d;
+            color: white;
+        }
+
+        .option-actions button:first-child:hover {
+            background: #5a6268;
+        }
+
+        .option-actions button:last-child {
+            background: #dc3545;
+            color: white;
+        }
+
+        .option-actions button:last-child:hover {
+            background: #c82333;
+        }
+
+        .status-text {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 20px;
+            min-height: 30px;
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            color: #333;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            min-height: 50px;
+            line-height: 1.5;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .subtitle.speaking {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: #667eea;
+            animation: pulse 1s infinite;
+        }
+
+        .subtitle.listening {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border-color: #28a745;
+            animation: pulse 1s infinite;
+        }
+
+        .microphone {
+            width: 120px;
+            height: 120px;
+            border: 4px solid #667eea;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .microphone:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .microphone.listening {
+            animation: listening 1s infinite;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        }
+
+        @keyframes listening {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .mic-icon {
+            font-size: 3em;
+            color: white;
+        }
+
+        .user-input {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            min-height: 50px;
+            font-size: 1.1em;
+            color: #333;
+        }
+
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn.primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn.secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn.secondary:hover:not(:disabled) {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn.menu {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .btn.menu:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn.order {
+            background: linear-gradient(135deg, #fd7e14, #e83e8c);
+            color: white;
+        }
+
+        .btn.order:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(253, 126, 20, 0.4);
+        }
+
+        .footer {
+            margin-top: 30px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .microphone {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .mic-icon {
+                font-size: 2.5em;
+            }
+            
+            .buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍽️ 음성 주문 시스템</h1>
+        </div>
+        
+        <div class="voice-interface">
+            <div class="speaker-icon" id="speakerIcon">🔊</div>
+            <div class="status-text" id="statusText">음성을 듣고 있습니다...</div>
+            <div class="subtitle" id="subtitle"></div>
+            <div class="microphone" id="microphone">
+                <div class="mic-icon">🎤</div>
+            </div>
+            <div class="user-input" id="userInput"></div>
+        </div>
+        
+        <div class="buttons">
+            <button id="startBtn" class="btn primary">🎤 음성 시작하기</button>
+            <button id="stopBtn" class="btn secondary" disabled>음성 인식 중지</button>
+            <button id="menuBtn" class="btn menu">📋 메뉴 보기</button>
+            <button id="orderBtn" class="btn order">🛒 주문하기</button>
+        </div>
+        
+        <div class="footer">
+            <p>🎤 페이지를 클릭하거나 마이크를 클릭하여 음성을 시작하세요</p>
+            <p>그 후 "메뉴" 또는 "주문"이라고 말해주세요</p>
+        </div>
+    </div>
+
+    <!-- 메뉴 모달 -->
+    <div id="menuModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeMenuModal()">&times;</span>
+            <h2>🍽️ 메뉴</h2>
+            <div id="menuContent"></div>
+        </div>
+    </div>
+
+    <!-- 옵션 선택 모달 -->
+    <div id="optionModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeOptionModal()">&times;</span>
+            <h2>옵션 선택</h2>
+            <div class="selected-item">
+                <h3 id="selectedItemName"></h3>
+                <p id="selectedItemPrice"></p>
+            </div>
+            <div class="option-section">
+                <h4>선택된 옵션</h4>
+                <div id="selectedOptions"></div>
+            </div>
+            <div class="option-section">
+                <h4>추가 옵션</h4>
+                <div id="availableOptions"></div>
+            </div>
+            <div class="option-actions">
+                <button onclick="resetOptions()">초기화</button>
+                <button onclick="addToOrderWithOptions()">주문담기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 주문 모달 -->
+    <div id="orderModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeOrderModal()">&times;</span>
+            <h2>🛒 주문하기</h2>
+            <div id="orderContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // API 통신을 위한 유틸리티 클래스
+        class APIClient {
+            constructor(baseURL = 'http://localhost:8000') {
+                this.baseURL = baseURL;
+            }
+
+            async request(endpoint, options = {}) {
+                const url = `${this.baseURL}${endpoint}`;
+                const config = {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                };
+
+                try {
+                    const response = await fetch(url, config);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    return await response.json();
+                } catch (error) {
+                    console.error('API 요청 실패:', error);
+                    throw error;
+                }
+            }
+
+            async getCategories() {
+                return this.request('/categories');
+            }
+
+            async getMenuByCategory(categoryId) {
+                return this.request(`/categories/${categoryId}/menu`);
+            }
+
+            async getMenuDetail(itemId) {
+                return this.request(`/menu/${itemId}`);
+            }
+
+            async getOptionsByType(optionType) {
+                return this.request(`/options/${optionType}`);
+            }
+
+            async createOrder(orderData) {
+                return this.request('/orders', {
+                    method: 'POST',
+                    body: JSON.stringify(orderData)
+                });
+            }
+
+            async getVoiceGuideText() {
+                return this.request('/voice-guide/text');
+            }
+        }
+
+        // 전역 변수
+        const apiClient = new APIClient();
+        let recognition = null;
+        let isListening = false;
+        let isSpeaking = false;
+        let hasUserInteracted = false;
+        let isRecognitionActive = false;
+        let categories = [];
+        let menuItems = {};
+        let orders = JSON.parse(localStorage.getItem('orders') || '[]');
+
+        // DOM 요소
+        const speakerIcon = document.getElementById('speakerIcon');
+        const statusText = document.getElementById('statusText');
+        const subtitle = document.getElementById('subtitle');
+        const microphone = document.getElementById('microphone');
+        const userInput = document.getElementById('userInput');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const menuBtn = document.getElementById('menuBtn');
+        const orderBtn = document.getElementById('orderBtn');
+        const menuModal = document.getElementById('menuModal');
+        const orderModal = document.getElementById('orderModal');
+        const optionModal = document.getElementById('optionModal');
+
+        // 음성 주문 시스템 클래스
+        class VoiceOrderSystem {
+            constructor() {
+                this.initializeElements();
+                this.setupEventListeners();
+                this.initializeSpeechRecognition();
+                this.showWelcomeMessage();
+            }
+
+            initializeElements() {
+                // 이미 DOM 요소들이 전역으로 정의되어 있음
+            }
+
+            setupEventListeners() {
+                startBtn.addEventListener('click', () => {
+                    hasUserInteracted = true;
+                    this.speakWelcomeMessage();
+                });
+                stopBtn.addEventListener('click', () => this.stopListening());
+                menuBtn.addEventListener('click', () => this.showMenuModal());
+                orderBtn.addEventListener('click', () => this.showOrderModal());
+                microphone.addEventListener('click', () => {
+                    hasUserInteracted = true;
+                    if (isListening) {
+                        this.stopListening();
+                    } else {
+                        this.speakWelcomeMessage();
+                    }
+                });
+
+                // 페이지 클릭 시 음성 시작
+                document.addEventListener('click', () => {
+                    if (!hasUserInteracted) {
+                        hasUserInteracted = true;
+                        this.speakWelcomeMessage();
+                    }
+                });
+
+                // 키보드 입력 시 음성 시작
+                document.addEventListener('keydown', () => {
+                    if (!hasUserInteracted) {
+                        hasUserInteracted = true;
+                        this.speakWelcomeMessage();
+                    }
+                });
+            }
+
+            initializeSpeechRecognition() {
+                if ('webkitSpeechRecognition' in window) {
+                    recognition = new webkitSpeechRecognition();
+                } else if ('SpeechRecognition' in window) {
+                    recognition = new SpeechRecognition();
+                } else {
+                    statusText.textContent = '음성 인식을 지원하지 않는 브라우저입니다.';
+                    startBtn.disabled = true;
+                    return;
+                }
+
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'ko-KR';
+
+                recognition.onstart = () => {
+                    isListening = true;
+                    isRecognitionActive = true;
+                    this.updateUI();
+                    statusText.textContent = '음성을 듣고 있습니다...';
+                    subtitle.textContent = '말씀해주세요...';
+                    subtitle.className = 'subtitle listening';
+                };
+
+                recognition.onresult = (event) => {
+                    const result = event.results[0][0].transcript.trim();
+                    userInput.textContent = `인식된 음성: "${result}"`;
+                    isRecognitionActive = false;
+                    this.processVoiceCommand(result);
+                };
+
+                recognition.onerror = (event) => {
+                    console.error('음성 인식 오류:', event.error);
+                    statusText.textContent = '음성 인식 중 오류가 발생했습니다.';
+                    isRecognitionActive = false;
+                    this.stopListening();
+                };
+
+                recognition.onend = () => {
+                    isListening = false;
+                    isRecognitionActive = false;
+                    this.updateUI();
+                    subtitle.className = 'subtitle';
+                };
+            }
+
+            showWelcomeMessage() {
+                statusText.textContent = '페이지를 클릭하거나 마이크를 클릭하여 음성을 시작하세요.';
+                subtitle.textContent = '';
+            }
+
+            async speakWelcomeMessage() {
+                const welcomeMessage = "안녕하세요. 반갑습니다. 주문하고 싶은 메뉴가 있으시면 메뉴명을 말씀해주시고, 못 정하셨으면 '메뉴'라고 말해 주세요.";
+                    this.speak(welcomeMessage, () => {
+                        statusText.textContent = '음성 인식을 시작하세요.';
+                        subtitle.className = 'subtitle listening';
+                        setTimeout(() => {
+                            this.startListening();
+                        }, 500);
+                    });
+            }
+
+            speak(text, callback = null) {
+                if (!hasUserInteracted) {
+                    console.log('사용자 상호작용이 필요합니다.');
+                    if (callback) callback();
+                    return;
+                }
+
+                if (isSpeaking) {
+                    speechSynthesis.cancel();
+                }
+
+                isSpeaking = true;
+                speakerIcon.style.animation = 'pulse 0.5s infinite';
+                subtitle.textContent = text;
+                subtitle.className = 'subtitle speaking';
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ko-KR';
+                utterance.rate = 0.8;
+                utterance.pitch = 1;
+                utterance.volume = 1;
+
+                const voices = speechSynthesis.getVoices();
+                const koreanVoice = voices.find(voice => 
+                    voice.lang.includes('ko') || voice.lang.includes('KR')
+                );
+                if (koreanVoice) {
+                    utterance.voice = koreanVoice;
+                }
+
+                utterance.onstart = () => {
+                    console.log('음성 재생 시작:', text);
+                };
+
+                utterance.onend = () => {
+                    console.log('음성 재생 완료');
+                    isSpeaking = false;
+                    speakerIcon.style.animation = 'pulse 2s infinite';
+                    subtitle.className = 'subtitle';
+                    if (callback) callback();
+                };
+
+                utterance.onerror = (event) => {
+                    console.error('음성 합성 오류:', event.error);
+                    isSpeaking = false;
+                    speakerIcon.style.animation = 'pulse 2s infinite';
+                    subtitle.className = 'subtitle';
+                    if (callback) callback();
+                };
+
+                speechSynthesis.speak(utterance);
+            }
+
+            startListening() {
+                if (!recognition) {
+                    statusText.textContent = '음성 인식을 지원하지 않습니다.';
+                    return;
+                }
+
+                if (isSpeaking) {
+                    console.log('음성 재생 중이므로 마이크 활성화를 지연합니다.');
+                    setTimeout(() => {
+                        this.startListening();
+                    }, 1000);
+                    return;
+                }
+
+                try {
+                    recognition.start();
+                } catch (error) {
+                    console.error('음성 인식 시작 오류:', error);
+                    statusText.textContent = '음성 인식을 시작할 수 없습니다.';
+                }
+            }
+
+            stopListening() {
+                if (recognition && isListening) {
+                    recognition.stop();
+                    isListening = false;
+                    isRecognitionActive = false;
+                }
+            }
+
+            processVoiceCommand(command) {
+                const lowerCommand = command.toLowerCase();
+                
+                if (lowerCommand.includes('메뉴')) {
+                    this.speak('메뉴 페이지로 이동합니다.', () => {
+                        this.showMenuModal();
+                    });
+                } else if (lowerCommand.includes('주문')) {
+                    this.speak('주문 페이지로 이동합니다.', () => {
+                        this.showOrderModal();
+                    });
+                } else {
+                    // 메뉴명을 말한 경우, 바로 메뉴 처리
+                    this.handleDirectMenuCommand(command);
+                }
+            }
+
+            // 직접 메뉴명 처리 함수
+            handleDirectMenuCommand(command) {
+                // 메뉴 데이터가 로드되지 않았다면 먼저 로드
+                if (categories.length === 0 || Object.keys(menuItems).length === 0) {
+                    this.speak('메뉴를 불러오는 중입니다. 잠시만 기다려주세요.', () => {
+                        this.loadMenuDataAndProcess(command);
+                    });
+                } else {
+                    this.processDirectMenuCommand(command);
+                }
+            }
+
+            // 메뉴 데이터 로드 후 처리
+            async loadMenuDataAndProcess(command) {
+                try {
+                    await loadCategories();
+                    await loadMenuItems();
+                    this.processDirectMenuCommand(command);
+                } catch (error) {
+                    console.error('메뉴 데이터 로드 실패:', error);
+                    this.speak('메뉴를 불러오는데 실패했습니다. 다시 시도해주세요.', () => {
+                            this.startListening();
+                    });
+                }
+            }
+
+            // 직접 메뉴명 처리
+            processDirectMenuCommand(command) {
+                console.log('processDirectMenuCommand 호출됨:', command);
+                // 띄어쓰기와 대소문자 구분 없이 메뉴명 매칭
+                const normalizedCommand = command.replace(/\s+/g, '').toLowerCase();
+                console.log('정규화된 명령어:', normalizedCommand);
+                
+                // 모든 메뉴 아이템에서 매칭 검색
+                let matchedItem = null;
+                let matchedCategory = null;
+                for (const categoryId in menuItems) {
+                    const items = menuItems[categoryId];
+                    for (const item of items) {
+                        const normalizedItemName = item.name.replace(/\s+/g, '').toLowerCase();
+                        if (normalizedItemName.includes(normalizedCommand) || normalizedCommand.includes(normalizedItemName)) {
+                            matchedItem = item;
+                            matchedCategory = categories.find(cat => cat.id == categoryId);
+                            console.log('매칭된 메뉴:', matchedItem.name, '카테고리:', matchedCategory.name);
+                            break;
+                        }
+                    }
+                    if (matchedItem) break;
+                }
+
+                if (matchedItem && matchedCategory) {
+                    console.log('메뉴 매칭 성공, 주문 과정 설명 시작');
+                    // 메뉴 페이지로 이동하고 바로 주문 과정 설명
+                    this.speak('메뉴 페이지로 이동합니다.', () => {
+                        this.showMenuModal();
+                        // 메뉴 모달이 표시된 후 주문 과정 설명
+                        setTimeout(() => {
+                            console.log('processMenuAfterGuide 호출');
+                            this.processMenuAfterGuide(matchedItem, matchedCategory);
+                        }, 2000);
+                    });
+                } else {
+                    console.log('메뉴 매칭 실패, 일반 메뉴 페이지로 이동');
+                    // 매칭되지 않은 경우 일반적인 메뉴 페이지로 이동
+                    this.speak('메뉴 페이지로 이동합니다.', () => {
+                        this.showMenuModal();
+                    });
+                }
+            }
+
+            // 메뉴 안내 후 메뉴 처리
+            processMenuAfterGuide(matchedItem, matchedCategory) {
+                console.log('processMenuAfterGuide 호출됨:', matchedItem.name, matchedCategory.name);
+                // 해당 메뉴 주문을 위한 구체적인 step-by-step 가이드
+                let guideMessage = "";
+                
+                if (matchedCategory.name === '돈카츠,카레') {
+                    guideMessage = `${matchedCategory.name} 탭을 누르시고 ${matchedItem.name}을 눌러주세요. 옵션을 선택한 후 주문담기 버튼을 눌러주세요. 그 다음에 결제하기 버튼을 눌러주세요. 카드를 넣어주세요.`;
+                } else if (matchedCategory.name === '1인정식') {
+                    guideMessage = `${matchedCategory.name} 탭을 누르시고 ${matchedItem.name}을 눌러주세요. 옵션을 선택한 후 주문담기 버튼을 눌러주세요. 그 다음에 결제하기 버튼을 눌러주세요. 카드를 넣어주세요.`;
+                } else if (matchedCategory.name === '쌀국수') {
+                    guideMessage = `${matchedCategory.name} 탭을 누르시고 ${matchedItem.name}을 눌러주세요. 그 다음에 결제하기 버튼을 눌러주세요. 카드를 넣어주세요.`;
+                } else if (matchedCategory.name === '사이드&추가메뉴') {
+                    guideMessage = `${matchedCategory.name} 탭을 누르시고 ${matchedItem.name}을 눌러주세요. 그 다음에 결제하기 버튼을 눌러주세요. 카드를 넣어주세요.`;
+                } else {
+                    guideMessage = `${matchedCategory.name} 탭을 누르시고 ${matchedItem.name}을 눌러주세요. 그 다음에 결제하기 버튼을 눌러주세요. 카드를 넣어주세요.`;
+                }
+                
+                console.log('가이드 메시지:', guideMessage);
+                
+                if (window.speechSynthesis) {
+                    const utterance = new SpeechSynthesisUtterance(guideMessage);
+                    utterance.lang = 'ko-KR';
+                    utterance.rate = 0.8;
+                    utterance.pitch = 1;
+                    utterance.volume = 1;
+                    
+                    const voices = speechSynthesis.getVoices();
+                    const koreanVoice = voices.find(voice => 
+                        voice.lang.includes('ko') || voice.lang.includes('KR')
+                    );
+                    if (koreanVoice) {
+                        utterance.voice = koreanVoice;
+                    }
+                    
+                    utterance.onend = () => {
+                        // 가이드 완료 후 해당 메뉴 처리
+                        setTimeout(() => {
+                            this.processMatchedMenu(matchedItem, matchedCategory);
+                        }, 1000);
+                    };
+                    
+                    speechSynthesis.speak(utterance);
+                }
+            }
+
+            // 매칭된 메뉴 처리
+            processMatchedMenu(matchedItem, matchedCategory) {
+                // 해당 카테고리 선택
+                this.selectCategoryAndProcessMenu(matchedCategory.id, matchedItem);
+            }
+
+            // 카테고리 선택 및 메뉴 처리
+            selectCategoryAndProcessMenu(categoryId, selectedItem) {
+                // 카테고리 버튼 활성화
+                const categoryButtons = document.querySelectorAll('.category-btn');
+                categoryButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.onclick.toString().includes(categoryId)) {
+                        btn.classList.add('active');
+                    }
+                });
+
+                // 해당 카테고리의 메뉴 표시
+                showCategoryMenu(categoryId);
+
+                // 선택된 메뉴 처리
+                setTimeout(() => {
+                    this.processSelectedMenu(selectedItem, categories.find(cat => cat.id == categoryId));
+                }, 500);
+            }
+
+            // 선택된 메뉴 처리
+            processSelectedMenu(item, category) {
+                if (category.name === '돈카츠,카레' || category.name === '1인정식') {
+                    // 옵션이 있는 메뉴는 옵션 모달 표시
+                    this.speak(`${category.name} 탭을 누르시고 ${item.name}을 눌러주세요. 옵션을 선택한 후 주문담기 버튼을 눌러주세요. 그 다음에 결제하기 버튼을 눌러주세요. 카드를 넣어주세요.`, () => {
+                        showOptionModal(item, category);
+                    });
+                } else {
+                    // 옵션이 없는 메뉴는 바로 주문 추가
+                    addToOrder(item.id, item.name, item.price);
+                    this.speak(`${category.name} 탭을 누르시고 ${item.name}을 눌러주세요. 그 다음에 결제하기 버튼을 눌러주세요. 카드를 넣어주세요.`, () => {
+                        // 마이크 종료
+                        if (recognition) {
+                            recognition.stop();
+                        }
+                    });
+                }
+            }
+
+            updateUI() {
+                startBtn.disabled = isListening;
+                stopBtn.disabled = !isListening;
+                
+                if (isListening) {
+                    microphone.classList.add('listening');
+                } else {
+                    microphone.classList.remove('listening');
+                }
+            }
+
+            async showMenuModal() {
+                try {
+                    await loadCategories();
+                    await loadMenuItems();
+                    renderMenuItems();
+                    menuModal.style.display = 'block';
+                    
+                    // 음성 입력 표시 영역 추가 (메뉴 모달용)
+                    if (!document.getElementById('voiceInputDisplay')) {
+                        const voiceInputDiv = document.createElement('div');
+                        voiceInputDiv.id = 'voiceInputDisplay';
+                        voiceInputDiv.style.cssText = `
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            background: rgba(0,0,0,0.8);
+                            color: white;
+                            padding: 15px;
+                            border-radius: 10px;
+                            font-size: 14px;
+                            z-index: 1000;
+                            display: none;
+                            max-width: 300px;
+                        `;
+                        document.body.appendChild(voiceInputDiv);
+                    }
+                    
+                    // 메뉴 모달이 열릴 때 상세한 음성 안내 제공 (한 번만)
+                    if (!window.menuVoicePlayed) {
+                        const voiceMessage = "저희 매장에는 다음과 같은 메뉴가 있습니다. 쌀국수 탭을 누르시면 차돌양지쌀국수, 한우쌀국수, 모듬쌀국수 등의 메뉴가 있습니다. 돈카츠,카레 탭을 누르시면 프리미엄 로스카츠, 안심카츠, 통모짜치즈돈카츠 등의 메뉴가 있습니다. 1인정식 탭을 누르시면 정식A, 정식B, 정식C, 정식D 등의 메뉴가 있습니다. 사이드&추가메뉴 탭을 누르시면 공깃밥 추가, 레몬추가, 트러플오일 추가 등의 메뉴가 있습니다. 주문하고 싶은 메뉴가 있으시면 메뉴명을 말씀해주세요.";
+                        
+                        if (window.speechSynthesis) {
+                            const utterance = new SpeechSynthesisUtterance(voiceMessage);
+                            utterance.lang = 'ko-KR';
+                            utterance.rate = 0.8;
+                            utterance.pitch = 1;
+                            utterance.volume = 1;
+                            
+                            const voices = speechSynthesis.getVoices();
+                            const koreanVoice = voices.find(voice => 
+                                voice.lang.includes('ko') || voice.lang.includes('KR')
+                            );
+                            if (koreanVoice) {
+                                utterance.voice = koreanVoice;
+                            }
+                            
+                    utterance.onend = () => {
+                        // 음성 안내가 완전히 끝나면 마이크 활성화
+                        console.log('메뉴 안내 음성 완료, 마이크 활성화 준비 중...');
+                        setTimeout(() => {
+                            console.log('마이크 활성화 시작');
+                            startMenuVoiceRecognition();
+                        }, 2000);
+                    };
+                            
+                            speechSynthesis.speak(utterance);
+                            window.menuVoicePlayed = true;
+                        }
+                    } else {
+                        // 이미 음성 안내를 재생했다면 바로 마이크 활성화
+                        setTimeout(() => {
+                            startMenuVoiceRecognition();
+                        }, 500);
+                    }
+                } catch (error) {
+                    console.error('메뉴 로드 실패:', error);
+                    alert('메뉴를 불러오는데 실패했습니다.');
+                }
+            }
+
+            showOrderModal() {
+                renderOrderItems();
+                orderModal.style.display = 'block';
+            }
+        }
+
+        // 메뉴 관련 함수들
+        async function loadCategories() {
+            try {
+                categories = await apiClient.getCategories();
+                console.log('카테고리 로드 완료:', categories);
+            } catch (error) {
+                console.error('카테고리 로드 실패:', error);
+                // 백엔드 연결 실패 시 하드코딩된 데이터 사용
+                categories = [
+                    { id: 1, name: '쌀국수', display_name: '쌀국수' },
+                    { id: 2, name: '돈카츠,카레', display_name: '돈카츠,카레' },
+                    { id: 3, name: '1인정식', display_name: '1인정식' },
+                    { id: 4, name: '사이드&추가메뉴', display_name: '사이드&추가메뉴' }
+                ];
+            }
+        }
+
+        async function loadMenuItems() {
+            try {
+                for (const category of categories) {
+                    const items = await apiClient.getMenuByCategory(category.id);
+                    menuItems[category.id] = items;
+                }
+                console.log('메뉴 아이템 로드 완료:', menuItems);
+            } catch (error) {
+                console.error('메뉴 아이템 로드 실패:', error);
+                // 백엔드 연결 실패 시 하드코딩된 데이터 사용
+                menuItems = {
+                    1: [ // 쌀국수
+                        { id: 1, name: '차돌양지쌀국수', price: 9900, description: '부드러운 차돌양지로 끓인 쌀국수' },
+                        { id: 2, name: '한우쌀국수', price: 10900, description: '한우로 끓인 진한 쌀국수' },
+                        { id: 3, name: '모듬 쌀국수', price: 11900, description: '다양한 고기가 들어간 쌀국수' }
+                    ],
+                    2: [ // 돈카츠,카레
+                        { id: 4, name: '프리미엄 로스카츠(등심)', price: 11900, description: '등심으로 만든 프리미엄 돈카츠' },
+                        { id: 5, name: '프리미엄 히레츠(안심)', price: 12900, description: '안심으로 만든 프리미엄 돈카츠' },
+                        { id: 6, name: '통모짜치즈돈카츠', price: 12900, description: '통모짜렐라 치즈가 들어간 돈카츠' },
+                        { id: 7, name: '시그니처 경양식돈카츠', price: 11900, description: '경양식 스타일의 시그니처 돈카츠' },
+                        { id: 8, name: '모듬카츠A[등심+안심]', price: 13900, description: '등심과 안심이 함께 들어간 모듬카츠' },
+                        { id: 9, name: '모듬카츠B[등심+치즈]', price: 13900, description: '등심과 치즈가 함께 들어간 모듬카츠' },
+                        { id: 10, name: '등심카츠 카레라이스', price: 10900, description: '등심카츠와 카레라이스' },
+                        { id: 11, name: '안심카츠 카레라이스', price: 12900, description: '안심카츠와 카레라이스' },
+                        { id: 12, name: '통모짜치즈 카레라이스', price: 12900, description: '통모짜렐라 치즈 카레라이스' }
+                    ],
+                    3: [ // 1인정식
+                        { id: 13, name: '정식A(쌀국수S+경양식)', price: 11900, description: '쌀국수와 경양식이 함께' },
+                        { id: 14, name: '정식B(쌀국수S+등심)', price: 10900, description: '쌀국수와 등심이 함께' },
+                        { id: 15, name: '정식C(쌀국수S+안심)', price: 12900, description: '쌀국수와 안심이 함께' },
+                        { id: 16, name: '정식D(쌀국수S+치즈)', price: 12900, description: '쌀국수와 치즈가 함께' }
+                    ],
+                    4: [ // 사이드&추가메뉴
+                        { id: 17, name: '공깃밥 추가', price: 1000, description: '추가 밥' },
+                        { id: 18, name: '레몬추가', price: 500, description: '레몬 추가' },
+                        { id: 19, name: '트러플오일 추가', price: 500, description: '트러플오일 추가' }
+                    ]
+                };
+                console.log('하드코딩된 메뉴 아이템 로드 완료:', menuItems);
+            }
+        }
+
+        function renderMenuItems() {
+            const menuContent = document.getElementById('menuContent');
+            if (!menuContent) return;
+
+            let html = '<div class="menu-categories">';
+            categories.forEach(category => {
+                html += `<button class="category-btn" onclick="showCategoryMenu(${category.id})">${category.display_name}</button>`;
+            });
+            html += '</div>';
+
+            html += '<div class="menu-items" id="menuItemsContainer"></div>';
+            menuContent.innerHTML = html;
+        }
+
+        function showCategoryMenu(categoryId) {
+            const menuItemsContainer = document.getElementById('menuItemsContainer');
+            if (!menuItemsContainer) return;
+
+            const items = menuItems[categoryId] || [];
+            let html = '';
+            
+            items.forEach(item => {
+                html += `
+                    <div class="menu-item">
+                        <h3>${item.name}</h3>
+                        <p>${item.description || ''}</p>
+                        <p class="price">${item.price.toLocaleString()}원</p>
+                        <button onclick="addToOrder(${item.id}, '${item.name}', ${item.price})">주문하기</button>
+                    </div>
+                `;
+            });
+
+            menuItemsContainer.innerHTML = html;
+            
+            // 음성 입력 표시 영역 추가
+            if (!document.getElementById('voiceInputDisplay')) {
+                const voiceInputDiv = document.createElement('div');
+                voiceInputDiv.id = 'voiceInputDisplay';
+                voiceInputDiv.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: rgba(0,0,0,0.8);
+                    color: white;
+                    padding: 15px;
+                    border-radius: 10px;
+                    font-size: 14px;
+                    z-index: 1000;
+                    display: none;
+                    max-width: 300px;
+                `;
+                document.body.appendChild(voiceInputDiv);
+            }
+            
+            // 카테고리 선택 시 바로 마이크 활성화 (음성 안내 재생하지 않음)
+            setTimeout(() => {
+                startMenuVoiceRecognition();
+            }, 2000);
+        }
+
+        // 메뉴 음성 인식 시작
+        function startMenuVoiceRecognition() {
+            console.log('startMenuVoiceRecognition 호출됨');
+            if (!recognition) {
+                console.log('recognition 객체가 없음');
+                return;
+            }
+            
+            // 이미 음성 인식이 시작된 상태라면 중지 후 다시 시작
+            if (isRecognitionActive) {
+                console.log('음성 인식이 이미 활성화됨, 중지 후 재시작');
+                recognition.stop();
+                setTimeout(() => {
+                    startMenuVoiceRecognition();
+                }, 100);
+                return;
+            }
+            
+            // 음성 인식 상태 표시
+            const voiceInputDisplay = document.getElementById('voiceInputDisplay');
+            if (voiceInputDisplay) {
+                voiceInputDisplay.textContent = '🎤 음성을 듣고 있습니다... 메뉴명을 말씀해주세요.';
+                voiceInputDisplay.style.display = 'block';
+                voiceInputDisplay.style.color = '#007bff';
+            }
+            
+            // 음성 인식 시작 전 잠시 대기
+            setTimeout(() => {
+                if (recognition && !isRecognitionActive) {
+                    try {
+                        recognition.start();
+                    } catch (error) {
+                        console.error('음성 인식 시작 오류:', error);
+                        // 오류 발생 시 잠시 후 다시 시도
+                        setTimeout(() => {
+                            if (recognition && !isRecognitionActive) {
+                                recognition.start();
+                            }
+                        }, 1000);
+                    }
+                }
+            }, 1000);
+            
+            recognition.onstart = () => {
+                console.log('메뉴 음성 인식 시작');
+                isRecognitionActive = true;
+                if (voiceInputDisplay) {
+                    voiceInputDisplay.textContent = '🎤 음성을 듣고 있습니다... 메뉴명을 말씀해주세요.';
+                    voiceInputDisplay.style.color = '#007bff';
+                }
+            };
+            
+            recognition.onresult = (event) => {
+                const result = event.results[0][0].transcript;
+                console.log('메뉴 음성 인식 결과:', result);
+                isRecognitionActive = false;
+                handleMenuVoiceCommand(result);
+            };
+            
+            recognition.onerror = (event) => {
+                console.error('메뉴 음성 인식 오류:', event.error);
+                isRecognitionActive = false;
+                if (voiceInputDisplay) {
+                    voiceInputDisplay.textContent = '❌ 음성 인식 오류가 발생했습니다. 다시 시도해주세요.';
+                    voiceInputDisplay.style.color = '#dc3545';
+                }
+                
+                // 2초 후 다시 음성 인식 시작
+                setTimeout(() => {
+                    startMenuVoiceRecognition();
+                }, 2000);
+            };
+            
+            recognition.onend = () => {
+                console.log('메뉴 음성 인식 종료');
+                isRecognitionActive = false;
+            };
+        }
+
+        // 메뉴 음성 명령 처리
+        function handleMenuVoiceCommand(command) {
+            // 사용자 입력 텍스트 표시
+            const voiceInputDisplay = document.getElementById('voiceInputDisplay');
+            if (voiceInputDisplay) {
+                voiceInputDisplay.textContent = `인식된 음성: "${command}"`;
+                voiceInputDisplay.style.display = 'block';
+                voiceInputDisplay.style.color = '#ffffff';
+            }
+
+            // 띄어쓰기와 대소문자 구분 없이 메뉴명 매칭
+            const normalizedCommand = command.replace(/\s+/g, '').toLowerCase();
+            
+            // 모든 메뉴 아이템에서 매칭 검색
+            let matchedItem = null;
+            let matchedCategory = null;
+            for (const categoryId in menuItems) {
+                const items = menuItems[categoryId];
+                for (const item of items) {
+                    const normalizedItemName = item.name.replace(/\s+/g, '').toLowerCase();
+                    if (normalizedItemName.includes(normalizedCommand) || normalizedCommand.includes(normalizedItemName)) {
+                        matchedItem = item;
+                        matchedCategory = categories.find(cat => cat.id == categoryId);
+                        break;
+                    }
+                }
+                if (matchedItem) break;
+            }
+
+            if (matchedItem && matchedCategory) {
+                // 성공 메시지 표시
+                if (voiceInputDisplay) {
+                    voiceInputDisplay.textContent = `✅ "${matchedItem.name}" 선택되었습니다!`;
+                    voiceInputDisplay.style.color = '#28a745';
+                }
+                
+                // 옵션 선택 프로세스 음성 안내
+                let optionGuideMessage = '';
+                
+                if (matchedCategory.name === '돈카츠,카레') {
+                    optionGuideMessage = `${matchedItem.name}을 선택하셨습니다. 옵션을 선택하시고 하단에 주문담기 버튼을 눌러주세요.`;
+                    // 옵션 모달 표시
+                    showOptionModal(matchedItem, matchedCategory);
+                } else if (matchedCategory.name === '1인정식') {
+                    optionGuideMessage = `${matchedItem.name}을 선택하셨습니다. 옵션을 선택하시고 하단에 주문담기 버튼을 눌러주세요.`;
+                    // 옵션 모달 표시
+                    showOptionModal(matchedItem, matchedCategory);
+                } else {
+                    // 다른 카테고리는 바로 주문 추가
+                    addToOrder(matchedItem.id, matchedItem.name, matchedItem.price);
+                    optionGuideMessage = `${matchedItem.name}이 주문에 추가되었습니다. 하단의 결제하기 버튼을 눌러주세요.`;
+                }
+                
+                if (window.speechSynthesis) {
+                    const utterance = new SpeechSynthesisUtterance(optionGuideMessage);
+                    utterance.lang = 'ko-KR';
+                    utterance.rate = 0.8;
+                    utterance.pitch = 1;
+                    utterance.volume = 1;
+                    
+                    const voices = speechSynthesis.getVoices();
+                    const koreanVoice = voices.find(voice => 
+                        voice.lang.includes('ko') || voice.lang.includes('KR')
+                    );
+                    if (koreanVoice) {
+                        utterance.voice = koreanVoice;
+                    }
+                    
+                    utterance.onend = () => {
+                        // 모든 메뉴는 마이크 종료 (옵션은 모달에서 처리)
+                        if (recognition) {
+                            recognition.stop();
+                        }
+                    };
+                    
+                    speechSynthesis.speak(utterance);
+                }
+                
+                // 3초 후 메시지 숨기기
+                setTimeout(() => {
+                    if (voiceInputDisplay) {
+                        voiceInputDisplay.style.display = 'none';
+                    }
+                }, 3000);
+            } else {
+                // 매칭되지 않은 경우
+                if (voiceInputDisplay) {
+                    voiceInputDisplay.textContent = `❌ "${command}" 메뉴를 찾을 수 없습니다. 다시 말씀해주세요.`;
+                    voiceInputDisplay.style.color = '#dc3545';
+                }
+                
+                // 2초 후 다시 음성 인식 시작
+                setTimeout(() => {
+                    startMenuVoiceRecognition();
+                }, 2000);
+            }
+        }
+
+        // 옵션 선택을 위한 음성 인식 시작
+        function startOptionVoiceRecognition(selectedItem, selectedCategory) {
+            if (!recognition) return;
+            
+            // 옵션 선택 상태 표시
+            const voiceInputDisplay = document.getElementById('voiceInputDisplay');
+            if (voiceInputDisplay) {
+                voiceInputDisplay.textContent = `🎤 옵션을 선택해주세요...`;
+                voiceInputDisplay.style.display = 'block';
+                voiceInputDisplay.style.color = '#007bff';
+            }
+            
+            // 옵션 선택을 위한 음성 인식 설정
+            recognition.onresult = (event) => {
+                const result = event.results[0][0].transcript;
+                console.log('옵션 음성 인식 결과:', result);
+                handleOptionVoiceCommand(result, selectedItem, selectedCategory);
+            };
+            
+            recognition.onerror = (event) => {
+                console.error('옵션 음성 인식 오류:', event.error);
+                if (voiceInputDisplay) {
+                    voiceInputDisplay.textContent = '❌ 옵션 음성 인식 오류가 발생했습니다. 다시 시도해주세요.';
+                    voiceInputDisplay.style.color = '#dc3545';
+                }
+                
+                // 2초 후 다시 옵션 음성 인식 시작
+                setTimeout(() => {
+                    startOptionVoiceRecognition(selectedItem, selectedCategory);
+                }, 2000);
+            };
+            
+            recognition.onend = () => {
+                console.log('옵션 음성 인식 종료');
+            };
+            
+            // 음성 인식 시작 전 잠시 대기
+            setTimeout(() => {
+                if (recognition) {
+                    recognition.start();
+                }
+            }, 500);
+        }
+
+        // 옵션 음성 명령 처리
+        function handleOptionVoiceCommand(command, selectedItem, selectedCategory) {
+            const voiceInputDisplay = document.getElementById('voiceInputDisplay');
+            if (voiceInputDisplay) {
+                voiceInputDisplay.textContent = `인식된 옵션: "${command}"`;
+                voiceInputDisplay.style.display = 'block';
+                voiceInputDisplay.style.color = '#ffffff';
+            }
+
+            // 띄어쓰기와 대소문자 구분 없이 옵션명 매칭
+            const normalizedCommand = command.replace(/\s+/g, '').toLowerCase();
+            
+            // 옵션 정의
+            let availableOptions = [];
+            if (selectedCategory.name === '돈카츠,카레') {
+                availableOptions = ['밥많이', '밥추가', '레몬추가', '트러플오일추가'];
+            } else if (selectedCategory.name === '1인정식') {
+                availableOptions = ['쌀국수사이즈업', '밥추가', '고수추가', '레몬추가', '트러플오일추가'];
+            }
+            
+            // 옵션 매칭 검색
+            let matchedOption = null;
+            for (const option of availableOptions) {
+                const normalizedOption = option.replace(/\s+/g, '').toLowerCase();
+                if (normalizedOption.includes(normalizedCommand) || normalizedCommand.includes(normalizedOption)) {
+                    matchedOption = option;
+                    break;
+                }
+            }
+
+            if (matchedOption) {
+                // 옵션 선택 성공
+                if (voiceInputDisplay) {
+                    voiceInputDisplay.textContent = `✅ "${matchedOption}" 옵션이 선택되었습니다!`;
+                    voiceInputDisplay.style.color = '#28a745';
+                }
+                
+                // 옵션 선택 완료 안내
+                const optionCompleteMessage = `${matchedOption} 옵션이 선택되었습니다. 추가로 옵션을 선택하시려면 말씀해주시고, 옵션 선택을 완료하시려면 '완료'라고 말씀해주세요.`;
+                
+                if (window.speechSynthesis) {
+                    const utterance = new SpeechSynthesisUtterance(optionCompleteMessage);
+                    utterance.lang = 'ko-KR';
+                    utterance.rate = 0.8;
+                    utterance.pitch = 1;
+                    utterance.volume = 1;
+                    
+                    const voices = speechSynthesis.getVoices();
+                    const koreanVoice = voices.find(voice => 
+                        voice.lang.includes('ko') || voice.lang.includes('KR')
+                    );
+                    if (koreanVoice) {
+                        utterance.voice = koreanVoice;
+                    }
+                    
+                    utterance.onend = () => {
+                        // 계속 옵션 선택을 위한 음성 인식 시작
+                        setTimeout(() => {
+                            startOptionVoiceRecognition(selectedItem, selectedCategory);
+                        }, 1000);
+                    };
+                    
+                    speechSynthesis.speak(utterance);
+                }
+                
+                // 3초 후 메시지 숨기기
+                setTimeout(() => {
+                    if (voiceInputDisplay) {
+                        voiceInputDisplay.style.display = 'none';
+                    }
+                }, 3000);
+            } else if (normalizedCommand.includes('완료') || normalizedCommand.includes('끝')) {
+                // 옵션 선택 완료
+                if (voiceInputDisplay) {
+                    voiceInputDisplay.textContent = `✅ 옵션 선택이 완료되었습니다!`;
+                    voiceInputDisplay.style.color = '#28a745';
+                }
+                
+                // 주문 추가 및 완료 안내
+                addToOrder(selectedItem.id, selectedItem.name, selectedItem.price);
+                
+                const orderCompleteMessage = `${selectedItem.name}이 주문에 추가되었습니다. 하단의 결제하기 버튼을 눌러주세요.`;
+                
+                if (window.speechSynthesis) {
+                    const utterance = new SpeechSynthesisUtterance(orderCompleteMessage);
+                    utterance.lang = 'ko-KR';
+                    utterance.rate = 0.8;
+                    utterance.pitch = 1;
+                    utterance.volume = 1;
+                    
+                    const voices = speechSynthesis.getVoices();
+                    const koreanVoice = voices.find(voice => 
+                        voice.lang.includes('ko') || voice.lang.includes('KR')
+                    );
+                    if (koreanVoice) {
+                        utterance.voice = koreanVoice;
+                    }
+                    
+                    utterance.onend = () => {
+                        // 옵션 선택 완료 후 마이크 종료
+                        if (recognition) {
+                            recognition.stop();
+                        }
+                    };
+                    
+                    speechSynthesis.speak(utterance);
+                }
+                
+                // 3초 후 메시지 숨기기
+                setTimeout(() => {
+                    if (voiceInputDisplay) {
+                        voiceInputDisplay.style.display = 'none';
+                    }
+                }, 3000);
+            } else {
+                // 매칭되지 않은 옵션
+                if (voiceInputDisplay) {
+                    voiceInputDisplay.textContent = `❌ "${command}" 옵션을 찾을 수 없습니다. 다시 말씀해주세요.`;
+                    voiceInputDisplay.style.color = '#dc3545';
+                }
+                
+                // 2초 후 다시 옵션 음성 인식 시작
+                setTimeout(() => {
+                    startOptionVoiceRecognition(selectedItem, selectedCategory);
+                }, 2000);
+            }
+        }
+
+        async function addToOrder(itemId, itemName, price) {
+            try {
+                const menuDetail = await apiClient.getMenuDetail(itemId);
+                
+                if (menuDetail.available_options && menuDetail.available_options.length > 0) {
+                    showOptionModal(menuDetail);
+                } else {
+                    addItemToOrder(itemId, itemName, price, []);
+                }
+            } catch (error) {
+                console.error('메뉴 상세 정보 조회 실패:', error);
+                // 백엔드 연결 실패 시 옵션 없이 주문에 추가
+                addItemToOrder(itemId, itemName, price, []);
+            }
+        }
+
+        function addItemToOrder(itemId, itemName, price, selectedOptions) {
+            const newItem = {
+                id: itemId,
+                name: itemName,
+                price: price,
+                quantity: 1,
+                options: selectedOptions,
+                totalPrice: price + selectedOptions.reduce((sum, opt) => sum + opt.price, 0)
+            };
+
+            const existingItem = orders.find(item => 
+                item.id === itemId && 
+                JSON.stringify(item.options) === JSON.stringify(selectedOptions)
+            );
+
+            if (existingItem) {
+                existingItem.quantity += 1;
+                existingItem.totalPrice = existingItem.price * existingItem.quantity + 
+                    existingItem.options.reduce((sum, opt) => sum + opt.price * opt.quantity, 0);
+            } else {
+                orders.push(newItem);
+            }
+
+            localStorage.setItem('orders', JSON.stringify(orders));
+            alert(`${itemName}이(가) 주문에 추가되었습니다!`);
+        }
+
+        function showOptionModal(menuDetail) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'block';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                    <h3>${menuDetail.name}</h3>
+                    <p>가격: ${menuDetail.price.toLocaleString()}원</p>
+                    <div class="options">
+                        <h4>옵션 선택</h4>
+                        ${menuDetail.available_options.map(option => `
+                            <label class="option-item">
+                                <input type="checkbox" value="${option.id}" data-price="${option.price}">
+                                <span>${option.name} (+${option.price.toLocaleString()}원)</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <button class="btn secondary" onclick="this.closest('.modal').remove()">취소</button>
+                        <button class="btn primary" onclick="confirmOptionSelection(${menuDetail.id}, '${menuDetail.name}', ${menuDetail.price}, this.closest('.modal'))">주문담기</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function confirmOptionSelection(itemId, itemName, basePrice, modal) {
+            const checkboxes = modal.querySelectorAll('input[type="checkbox"]:checked');
+            const selectedOptions = Array.from(checkboxes).map(cb => ({
+                option_id: parseInt(cb.value),
+                quantity: 1,
+                price: parseInt(cb.dataset.price),
+                name: cb.nextElementSibling.textContent.split(' (+')[0]
+            }));
+
+            addItemToOrder(itemId, itemName, basePrice, selectedOptions);
+            modal.remove();
+        }
+
+        // 주문 관련 함수들
+        function renderOrderItems() {
+            const orderContent = document.getElementById('orderContent');
+            if (!orderContent) return;
+
+            if (orders.length === 0) {
+                orderContent.innerHTML = '<p>주문 목록이 비어있습니다.</p>';
+                return;
+            }
+
+            let html = '<div class="order-items">';
+            let totalAmount = 0;
+
+            orders.forEach((item, index) => {
+                const itemTotal = item.totalPrice || item.price;
+                totalAmount += itemTotal * item.quantity;
+                
+                const optionsText = item.options && item.options.length > 0 
+                    ? `<div class="item-options">옵션: ${item.options.map(opt => opt.name).join(', ')}</div>`
+                    : '';
+
+                html += `
+                    <div class="order-item">
+                        <h4>${item.name}</h4>
+                        ${optionsText}
+                        <p>수량: ${item.quantity}개</p>
+                        <p>가격: ${itemTotal.toLocaleString()}원</p>
+                        <button onclick="removeOrderItem(${index})">삭제</button>
+                    </div>
+                `;
+            });
+
+            html += `</div>
+                <div class="order-summary">
+                    <h3>총 금액: ${totalAmount.toLocaleString()}원</h3>
+                    <button class="btn primary" onclick="confirmOrder()">주문 확인</button>
+                </div>`;
+
+            orderContent.innerHTML = html;
+        }
+
+        function removeOrderItem(index) {
+            orders.splice(index, 1);
+            localStorage.setItem('orders', JSON.stringify(orders));
+            renderOrderItems();
+        }
+
+        async function confirmOrder() {
+            if (orders.length === 0) {
+                alert('주문할 아이템이 없습니다.');
+                return;
+            }
+
+            const totalAmount = orders.reduce((sum, item) => sum + (item.totalPrice || item.price) * item.quantity, 0);
+            const confirmMessage = `주문을 확인하시겠습니까?\n총 금액: ${totalAmount.toLocaleString()}원`;
+
+            if (confirm(confirmMessage)) {
+                try {
+                    const orderData = {
+                        items: orders.map(item => ({
+                            menu_item_id: item.id,
+                            quantity: item.quantity,
+                            options: item.options || []
+                        }))
+                    };
+
+                    const response = await apiClient.createOrder(orderData);
+                    alert(`주문이 완료되었습니다! 주문번호: ${response.order_number}\n총 금액: ${response.total_amount.toLocaleString()}원`);
+                    
+                    orders = [];
+                    localStorage.removeItem('orders');
+                    closeOrderModal();
+                } catch (error) {
+                    console.error('주문 생성 실패:', error);
+                    // 백엔드 연결 실패 시 로컬 주문 완료 처리
+                    const orderNumber = `ORD-${Date.now()}`;
+                    alert(`주문이 완료되었습니다! 주문번호: ${orderNumber}\n총 금액: ${totalAmount.toLocaleString()}원`);
+                    
+                    orders = [];
+                    localStorage.removeItem('orders');
+                    closeOrderModal();
+                }
+            }
+        }
+
+        // 모달 관련 함수들
+        function closeMenuModal() {
+            menuModal.style.display = 'none';
+        }
+
+        function closeOrderModal() {
+            orderModal.style.display = 'none';
+        }
+
+        function closeOptionModal() {
+            optionModal.style.display = 'none';
+        }
+
+        // 옵션 모달 표시
+        function showOptionModal(item, category) {
+            const selectedItemName = document.getElementById('selectedItemName');
+            const selectedItemPrice = document.getElementById('selectedItemPrice');
+            const availableOptions = document.getElementById('availableOptions');
+            
+            selectedItemName.textContent = item.name;
+            selectedItemPrice.textContent = `${item.price.toLocaleString()}원`;
+            
+            // 옵션 목록 생성
+            let optionsHtml = '';
+            if (category.name === '돈카츠,카레') {
+                const options = [
+                    { name: '밥많이', price: 0 },
+                    { name: '밥추가', price: 1000 },
+                    { name: '레몬추가', price: 500 },
+                    { name: '트러플오일 추가', price: 500 }
+                ];
+                options.forEach(option => {
+                    optionsHtml += `
+                        <div class="option-item" onclick="toggleOption('${option.name}', ${option.price})">
+                            <span>${option.name}</span>
+                            <span>+${option.price.toLocaleString()}원</span>
+                        </div>
+                    `;
+                });
+            } else if (category.name === '1인정식') {
+                const options = [
+                    { name: '쌀국수사이즈업', price: 3000 },
+                    { name: '밥추가', price: 1000 },
+                    { name: '고수추가', price: 500 },
+                    { name: '레몬추가', price: 500 },
+                    { name: '트러플오일 추가', price: 500 }
+                ];
+                options.forEach(option => {
+                    optionsHtml += `
+                        <div class="option-item" onclick="toggleOption('${option.name}', ${option.price})">
+                            <span>${option.name}</span>
+                            <span>+${option.price.toLocaleString()}원</span>
+                        </div>
+                    `;
+                });
+            }
+            
+            availableOptions.innerHTML = optionsHtml;
+            optionModal.style.display = 'block';
+        }
+
+        // 옵션 토글
+        function toggleOption(optionName, optionPrice) {
+            const selectedOptions = document.getElementById('selectedOptions');
+            const optionItems = document.querySelectorAll('.option-item');
+            
+            // 옵션 아이템 찾기
+            let optionItem = null;
+            optionItems.forEach(item => {
+                if (item.textContent.includes(optionName)) {
+                    optionItem = item;
+                }
+            });
+            
+            if (optionItem) {
+                if (optionItem.classList.contains('selected')) {
+                    // 선택 해제
+                    optionItem.classList.remove('selected');
+                    removeSelectedOption(optionName);
+                } else {
+                    // 선택
+                    optionItem.classList.add('selected');
+                    addSelectedOption(optionName, optionPrice);
+                }
+            }
+        }
+
+        // 선택된 옵션 추가
+        function addSelectedOption(optionName, optionPrice) {
+            const selectedOptions = document.getElementById('selectedOptions');
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'selected-option';
+            optionDiv.innerHTML = `
+                <span>${optionName}</span>
+                <span>+${optionPrice.toLocaleString()}원</span>
+            `;
+            selectedOptions.appendChild(optionDiv);
+        }
+
+        // 선택된 옵션 제거
+        function removeSelectedOption(optionName) {
+            const selectedOptions = document.getElementById('selectedOptions');
+            const options = selectedOptions.querySelectorAll('.selected-option');
+            options.forEach(option => {
+                if (option.textContent.includes(optionName)) {
+                    option.remove();
+                }
+            });
+        }
+
+        // 옵션 초기화
+        function resetOptions() {
+            const selectedOptions = document.getElementById('selectedOptions');
+            const optionItems = document.querySelectorAll('.option-item');
+            
+            selectedOptions.innerHTML = '';
+            optionItems.forEach(item => {
+                item.classList.remove('selected');
+            });
+        }
+
+        // 옵션과 함께 주문 추가
+        function addToOrderWithOptions() {
+            const selectedItemName = document.getElementById('selectedItemName').textContent;
+            const selectedItemPrice = document.getElementById('selectedItemPrice').textContent;
+            const selectedOptions = document.getElementById('selectedOptions');
+            
+            // 선택된 옵션들 수집
+            const options = [];
+            const optionElements = selectedOptions.querySelectorAll('.selected-option');
+            optionElements.forEach(option => {
+                const name = option.children[0].textContent;
+                const price = parseInt(option.children[1].textContent.replace(/[^0-9]/g, ''));
+                options.push({ name, price });
+            });
+            
+            // 주문에 추가
+            addToOrder(0, selectedItemName, parseInt(selectedItemPrice.replace(/[^0-9]/g, '')));
+            
+            // 모달 닫기
+            closeOptionModal();
+            
+            // 완료 음성 안내
+            const completeMessage = `${selectedItemName}이 주문에 추가되었습니다. 하단의 결제하기 버튼을 눌러주세요. 그 다음에 카드를 넣어주세요.`;
+            
+            if (window.speechSynthesis) {
+                const utterance = new SpeechSynthesisUtterance(completeMessage);
+                utterance.lang = 'ko-KR';
+                utterance.rate = 0.8;
+                utterance.pitch = 1;
+                utterance.volume = 1;
+                
+                const voices = speechSynthesis.getVoices();
+                const koreanVoice = voices.find(voice => 
+                    voice.lang.includes('ko') || voice.lang.includes('KR')
+                );
+                if (koreanVoice) {
+                    utterance.voice = koreanVoice;
+                }
+                
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        // 모달 외부 클릭 시 닫기
+        window.onclick = function(event) {
+            if (event.target === menuModal) {
+                closeMenuModal();
+            }
+            if (event.target === orderModal) {
+                closeOrderModal();
+            }
+            if (event.target === optionModal) {
+                closeOptionModal();
+            }
+        }
+
+        // 페이지 로드 시 음성 주문 시스템 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            new VoiceOrderSystem();
+        });
+    </script>
+</body>
+</html>

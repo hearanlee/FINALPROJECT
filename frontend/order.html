@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주문 - 음성 주문 시스템</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="order.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛒 주문하기</h1>
+            <button class="back-btn" onclick="goBack()">← 홈으로</button>
+        </div>
+        
+        <div class="order-content">
+            <div class="order-items" id="orderItems">
+                <div class="empty-cart">
+                    <div class="empty-icon">🛒</div>
+                    <h3>주문 목록이 비어있습니다</h3>
+                    <p>메뉴에서 원하는 음식을 선택해주세요</p>
+                    <button class="btn menu" onclick="goToMenu()">메뉴 보러가기</button>
+                </div>
+            </div>
+            
+            <div class="order-summary" id="orderSummary" style="display: none;">
+                <h3>주문 요약</h3>
+                <div class="summary-items" id="summaryItems"></div>
+                <div class="total-section">
+                    <div class="total-line">
+                        <span>총 수량:</span>
+                        <span id="totalQuantity">0</span>
+                    </div>
+                    <div class="total-line">
+                        <span>총 금액:</span>
+                        <span id="totalPrice">0원</span>
+                    </div>
+                </div>
+                <div class="order-actions">
+                    <button class="btn secondary" onclick="clearOrder()">주문 초기화</button>
+                    <button class="btn primary" onclick="confirmOrder()">주문 확인</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <button class="btn menu" onclick="goToMenu()">메뉴 더 보기</button>
+        </div>
+    </div>
+
+    <script src="api.js"></script>
+    <script src="order.js"></script>
+</body>
+</html>

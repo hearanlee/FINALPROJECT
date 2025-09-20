@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>메뉴 - 음성 주문 시스템</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="menu.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍽️ 메뉴</h1>
+            <button class="back-btn" onclick="goBack()">← 홈으로</button>
+        </div>
+        
+        <div class="menu-content">
+            <div class="menu-categories">
+                <div class="category active" data-category="main">메인 요리</div>
+                <div class="category" data-category="side">사이드 메뉴</div>
+                <div class="category" data-category="drink">음료</div>
+                <div class="category" data-category="dessert">디저트</div>
+            </div>
+            
+            <div class="menu-items" id="menuItems">
+                <!-- 메인 요리 -->
+                <div class="menu-section" id="main">
+                    <div class="menu-item">
+                        <div class="item-image">🍖</div>
+                        <div class="item-info">
+                            <h3>스테이크</h3>
+                            <p>프리미엄 한우 스테이크</p>
+                            <span class="price">25,000원</span>
+                        </div>
+                        <button class="order-btn" onclick="addToOrder('스테이크', 25000)">주문</button>
+                    </div>
+                    
+                    <div class="menu-item">
+                        <div class="item-image">🍝</div>
+                        <div class="item-info">
+                            <h3>파스타</h3>
+                            <p>크림 소스 파스타</p>
+                            <span class="price">12,000원</span>
+                        </div>
+                        <button class="order-btn" onclick="addToOrder('파스타', 12000)">주문</button>
+                    </div>
+                    
+                    <div class="menu-item">
+                        <div class="item-image">🍕</div>
+                        <div class="item-info">
+                            <h3>피자</h3>
+                            <p>마르게리타 피자</p>
+                            <span class="price">18,000원</span>
+                        </div>
+                        <button class="order-btn" onclick="addToOrder('피자', 18000)">주문</button>
+                    </div>
+                </div>
+                
+                <!-- 사이드 메뉴 -->
+                <div class="menu-section" id="side" style="display: none;">
+                    <div class="menu-item">
+                        <div class="item-image">🍟</div>
+                        <div class="item-info">
+                            <h3>감자튀김</h3>
+                            <p>바삭한 감자튀김</p>
+                            <span class="price">5,000원</span>
+                        </div>
+                        <button class="order-btn" onclick="addToOrder('감자튀김', 5000)">주문</button>
+                    </div>
+                    
+                    <div class="menu-item">
+                        <div class="item-image">🥗</div>
+                        <div class="item-info">
+                            <h3>시저샐러드</h3>
+                            <p>신선한 시저샐러드</p>
+                            <span class="price">8,000원</span>
+                        </div>
+                        <button class="order-btn" onclick="addToOrder('시저샐러드', 8000)">주문</button>
+                    </div>
+                </div>
+                
+                <!-- 음료 -->
+                <div class="menu-section" id="drink" style="display: none;">
+                    <div class="menu-item">
+                        <div class="item-image">🥤</div>
+                        <div class="item-info">
+                            <h3>콜라</h3>
+                            <p>시원한 콜라</p>
+                            <span class="price">3,000원</span>
+                        </div>
+                        <button class="order-btn" onclick="addToOrder('콜라', 3000)">주문</button>
+                    </div>
+                    
+                    <div class="menu-item">
+                        <div class="item-image">☕</div>
+                        <div class="item-info">
+                            <h3>아메리카노</h3>
+                            <p>진한 아메리카노</p>
+                            <span class="price">4,000원</span>
+                        </div>
+                        <button class="order-btn" onclick="addToOrder('아메리카노', 4000)">주문</button>
+                    </div>
+                </div>
+                
+                <!-- 디저트 -->
+                <div class="menu-section" id="dessert" style="display: none;">
+                    <div class="menu-item">
+                        <div class="item-image">🍰</div>
+                        <div class="item-info">
+                            <h3>치즈케이크</h3>
+                            <p>부드러운 치즈케이크</p>
+                            <span class="price">7,000원</span>
+                        </div>
+                        <button class="order-btn" onclick="addToOrder('치즈케이크', 7000)">주문</button>
+                    </div>
+                    
+                    <div class="menu-item">
+                        <div class="item-image">🍨</div>
+                        <div class="item-info">
+                            <h3>아이스크림</h3>
+                            <p>바닐라 아이스크림</p>
+                            <span class="price">4,000원</span>
+                        </div>
+                        <button class="order-btn" onclick="addToOrder('아이스크림', 4000)">주문</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <button class="btn order" onclick="goToOrder()">주문하러 가기</button>
+        </div>
+    </div>
+
+    <script src="api.js"></script>
+    <script src="menu.js"></script>
+</body>
+</html>

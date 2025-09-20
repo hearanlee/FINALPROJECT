@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>간단한 음성 주문 시스템</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 50px;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            margin: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            min-height: 50px;
+        }
+        .subtitle {
+            font-size: 1.1em;
+            color: #333;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            min-height: 50px;
+            line-height: 1.5;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .subtitle.speaking {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: #667eea;
+            animation: pulse 1s infinite;
+        }
+        
+        .subtitle.listening {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border-color: #28a745;
+            animation: pulse 1s infinite;
+        }
+        
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍽️ 음성 주문 시스템</h1>
+        
+        <div class="status" id="status">음성을 시작하려면 버튼을 클릭하세요</div>
+        <div class="subtitle" id="subtitle"></div>
+        
+        <button onclick="startVoice()">🎤 음성 시작하기</button>
+        <button onclick="testVoice()">🔊 음성 테스트</button>
+        <button onclick="goToMenu()">📋 메뉴 보기</button>
+        <button onclick="goToOrder()">🛒 주문하기</button>
+        
+        <div class="log" id="log"></div>
+    </div>
+    
+    <script>
+        let isListening = false;
+        let recognition = null;
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        function speak(text, callback = null) {
+            log('음성 재생 시도: ' + text);
+            
+            if (speechSynthesis.speaking) {
+                speechSynthesis.cancel();
+            }
+            
+            // 자막을 즉시 전체 표시
+            const subtitle = document.getElementById('subtitle');
+            subtitle.textContent = text;
+            subtitle.className = 'subtitle speaking';
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ko-KR';
+            utterance.rate = 0.8;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+            
+            utterance.onstart = () => {
+                log('음성 재생 시작');
+                document.getElementById('status').textContent = '음성 재생 중...';
+                // 음성 재생 시작과 동시에 자막이 이미 표시되어 있음
+            };
+            
+            utterance.onend = () => {
+                log('음성 재생 완료');
+                document.getElementById('status').textContent = '음성 재생 완료';
+                // 자막은 그대로 유지하고 스타일만 변경
+                subtitle.className = 'subtitle';
+                if (callback) callback();
+            };
+            
+            utterance.onerror = (event) => {
+                log('음성 재생 오류: ' + event.error);
+                document.getElementById('status').textContent = '음성 재생 오류: ' + event.error;
+                subtitle.className = 'subtitle';
+                if (callback) callback();
+            };
+            
+            speechSynthesis.speak(utterance);
+        }
+        
+        function startVoice() {
+            log('음성 시작 버튼 클릭됨');
+            const welcomeMessage = "안녕하세요. 반갑습니다. 주문하고 싶은 메뉴가 있으시면 메뉴명을 말씀해주시고, 못 정하셨으면 '메뉴'라고 말해 주세요.";
+            speak(welcomeMessage, () => {
+                // 음성이 완전히 끝난 후에만 마이크 활성화
+                const subtitle = document.getElementById('subtitle');
+                subtitle.textContent = '이제 "메뉴" 또는 "주문"이라고 말해주세요.';
+                subtitle.className = 'subtitle listening';
+                setTimeout(() => {
+                    startListening();
+                }, 500);
+            });
+        }
+        
+        function testVoice() {
+            log('음성 테스트 버튼 클릭됨');
+            speak("음성 테스트입니다. 잘 들리시나요?");
+        }
+        
+        function startListening() {
+            log('음성 인식 시작');
+            
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                log('음성 인식을 지원하지 않는 브라우저입니다.');
+                document.getElementById('status').textContent = '음성 인식을 지원하지 않습니다.';
+                return;
+            }
+            
+            // 음성 재생 중에는 마이크 활성화하지 않음
+            if (speechSynthesis.speaking) {
+                log('음성 재생 중이므로 마이크 활성화를 지연합니다.');
+                setTimeout(() => {
+                    startListening();
+                }, 1000);
+                return;
+            }
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'ko-KR';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            
+            recognition.onstart = () => {
+                log('음성 인식 시작됨');
+                isListening = true;
+                document.getElementById('status').textContent = '음성을 듣고 있습니다...';
+                const subtitle = document.getElementById('subtitle');
+                subtitle.textContent = '말씀해주세요...';
+                subtitle.className = 'subtitle listening';
+            };
+            
+            recognition.onresult = (event) => {
+                const result = event.results[0][0].transcript.trim();
+                log('인식된 음성: ' + result);
+                document.getElementById('status').textContent = '인식된 음성: ' + result;
+                processVoiceCommand(result);
+            };
+            
+            recognition.onerror = (event) => {
+                log('음성 인식 오류: ' + event.error);
+                document.getElementById('status').textContent = '음성 인식 오류: ' + event.error;
+                isListening = false;
+                const subtitle = document.getElementById('subtitle');
+                subtitle.className = 'subtitle';
+            };
+            
+            recognition.onend = () => {
+                log('음성 인식 종료');
+                isListening = false;
+                document.getElementById('status').textContent = '음성 인식 종료';
+                const subtitle = document.getElementById('subtitle');
+                subtitle.className = 'subtitle';
+            };
+            
+            try {
+                recognition.start();
+            } catch (error) {
+                log('음성 인식 시작 오류: ' + error.message);
+                document.getElementById('status').textContent = '음성 인식 시작 오류: ' + error.message;
+            }
+        }
+        
+        function processVoiceCommand(command) {
+            const lowerCommand = command.toLowerCase();
+            log('음성 명령 처리: ' + lowerCommand);
+            
+            if (lowerCommand.includes('메뉴')) {
+                speak('메뉴 페이지로 이동합니다.', () => {
+                    goToMenu();
+                });
+            } else if (lowerCommand.includes('주문')) {
+                speak('주문 페이지로 이동합니다.', () => {
+                    goToOrder();
+                });
+            } else {
+                speak('죄송합니다. "메뉴" 또는 "주문"이라고 말씀해주세요.', () => {
+                    document.getElementById('status').textContent = '다시 말씀해주세요.';
+                    const subtitle = document.getElementById('subtitle');
+                    subtitle.textContent = '다시 시도해주세요.';
+                    subtitle.className = 'subtitle';
+                    // 음성이 완전히 끝난 후 자동으로 다시 음성 인식 시작
+                    setTimeout(() => {
+                        subtitle.textContent = '이제 "메뉴" 또는 "주문"이라고 말해주세요.';
+                        subtitle.className = 'subtitle listening';
+                        startListening();
+                    }, 2000);
+                });
+            }
+        }
+        
+        function goToMenu() {
+            log('메뉴 페이지로 이동');
+            window.location.href = 'menu.html';
+        }
+        
+        function goToOrder() {
+            log('주문 페이지로 이동');
+            window.location.href = 'order.html';
+        }
+        
+        // 페이지 로드 시 초기화
+        window.addEventListener('load', () => {
+            log('페이지 로드 완료');
+            log('SpeechSynthesis 지원 여부: ' + ('speechSynthesis' in window));
+            log('SpeechRecognition 지원 여부: ' + (('webkitSpeechRecognition' in window) || ('SpeechRecognition' in window)));
+        });
+    </script>
+</body>
+</html>
