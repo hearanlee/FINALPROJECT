@@ -627,7 +627,7 @@
     </div>
 
     <script>
-        // API 통신을 위한 유틸리티 클래스
+        // API 통신을 위한 유틸리티 클래스 (백엔드 서버 사용)
         class APIClient {
             constructor(baseURL = 'http://localhost:8000') {
                 this.baseURL = baseURL;
@@ -681,7 +681,8 @@
             }
 
             async getVoiceGuideText() {
-                return this.request('/voice-guide/text');
+                const data = await this.request('/voice-guide/text');
+                return data.welcome_message || data.menu_guide || '';
             }
         }
 
@@ -695,6 +696,43 @@
         let categories = [];
         let menuItems = {};
         let orders = JSON.parse(localStorage.getItem('orders') || '[]');
+        
+        // 폴백 데이터 (백엔드 연결 실패 시 사용)
+        const fallbackData = {
+            categories: [
+                { id: 1, name: "쌀국수", description: "맛있는 쌀국수 메뉴" },
+                { id: 2, name: "돈카츠,카레", description: "돈카츠와 카레 메뉴" },
+                { id: 3, name: "1인정식", description: "1인용 정식 메뉴" },
+                { id: 4, name: "사이드&추가메뉴", description: "사이드 메뉴와 추가 메뉴" }
+            ],
+            menuItems: {
+                1: [
+                    { id: 1, name: "차돌양지쌀국수", price: 12000, description: "부드러운 차돌양지가 들어간 쌀국수" },
+                    { id: 2, name: "한우쌀국수", price: 15000, description: "한우가 들어간 쌀국수" },
+                    { id: 3, name: "모듬쌀국수", price: 13000, description: "다양한 고기가 들어간 쌀국수" }
+                ],
+                2: [
+                    { id: 4, name: "프리미엄 로스카츠", price: 18000, description: "프리미엄 로스카츠" },
+                    { id: 5, name: "안심카츠", price: 16000, description: "부드러운 안심카츠" },
+                    { id: 6, name: "통모짜치즈돈카츠", price: 17000, description: "통모짜치즈가 들어간 돈카츠" }
+                ],
+                3: [
+                    { id: 7, name: "정식A", price: 20000, description: "정식A 세트" },
+                    { id: 8, name: "정식B", price: 22000, description: "정식B 세트" },
+                    { id: 9, name: "정식C", price: 24000, description: "정식C 세트" },
+                    { id: 10, name: "정식D", price: 26000, description: "정식D 세트" }
+                ],
+                4: [
+                    { id: 11, name: "공깃밥 추가", price: 2000, description: "공깃밥 추가" },
+                    { id: 12, name: "레몬추가", price: 1000, description: "레몬 추가" },
+                    { id: 13, name: "트러플오일 추가", price: 3000, description: "트러플오일 추가" }
+                ]
+            },
+            voiceGuide: {
+                welcome_message: "안녕하세요. 반갑습니다. 주문하고 싶은 메뉴가 있으시면 메뉴명을 말씀해주시고, 못 정하셨으면 '메뉴'라고 말해 주세요.",
+                menu_guide: "저희 매장에는 다음과 같은 메뉴가 있습니다. 쌀국수 탭을 누르시면 차돌양지쌀국수, 한우쌀국수, 모듬쌀국수 등의 메뉴가 있습니다. 돈카츠,카레 탭을 누르시면 프리미엄 로스카츠, 안심카츠, 통모짜치즈돈카츠 등의 메뉴가 있습니다. 1인정식 탭을 누르시면 정식A, 정식B, 정식C, 정식D 등의 메뉴가 있습니다. 사이드&추가메뉴 탭을 누르시면 공깃밥 추가, 레몬추가, 트러플오일 추가 등의 메뉴가 있습니다. 주문하고 싶은 메뉴가 있으시면 메뉴명을 말씀해주세요."
+            }
+        };
 
         // DOM 요소
         const speakerIcon = document.getElementById('speakerIcon');
@@ -808,16 +846,29 @@
                 subtitle.textContent = '';
             }
 
-            async speakWelcomeMessage() {
-                const welcomeMessage = "안녕하세요. 반갑습니다. 주문하고 싶은 메뉴가 있으시면 메뉴명을 말씀해주시고, 못 정하셨으면 '메뉴'라고 말해 주세요.";
-                    this.speak(welcomeMessage, () => {
-                        statusText.textContent = '음성 인식을 시작하세요.';
-                        subtitle.className = 'subtitle listening';
-                        setTimeout(() => {
-                            this.startListening();
-                        }, 500);
-                    });
+        async speakWelcomeMessage() {
+            try {
+                const voiceGuideText = await apiClient.getVoiceGuideText();
+                this.speak(voiceGuideText, () => {
+                    statusText.textContent = '음성 인식을 시작하세요.';
+                    subtitle.className = 'subtitle listening';
+                    setTimeout(() => {
+                        this.startListening();
+                    }, 500);
+                });
+            } catch (error) {
+                console.error('음성 가이드 텍스트 로드 실패 (백엔드):', error);
+                console.log('폴백 데이터 사용');
+                const fallbackMessage = fallbackData.voiceGuide.welcome_message;
+                this.speak(fallbackMessage, () => {
+                    statusText.textContent = '음성 인식을 시작하세요.';
+                    subtitle.className = 'subtitle listening';
+                    setTimeout(() => {
+                        this.startListening();
+                    }, 500);
+                });
             }
+        }
 
             speak(text, callback = null) {
                 if (!hasUserInteracted) {
@@ -1108,7 +1159,8 @@
                     
                     // 메뉴 모달이 열릴 때 상세한 음성 안내 제공 (한 번만)
                     if (!window.menuVoicePlayed) {
-                        const voiceMessage = "저희 매장에는 다음과 같은 메뉴가 있습니다. 쌀국수 탭을 누르시면 차돌양지쌀국수, 한우쌀국수, 모듬쌀국수 등의 메뉴가 있습니다. 돈카츠,카레 탭을 누르시면 프리미엄 로스카츠, 안심카츠, 통모짜치즈돈카츠 등의 메뉴가 있습니다. 1인정식 탭을 누르시면 정식A, 정식B, 정식C, 정식D 등의 메뉴가 있습니다. 사이드&추가메뉴 탭을 누르시면 공깃밥 추가, 레몬추가, 트러플오일 추가 등의 메뉴가 있습니다. 주문하고 싶은 메뉴가 있으시면 메뉴명을 말씀해주세요.";
+                        try {
+                            const voiceMessage = await apiClient.getVoiceGuideText();
                         
                         if (window.speechSynthesis) {
                             const utterance = new SpeechSynthesisUtterance(voiceMessage);
@@ -1137,6 +1189,39 @@
                             speechSynthesis.speak(utterance);
                             window.menuVoicePlayed = true;
                         }
+                        } catch (error) {
+                            console.error('메뉴 음성 가이드 로드 실패:', error);
+                            // 백엔드 연결 실패 시 기본 메시지 사용
+                            const fallbackMessage = "저희 매장에는 다음과 같은 메뉴가 있습니다. 쌀국수 탭을 누르시면 차돌양지쌀국수, 한우쌀국수, 모듬쌀국수 등의 메뉴가 있습니다. 돈카츠,카레 탭을 누르시면 프리미엄 로스카츠, 안심카츠, 통모짜치즈돈카츠 등의 메뉴가 있습니다. 1인정식 탭을 누르시면 정식A, 정식B, 정식C, 정식D 등의 메뉴가 있습니다. 사이드&추가메뉴 탭을 누르시면 공깃밥 추가, 레몬추가, 트러플오일 추가 등의 메뉴가 있습니다. 주문하고 싶은 메뉴가 있으시면 메뉴명을 말씀해주세요.";
+                            
+                            if (window.speechSynthesis) {
+                                const utterance = new SpeechSynthesisUtterance(fallbackMessage);
+                                utterance.lang = 'ko-KR';
+                                utterance.rate = 0.8;
+                                utterance.pitch = 1;
+                                utterance.volume = 1;
+                                
+                                const voices = speechSynthesis.getVoices();
+                                const koreanVoice = voices.find(voice => 
+                                    voice.lang.includes('ko') || voice.lang.includes('KR')
+                                );
+                                if (koreanVoice) {
+                                    utterance.voice = koreanVoice;
+                                }
+                                
+                                utterance.onend = () => {
+                                    // 음성 안내가 완전히 끝나면 마이크 활성화
+                                    console.log('메뉴 안내 음성 완료, 마이크 활성화 준비 중...');
+                                    setTimeout(() => {
+                                        console.log('마이크 활성화 시작');
+                                        startMenuVoiceRecognition();
+                                    }, 2000);
+                                };
+                                
+                                speechSynthesis.speak(utterance);
+                                window.menuVoicePlayed = true;
+                            }
+                        }
                     } else {
                         // 이미 음성 안내를 재생했다면 바로 마이크 활성화
                         setTimeout(() => {
@@ -1159,16 +1244,11 @@
         async function loadCategories() {
             try {
                 categories = await apiClient.getCategories();
-                console.log('카테고리 로드 완료:', categories);
+                console.log('카테고리 로드 완료 (백엔드):', categories);
             } catch (error) {
-                console.error('카테고리 로드 실패:', error);
-                // 백엔드 연결 실패 시 하드코딩된 데이터 사용
-                categories = [
-                    { id: 1, name: '쌀국수', display_name: '쌀국수' },
-                    { id: 2, name: '돈카츠,카레', display_name: '돈카츠,카레' },
-                    { id: 3, name: '1인정식', display_name: '1인정식' },
-                    { id: 4, name: '사이드&추가메뉴', display_name: '사이드&추가메뉴' }
-                ];
+                console.error('카테고리 로드 실패 (백엔드):', error);
+                console.log('폴백 데이터 사용');
+                categories = fallbackData.categories;
             }
         }
 
@@ -1178,40 +1258,11 @@
                     const items = await apiClient.getMenuByCategory(category.id);
                     menuItems[category.id] = items;
                 }
-                console.log('메뉴 아이템 로드 완료:', menuItems);
+                console.log('메뉴 아이템 로드 완료 (백엔드):', menuItems);
             } catch (error) {
-                console.error('메뉴 아이템 로드 실패:', error);
-                // 백엔드 연결 실패 시 하드코딩된 데이터 사용
-                menuItems = {
-                    1: [ // 쌀국수
-                        { id: 1, name: '차돌양지쌀국수', price: 9900, description: '부드러운 차돌양지로 끓인 쌀국수' },
-                        { id: 2, name: '한우쌀국수', price: 10900, description: '한우로 끓인 진한 쌀국수' },
-                        { id: 3, name: '모듬 쌀국수', price: 11900, description: '다양한 고기가 들어간 쌀국수' }
-                    ],
-                    2: [ // 돈카츠,카레
-                        { id: 4, name: '프리미엄 로스카츠(등심)', price: 11900, description: '등심으로 만든 프리미엄 돈카츠' },
-                        { id: 5, name: '프리미엄 히레츠(안심)', price: 12900, description: '안심으로 만든 프리미엄 돈카츠' },
-                        { id: 6, name: '통모짜치즈돈카츠', price: 12900, description: '통모짜렐라 치즈가 들어간 돈카츠' },
-                        { id: 7, name: '시그니처 경양식돈카츠', price: 11900, description: '경양식 스타일의 시그니처 돈카츠' },
-                        { id: 8, name: '모듬카츠A[등심+안심]', price: 13900, description: '등심과 안심이 함께 들어간 모듬카츠' },
-                        { id: 9, name: '모듬카츠B[등심+치즈]', price: 13900, description: '등심과 치즈가 함께 들어간 모듬카츠' },
-                        { id: 10, name: '등심카츠 카레라이스', price: 10900, description: '등심카츠와 카레라이스' },
-                        { id: 11, name: '안심카츠 카레라이스', price: 12900, description: '안심카츠와 카레라이스' },
-                        { id: 12, name: '통모짜치즈 카레라이스', price: 12900, description: '통모짜렐라 치즈 카레라이스' }
-                    ],
-                    3: [ // 1인정식
-                        { id: 13, name: '정식A(쌀국수S+경양식)', price: 11900, description: '쌀국수와 경양식이 함께' },
-                        { id: 14, name: '정식B(쌀국수S+등심)', price: 10900, description: '쌀국수와 등심이 함께' },
-                        { id: 15, name: '정식C(쌀국수S+안심)', price: 12900, description: '쌀국수와 안심이 함께' },
-                        { id: 16, name: '정식D(쌀국수S+치즈)', price: 12900, description: '쌀국수와 치즈가 함께' }
-                    ],
-                    4: [ // 사이드&추가메뉴
-                        { id: 17, name: '공깃밥 추가', price: 1000, description: '추가 밥' },
-                        { id: 18, name: '레몬추가', price: 500, description: '레몬 추가' },
-                        { id: 19, name: '트러플오일 추가', price: 500, description: '트러플오일 추가' }
-                    ]
-                };
-                console.log('하드코딩된 메뉴 아이템 로드 완료:', menuItems);
+                console.error('메뉴 아이템 로드 실패 (백엔드):', error);
+                console.log('폴백 데이터 사용');
+                menuItems = fallbackData.menuItems;
             }
         }
 
