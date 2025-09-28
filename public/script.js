@@ -130,7 +130,34 @@ class VoiceChat {
     }
 
     async callGPTAPI(message) {
-        const response = await fetch('http://localhost:8000/api/chat', {
+        try {
+            // 먼저 FastAPI 백엔드 시도
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                return data.response;
+            } else {
+                // FastAPI가 실패하면 백업 API 사용
+                console.log('FastAPI 백엔드 연결 실패, 백업 API 사용');
+                return await this.callBackupAPI(message);
+            }
+        } catch (error) {
+            console.log('FastAPI 백엔드 오류, 백업 API 사용:', error.message);
+            return await this.callBackupAPI(message);
+        }
+    }
+
+    async callBackupAPI(message) {
+        const response = await fetch('/api/chat-backup', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
