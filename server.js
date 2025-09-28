@@ -19,22 +19,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// FastAPI 백엔드로 프록시 설정
-app.use('/api', createProxyMiddleware({
-    target: 'http://localhost:8000',
-    changeOrigin: true,
-    onError: (err, req, res) => {
-        console.log('프록시 오류:', err.message);
-        // FastAPI가 실행되지 않을 때 대체 응답
-        res.status(503).json({ 
-            error: '백엔드 서버에 연결할 수 없습니다.',
-            details: 'FastAPI 서버가 실행 중인지 확인해주세요.'
-        });
-    }
-}));
-
-// GPT API 엔드포인트 (백업용)
-app.post('/api/chat-backup', async (req, res) => {
+// GPT API 엔드포인트 (메인)
+app.post('/api/chat', async (req, res) => {
     try {
         const { message, model = 'gpt-3.5-turbo' } = req.body;
 
