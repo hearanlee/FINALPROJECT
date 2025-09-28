@@ -130,14 +130,13 @@ class VoiceChat {
     }
 
     async callGPTAPI(message) {
-        const response = await fetch('/api/chat', {
+        const response = await fetch('http://localhost:8000/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                message: message,
-                model: 'openai/gpt-4o-mini'
+                message: message
             })
         });
 

@@ -8,7 +8,9 @@
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
     "server": "node server.js",
-    "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
+    "backend": "cd backend && python run.py",
+    "frontend": "npm run server",
+    "dev:full": "concurrently \"npm run backend\" \"npm run frontend\"",
     "clean": "rimraf dist"
   },
   "keywords": ["azure", "ai", "inference", "gpt"],
