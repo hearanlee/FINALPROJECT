@@ -1,0 +1,674 @@
+/* 기본 스타일 초기화 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #333;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* 모바일 화면 전체 컨테이너 */
+.mobile-container {
+    width: 390px;
+    height: 844px;
+    background-color: #f4f4f8;
+    border: 8px solid #111;
+    border-radius: 40px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 페이지 헤더 */
+.page-header {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    color: #0D2A5C;
+}
+
+.page-header img {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+}
+
+.page-header h1 {
+    font-size: 20px;
+}
+
+/* 메인 컨텐츠 */
+.content {
+    padding: 0 30px;
+    text-align: center;
+    flex-grow: 1;
+    /* overflow-y: auto; 스크롤*/
+}
+
+/* 질문 카드 */
+.question-card {
+    background-color: white;
+    border: 1px solid #0D2A5C;
+    border-radius: 15px;
+    padding: 20px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #0D2A5C;
+    line-height: 1.5;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.separator {
+    font-size: 20px;
+    font-weight: bold;
+    color: #0D2A5C;
+    margin: 15px 0;
+}
+
+/* 식사/간식 선택 버튼 */
+.choice-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    /* 테두리 두께를 미리 3px로 설정합니다. */
+    border: 3px solid #0D2A5C;
+    border-radius: 15px;
+    padding: 15px;
+    font-size: 22px;
+    font-weight: bold;
+    color: #0D2A5C;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    cursor: pointer;
+    /* 색상 변경 시 부드러운 효과를 추가합니다. */
+    transition: all 0.2s ease-in-out;
+}
+
+.choice-button img {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 5px;
+}
+
+/* 하단 액션 버튼 컨테이너 */
+.action-buttons {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px 30px;
+    margin-top: auto; /* 남은 공간을 밀어내어 맨 아래에 붙도록 함 */
+}
+
+.btn {
+    width: 48%;
+    padding: 15px 0;
+    border-radius: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.btn-secondary {
+    background-color: white;
+    color: #0D2A5C;
+    border: 2px solid #0D2A5C;
+}
+
+.btn-primary {
+    background-color: #0D2A5C;
+    color: white;
+    border: 2px solid #0D2A5C;
+}
+
+/* 하단 네비게이션 바 (main.css와 동일) */
+.bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    background-color: white;
+    border-top: 1px solid #eee;
+    padding: 10px 0;
+    height: 80px;
+    align-items: center;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: gray;
+    font-size: 12px;
+}
+
+.nav-item img {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 4px;
+}
+
+.nav-item.active {
+    color: #0D2A5C;
+    font-weight: bold;
+}
+
+.choice-button.selected {
+    border-color: #007BFF; /* 테두리 색상만 바꿉니다. */
+    background-color: #f0f8ff;
+}
+
+
+/* --- 이 아래 코드를 menu.css 맨 아래에 추가 --- */
+
+.result-image {
+    width: 100%; /* 부모 요소에 꽉 차게 */
+    border-radius: 15px;
+    margin-top: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.info-box {
+    background-color: #eaf3ff; /* 연한 하늘색 배경 */
+    border-radius: 15px;
+    padding: 15px;
+    margin-top: 20px;
+    text-align: left; /* 왼쪽 정렬 */
+    color: #0D2A5C;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.info-box strong {
+    font-weight: bold;
+}
+
+.restaurant-list {
+    width: 100%;
+}
+
+.restaurant-item {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    border: 3px solid white; /* 선택 효과를 위해 미리 공간 확보 */
+    border-radius: 15px;
+    padding: 10px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.restaurant-item.selected {
+    border-color: #007BFF;
+}
+
+.restaurant-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    margin-right: 15px;
+}
+
+.restaurant-info {
+    flex: 1;
+    text-align: left;
+}
+
+.info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.restaurant-name {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+}
+
+.restaurant-distance {
+    font-size: 14px;
+    color: gray;
+}
+
+.restaurant-rating {
+    font-size: 14px;
+    color: #f5a623; /* 별점 색상 */
+    margin-bottom: 5px;
+}
+
+.restaurant-address {
+    font-size: 14px;
+    color: gray;
+}
+
+/* 상세 페이지 컨텐츠 패딩 조절 */
+.detail-content {
+    padding: 0;
+}
+
+.map-image {
+    width: 100%;
+    height: 204px;
+    object-fit: cover;
+}
+
+.detail-card {
+    background-color: white;
+    padding: 6px 20px; /* 상하 여백을 15px로 줄임 */
+    border-radius: 0 0 20px 20px;
+    margin-top: -10px;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    text-align: left;
+}
+
+.detail-card h2 {
+    font-size: 22px;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.detail-card .address {
+    font-size: 16px;
+    color: gray;
+    margin-bottom: 2px;
+}
+
+.detail-card .rating-line {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.detail-card .stars {
+    color: #f5a623;
+    font-size: 18px;
+}
+
+.detail-card .rating-text {
+    font-size: 16px;
+    color: gray;
+    margin-left: 8px;
+}
+
+.tag {
+    display: inline-block;
+    background-color: #eaf3ff;
+    color: #007BFF;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.gallery {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 20px;
+}
+
+.gallery img {
+    width: 32%;
+    height: auto;
+    border-radius: 10px;
+}
+
+.detail-action-buttons {
+    padding: 0 20px 2px 20px;
+}
+
+.full-width {
+    width: 100%;
+    margin-bottom: 4px;
+}
+
+.navigation-container {
+    flex-grow: 1; /* 헤더, 푸터를 제외한 모든 공간 차지 */
+    position: relative; /* 자식 요소의 position:absolute 기준점 */
+}
+
+.route-map-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* 이미지가 컨테이너에 꽉 차도록 설정 */
+}
+
+.nav-header {
+    position: relative; /* 지도 이미지 위에 나타나도록 */
+    background-color: white; /* 헤더 배경색 */
+    padding-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 0 0 15px 15px;
+}
+
+.back-button-floating {
+    position: absolute;
+    top: 80px; /* 헤더 바로 아래 위치 */
+    left: 20px;
+    width: auto;
+    padding: 8px 15px;
+}
+
+.bottom-buttons-floating {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    padding: 0;
+    margin: 0;
+}
+
+.btn-floating-style {
+    background-color: white;
+    color: #0D2A5C;
+    border: 3px solid #0D2A5C;           /* 테두리를 더 두껍게 */
+    border-radius: 50px;                /* 모서리를 완전히 둥글게 (알약 모양) */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* 그림자 효과 추가 */
+    font-weight: bold;
+}
+
+.map-container {
+    flex-grow: 1;
+    position: relative;
+}
+
+.map-background-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.search-bar-floating {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    right: 15px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+}
+
+.search-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+}
+
+.search-input {
+    flex-grow: 1;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    background-color: transparent;
+}
+
+.map-pins {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.map-pin {
+    position: absolute;
+    width: 35px; /* 핀 이미지 크기 조절 */
+    height: auto;
+    transform: translate(-50%, -50%); /* 이미지의 중앙이 좌표에 위치하도록 설정 */
+}
+
+.voice-icon-container {
+    position: relative;
+    display: inline-block;
+    margin: 40px 0 20px 0;
+}
+
+.voice-mic-icon {
+    width: 120px;
+    height: auto;
+    cursor: pointer;
+}
+
+.volume-controls {
+    position: absolute;
+    top: 30%; /* 세로 위치를 정가운데로 맞춥니다. */
+    right: -90px; /* 오른쪽 바깥으로 35px 만큼 밀어냅니다. */
+    transform: translateY(-50%); /* 세로 위치를 미세 조정합니다. */
+    display: flex;
+    flex-direction: column;
+}
+
+.volume-btn {
+    background-color: #0D2A5C;
+    color: white;
+    width: 50px; /* <--- 메인 화면과 똑같이 50px로 변경 */
+    height: 50px; /* <--- 메인 화면과 똑같이 50px로 변경 */
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px; /* <--- 메인 화면과 똑같이 24px로 변경 */
+    font-weight: bold;
+    margin: 8px 0; /* 크기가 커졌으니 간격도 살짝 늘립니다 */
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+/* 첫번째 버튼(+) 배경색 (빠졌던 부분) */
+.volume-btn:first-child {
+    background-color: #0D2A5C; /* 연한 회색/하늘색 */
+}
+
+/* 두번째 버튼(-) 배경색 (빠졌던 부분) */
+.volume-btn:last-child {
+    background-color: #0D2A5C; /* 기존의 짙은 남색 */
+}
+
+.instruction-text {
+    font-size: 16px;
+    color: gray;
+    line-height: 1.5;
+}
+
+.voice-action-buttons {
+    padding: 20px;
+    margin-top: auto;
+}
+
+.button-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.button-row .btn {
+    width: 48%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+}
+
+/* 버튼 한 줄(2개)을 감싸는 컨테이너 */
+.button-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px; /* 아래 '뒤로가기' 버튼과의 간격 */
+}
+
+/* button-row 안의 버튼은 너비를 48%로 설정합니다. */
+.button-row .btn {
+    width: 48%;
+}
+
+.settings-list {
+    margin-top: 20px;
+}
+
+.settings-button {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background-color: white;
+    border: 1px solid #0D2A5C;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #0D2A5C;
+    cursor: pointer;
+    text-align: left;
+}
+
+.settings-button img {
+    width: 28px;
+    height: 28px;
+    margin-right: 15px;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.6); /* 반투명 검은 배경 */
+    display: none; /* 평소에는 숨김 */
+    z-index: 10;
+}
+
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    border-radius: 20px;
+    padding: 20px;
+    width: 350px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    display: none; /* 평소에는 숨김 */
+    z-index: 20;
+}
+
+/* JavaScript로 active 클래스가 추가되면 보이도록 설정 */
+.modal-overlay.active,
+.modal.active {
+    display: block;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    color: #0D2A5C;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+    margin-right: 10px;
+}
+.close-button img {
+    width: 24px;
+    height: 24px;
+}
+
+.modal-subtitle {
+    font-size: 16px;
+    color: gray;
+    margin-bottom: 30px;
+}
+
+.slider-container {
+    padding: 0 10px;
+}
+
+.slider-bar-wrapper {
+    position: relative;
+    height: 30px;
+    display: flex;
+    align-items: center;
+}
+
+.slider-track {
+    width: 100%;
+    height: 6px;
+    background-color: #e0e0e0;
+    border-radius: 3px;
+}
+
+.slider-points {
+    position: absolute;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+
+.slider-point {
+    width: 24px;
+    height: 24px;
+    background-color: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.slider-point.active {
+    background-color: #0D2A5C;
+    border-color: #0D2A5C;
+}
+
+.slider-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 16px;
+    color: #0D2A5C;
+    text-align: center;
+}
+
+.label-item {
+    width: 60px; /* 각 라벨의 너비를 지정하여 정렬을 맞춤 */
+}
+
+.slider-labels img {
+    width: 30px;
+    height: 30px;
+    margin-bottom: 5px;
+}
+
+.slider-labels .active {
+    font-weight: bold;
+}
+
+

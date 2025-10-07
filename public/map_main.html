@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Permissions-Policy" content="accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()">
+    <title>포핸즈 매장 찾기</title>
+    <link rel="stylesheet" href="menu.css">
+    <style>
+        .map-container {
+            position: relative;
+            width: 100%;
+            height: 70vh;
+            margin: 0;
+            padding: 0;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+        }
+        
+        .search-bar-floating {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 10;
+            background: white;
+            border-radius: 25px;
+            padding: 10px 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+        }
+        
+        .search-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+        
+        .search-input {
+            border: none;
+            outline: none;
+            flex: 1;
+            font-size: 14px;
+        }
+        
+        .bottom-buttons-floating {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+        
+        .button-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background:  #0D2A5C;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background:  white;
+            color: #0D2A5C;
+        }
+        
+        .btn:disabled {
+            background: #e9ecef;
+            color: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .full-width {
+            width: 100%;
+        }
+        
+        /* 커스텀 오버레이 스타일 */
+        .wrap {
+            position: relative;
+            width: 300px;
+            height: auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+        
+        .info {
+            width: 100%;
+            height: auto;
+        }
+        
+        .info .title {
+            padding: 15px 20px;
+            background:  #0D2A5C;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            position: relative;
+        }
+        
+        .info .close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            width: 20px;
+            height: 20px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: white;
+        }
+        
+        .info .close:hover {
+            background: rgba(255,255,255,0.5);
+        }
+        
+        .info .close:before {
+            content: '×';
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .info .body {
+            padding: 15px 20px;
+        }
+        
+        .info .img {
+            width: 100%;
+            height: 120px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .info .img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .info .desc {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .info .desc .ellipsis {
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .info .desc .jibun {
+            color: #666;
+            font-size: 13px;
+        }
+        
+        .info .desc .facility {
+            color: #28a745;
+            font-size: 13px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .info .desc a {
+            color:  #0D2A5C;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .info .desc a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mobile-container">
+        <header class="page-header">
+            <a href="main.html"><img src="./images/icon-back-arrow.png" alt="뒤로 가기"></a>
+            <h1>음식점 찾기</h1>
+        </header>
+
+        <div class="map-container">
+            <div id="map"></div>
+
+            <div class="search-bar-floating">
+                <img src="./images/icon_search.png" alt="검색" class="search-icon">
+                <input type="text" class="search-input" placeholder="매장명 또는 주소 검색" id="searchInput">
+            </div>
+
+            <div class="bottom-buttons-floating">
+                <div class="button-row">
+                    <button id="navigationBtn" class="btn btn-primary" disabled>길찾기 안내 시작</button>
+                    <button id="voiceGuideBtn" class="btn btn-primary" disabled>키오스크 음성안내</button>
+                </div>
+                <a href="main.html" class="btn btn-secondary full-width" style="text-decoration: none; display: flex; justify-content: center; align-items: center;">뒤로 가기</a>
+            </div>
+        </div>
+        
+        <nav class="bottom-nav">
+             <a href="main.html" class="nav-item">
+                <img src="./images/icon-home.png" alt="홈">
+                <span>홈</span>
+            </a>
+            <a href="map_main.html" class="nav-item active"> <img src="./images/icon-map.png" alt="지도">
+                <span>지도</span>
+            </a>
+            <a href="my_info.html" class="nav-item">
+                <img src="./images/icon-user.png" alt="내정보">
+                <span>내정보</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- 카카오 지도 API - 정적 로드 방식 -->
+    <script type="text/javascript" 
+            src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=749bffa5f8917cfcd65aae3b5addccc7"
+            onload="console.log('카카오 지도 API 스크립트 로드 성공')"
+            onerror="console.error('카카오 지도 API 스크립트 로드 실패')"></script>
+    <script>
+
+        // 카카오 지도 API가 로드된 후 실행되도록 함수로 감싸기
+        function initMap() {
+            console.log('initMap 함수 호출됨');
+            console.log('kakao 객체 확인:', typeof kakao);
+            console.log('kakao.maps 확인:', typeof kakao?.maps);
+            
+            if (typeof kakao === 'undefined' || !kakao.maps) {
+                console.error('카카오 지도 API가 로드되지 않았습니다.');
+                console.error('kakao:', typeof kakao);
+                console.error('kakao.maps:', typeof kakao?.maps);
+                return;
+            }
+
+            var mapContainer = document.getElementById('map'), // 지도를 표시할 div  
+                mapOption = { 
+                    center: new kakao.maps.LatLng(37.5835897, 127.0565725),  // 지도의 중심좌표는 전농관
+                    level: 4 // 지도의 확대 레벨
+                };
+
+            var map = new kakao.maps.Map(mapContainer, mapOption); // 지도를 생성합니다
+         
+            // 마커를 표시할 위치와 title 객체 배열입니다 
+            var positions = [
+                {
+                    title: '포핸즈', 
+                    latlng: new kakao.maps.LatLng(37.5839449, 127.0535993)
+                },
+                {
+                    title: '카페시사', 
+                    latlng: new kakao.maps.LatLng(37.58349829841931, 127.05323124137777)
+                }
+            ];
+
+            // 마커 이미지의 이미지 주소입니다
+            var imageSrc = "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png"; 
+                
+            // 마커들을 생성합니다
+            var markers = [];
+            for (var i = 0; i < positions.length; i++) {
+                // 마커 이미지의 이미지 크기 입니다
+                var imageSize = new kakao.maps.Size(24, 35); 
+                
+                // 마커 이미지를 생성합니다    
+                var markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize); 
+                
+                // 마커를 생성합니다
+                var marker = new kakao.maps.Marker({
+                    map: map, // 마커를 표시할 지도
+                    position: positions[i].latlng, // 마커를 표시할 위치
+                    title: positions[i].title, // 마커의 타이틀
+                    image: markerImage // 마커 이미지 
+                });
+                
+                markers.push(marker);
+            }
+
+            // 커스텀 오버레이에 표시할 컨텐츠 입니다
+            
+            var content = '<div class="wrap">' + 
+                        '    <div class="info">' + 
+                        '        <div class="title">' + 
+                        '            포핸즈' + 
+                        '            <div class="close" onclick="closeOverlay()" title="닫기"></div>' + 
+                        '        </div>' + 
+                        '        <div class="body">' + 
+                        '            <div class="img">' +
+                        '                <img src="https://search.pstatic.net/common/?src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20250416_13%2F1744789141827jk9Fk_JPEG%2F001.jpg">' +
+                        '           </div>' + 
+                        '            <div class="desc">' + 
+                        '                <div class="ellipsis">전농로 222 씨티빌라트 상가 2층</div>' + 
+                        '                <div class="jibun ellipsis">쌀국수, 돈가츠, 카레라이스</div>' + 
+                        '                <div class="facility ellipsis">엘리베이터 사용가능</div>' + 
+                        '                <div><a href="https://map.naver.com/p/search/%ED%8F%AC%ED%95%B8%EC%A6%88/place/1411631795?placePath=/home?entry=pll&from=map&fromNxList=true&fromPanelNum=2&timestamp=202510070857&locale=ko&svcName=map_pcv5&searchText=%ED%8F%AC%ED%95%B8%EC%A6%88&searchType=place&c=15.00,0,0,0,dh">상세정보</a></div>' + 
+                        '            </div>' + 
+                        '        </div>' + 
+                        '    </div>' +    
+                        '</div>';
+
+            // 포핸즈 마커에만 커스텀 오버레이를 생성합니다 (처음에는 숨김)
+            var pohandsMarker = markers[0]; // 포핸즈 마커 (첫 번째)
+            var overlay = new kakao.maps.CustomOverlay({
+                content: content,
+                map: null, // 처음에는 지도에 표시하지 않음
+                position: pohandsMarker.getPosition()       
+            });
+
+            // 버튼 활성화/비활성화 함수들
+            function enableButtons() {
+                document.getElementById('navigationBtn').disabled = false;
+                document.getElementById('voiceGuideBtn').disabled = false;
+            }
+
+            function disableButtons() {
+                document.getElementById('navigationBtn').disabled = true;
+                document.getElementById('voiceGuideBtn').disabled = true;
+            }
+
+            // 커스텀 오버레이를 닫기 위해 호출되는 함수입니다 (전역 함수로 정의)
+            window.closeOverlay = function() {
+                overlay.setMap(null);
+                disableButtons(); // 오버레이 닫을 때 버튼 비활성화
+            };
+
+            // 포핸즈 마커를 클릭했을 때만 커스텀 오버레이를 표시합니다
+            kakao.maps.event.addListener(pohandsMarker, 'click', function() {
+                overlay.setMap(map);
+                enableButtons(); // 오버레이 열 때 버튼 활성화
+            });
+
+            // 버튼 클릭 이벤트 추가
+            document.getElementById('navigationBtn').addEventListener('click', function() {
+                if (!this.disabled) {
+                    window.location.href = 'navigation.html';
+                }
+            });
+
+            document.getElementById('voiceGuideBtn').addEventListener('click', function() {
+                if (!this.disabled) {
+                    window.location.href = 'voice_guide.html';
+                }
+            });
+            
+            // 검색 기능 (기본 구현)
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    var searchText = this.value;
+                    if (searchText.trim() !== '') {
+                        // 검색 로직 구현 (추후 확장 가능)
+                        console.log('검색어: ' + searchText);
+                    }
+                }
+            });
+        }
+
+        // 페이지 로드 완료 후 지도 초기화
+        window.addEventListener('load', function() {
+            console.log('페이지 로드 완료');
+            
+            // 로딩 상태 표시
+            const mapContainer = document.getElementById('map');
+            if (mapContainer) {
+                mapContainer.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100%; background-color: #f0f0f0; color: #666; font-size: 16px;">지도를 로딩 중...</div>';
+            }
+
+                   // 카카오 지도 API 로드 확인 및 초기화
+                   let retryCount = 0;
+                   const maxRetries = 5; // 5번 시도 후 포기
+
+            function tryInitMap() {
+                retryCount++;
+                console.log(`카카오 지도 API 확인 시도 ${retryCount}/${maxRetries}`);
+                
+                if (typeof kakao !== 'undefined' && kakao.maps) {
+                    console.log('카카오 지도 API 확인됨, 지도 초기화 시작');
+                    initMap();
+                } else if (retryCount >= maxRetries) {
+                    console.error('카카오 지도 API 로드 실패 - 최대 재시도 횟수 초과');
+                    if (mapContainer) {
+                        mapContainer.innerHTML = `
+                            <div style="position: relative; width: 100%; height: 100%; background-color: #f0f0f0;">
+                                <img src="./images/map_background.png" alt="배경 지도" style="width: 100%; height: 100%; object-fit: cover;">
+                                <div style="position: absolute; top: 20px; left: 20px; right: 20px; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px; font-size: 12px;">
+                                    <strong>지도 로드 실패</strong><br>
+                                    API 키: 749bffa5f8917cfcd65aae3b5addccc7<br>
+                                    <button onclick="location.reload()" style="margin-top: 5px; padding: 5px 10px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px;">새로고침</button>
+                                </div>
+                                <div style="position: absolute; top: 20%; left: 45%; width: 30px; height: 40px; background: url('./images/icon_mappin.png') no-repeat center; background-size: contain;"></div>
+                                <div style="position: absolute; top: 35%; left: 30%; width: 30px; height: 40px; background: url('./images/icon_mappin.png') no-repeat center; background-size: contain;"></div>
+                                <div style="position: absolute; top: 40%; left: 50%; width: 30px; height: 40px; background: url('./images/icon_mappin.png') no-repeat center; background-size: contain;"></div>
+                                <div style="position: absolute; top: 55%; left: 35%; width: 30px; height: 40px; background: url('./images/icon_mappin.png') no-repeat center; background-size: contain;"></div>
+                                <div style="position: absolute; top: 60%; left: 60%; width: 30px; height: 40px; background: url('./images/icon_mappin.png') no-repeat center; background-size: contain;"></div>
+                                <div style="position: absolute; top: 70%; left: 48%; width: 30px; height: 40px; background: url('./images/icon_mappin.png') no-repeat center; background-size: contain;"></div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    console.log('카카오 지도 API 대기 중... (재시도 ' + retryCount + '/' + maxRetries + ')');
+                    setTimeout(tryInitMap, 500);
+                }
+            }
+
+            // 즉시 시도
+            tryInitMap();
+        });
+    </script>
+
+</body>
+</html>

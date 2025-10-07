@@ -1,39 +1,62 @@
 {
-  "name": "gpt-inference-client",
+  "name": "pohands-chat-app",
   "version": "1.0.0",
-  "description": "Azure AI Inference client for GPT models",
-  "main": "dist/index.js",
+  "description": "포핸즈 주문 도우미 채팅 앱",
+  "main": "src/index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
     "server": "node server.js",
     "backend": "cd backend && python run.py",
-    "frontend": "npm run server",
-    "dev:full": "concurrently \"npm run backend\" \"npm run frontend\"",
-    "clean": "rimraf dist"
+    "frontend": "cd public && python run_frontend.py",
+    "dev:full": "concurrently \"npm run backend\" \"npm start\"",
+    "dev:frontend": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "clean": "rimraf build"
   },
   "keywords": [
-    "azure",
-    "ai",
-    "inference",
-    "gpt"
+    "react",
+    "chat",
+    "restaurant",
+    "ordering"
   ],
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@tailwindcss/postcss": "^4.1.14",
+    "ajv": "^8.17.1",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "http-proxy-middleware": "^3.0.5",
     "node-fetch": "^3.3.2",
-    "openai": "^4.47.2"
+    "openai": "^4.47.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.9.3",
+    "react-scripts": "^5.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
+    "autoprefixer": "^10.4.21",
     "concurrently": "^8.2.2",
+    "postcss": "^8.5.6",
     "rimraf": "^5.0.0",
+    "tailwindcss": "^4.1.13",
     "ts-node": "^10.9.0",
     "typescript": "^5.3.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }

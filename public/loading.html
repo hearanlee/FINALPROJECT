@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading...</title>
+    <link rel="stylesheet" href="loading.css">
+</head>
+<body>
+    
+    <div class="mobile-container">
+        <img src="./images/loading-icon.png" alt="앱 로고" class="loading-icon">
+        <p class="loading-text">로딩중...</p>
+    </div>
+    <script>
+        // 이 페이지가 로드되고 2초(2000밀리초) 후에 안의 코드를 실행합니다.
+        setTimeout(function() {
+            // main.html 파일로 페이지를 이동시킵니다.
+            window.location.href = 'main.html';
+        }, 2000); // 2000은 2초를 의미합니다. 3초로 바꾸려면 3000으로 수정하세요.
+    </script>
+
+</body>
+</html>

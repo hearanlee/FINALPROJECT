@@ -65,3 +65,16 @@ class VoiceResponse(BaseModel):
     response: str
     menu_suggestions: Optional[List[Menu]] = None
     procedures: Optional[List[Procedure]] = None
+
+# 메뉴 추천 요청 모델
+class MenuRecommendationRequest(BaseModel):
+    meal_type: str  # "식사" 또는 "간식"
+    temperature: str  # "따뜻한" 또는 "시원한"
+    spiciness: str  # "매운" 또는 "안매운"
+    food_type: str  # "밥" 또는 "면"
+
+# 메뉴 추천 응답 모델
+class MenuRecommendationResponse(BaseModel):
+    recommendations: List[Menu]
+    total_count: int
+    selection_summary: str

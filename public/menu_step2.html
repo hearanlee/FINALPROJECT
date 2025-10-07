@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu - Step 2</title>
+    <link rel="stylesheet" href="menu.css">
+</head>
+<body>
+
+    <div class="mobile-container">
+        <header class="page-header">
+            <a href="menu.html"><img src="./images/icon-back-arrow.png" alt="뒤로 가기"></a>
+            <h1>메뉴 추천</h1>
+        </header>
+
+        <main class="content">
+            <div class="question-card">
+                <p>따뜻한 음식을 원하세요,<br>아니면 시원한 음식을 원하세요?</p>
+            </div>
+
+            <div class="separator">
+                <p>︾</p>
+            </div>
+
+            <div class="choice-button">
+                <img src="./images/icon-warm.png" alt="따뜻한 음식 아이콘">
+                <span>따뜻한 음식</span>
+            </div>
+
+            <div class="separator">
+                <p>VS</p>
+            </div>
+
+            <div class="choice-button">
+                <img src="./images/icon-cold.png" alt="시원한 음식 아이콘">
+                <span>시원한 음식</span>
+            </div>
+        </main>
+        
+        <div class="action-buttons">
+             <a href="menu.html" class="btn btn-secondary" style="text-decoration: none; display: flex; justify-content: center; align-items: center;">뒤로 가기</a>
+            <button id="nextBtn" class="btn btn-primary">다음 단계</button>
+        </div>
+
+        <nav class="bottom-nav">
+            <a href="main.html" class="nav-item">
+                <img src="./images/icon-home.png" alt="홈">
+                <span>홈</span>
+            </a>
+            <a href="map_main.html" class="nav-item">
+                <img src="./images/icon-map.png" alt="지도">
+                <span>지도</span>
+            </a>
+            <a href="my_info.html" class="nav-item">
+                <img src="./images/icon-user.png" alt="내정보">
+                <span>내정보</span>
+            </a>
+        </nav>
+    </div>
+    <script src="menu_step2.js"></script>
+    </body>
+</html>

@@ -57,6 +57,17 @@ class Procedure(Base):
     # 관계 설정
     menu = relationship("Menu", back_populates="procedures")
 
+class MenuRecommendation(Base):
+    __tablename__ = "menu_recommendations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    meal_type = Column(String)  # "식사" 또는 "간식"
+    temperature = Column(String)  # "따뜻한" 또는 "시원한"
+    spiciness = Column(String)  # "매운" 또는 "안매운"
+    food_type = Column(String)  # "밥" 또는 "면"
+    menu_ids = Column(String)  # 추천 메뉴 ID들을 콤마로 구분하여 저장
+    created_at = Column(String)  # 생성 시간
+
 # 데이터베이스 테이블 생성
 def create_tables():
     Base.metadata.create_all(bind=engine)
@@ -159,6 +170,30 @@ def init_database():
     
     for procedure in procedures_data:
         cursor.execute("INSERT OR IGNORE INTO procedures (menu_id, step_order, instruction) VALUES (?, ?, ?)", procedure)
+    
+    # 메뉴 추천 규칙 데이터 삽입
+    import datetime
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    recommendation_rules = [
+        # 식사 -> 따뜻한 음식 -> 안매운 음식 -> 면 -> 쌀국수
+        ("식사", "따뜻한", "안매운", "면", "1,2,3", current_time),  # 쌀국수 메뉴들 (ID: 1,2,3)
+        
+        # 식사 -> 따뜻한 음식 -> 안매운 음식 -> 밥 -> 카레라이스, 돈까스
+        ("식사", "따뜻한", "안매운", "밥", "10,11,12,4,5,6,7,8,9", current_time),  # 카레라이스와 돈까스 메뉴들
+        
+        # 추가 규칙들 (확장 가능)
+        ("식사", "따뜻한", "매운", "면", "1,2,3", current_time),  # 매운 쌀국수 (향후 확장)
+        ("식사", "시원한", "안매운", "면", "1,2,3", current_time),  # 시원한 쌀국수 (향후 확장)
+        ("간식", "따뜻한", "안매운", "밥", "10,11,12", current_time),  # 간식용 카레라이스
+    ]
+    
+    for rule in recommendation_rules:
+        cursor.execute("""
+            INSERT OR IGNORE INTO menu_recommendations 
+            (meal_type, temperature, spiciness, food_type, menu_ids, created_at) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, rule)
     
     conn.commit()
     conn.close()

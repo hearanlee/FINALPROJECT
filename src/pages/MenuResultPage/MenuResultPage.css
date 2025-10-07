@@ -1,0 +1,195 @@
+/* 기본 스타일 초기화 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #333;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* 모바일 화면 전체 컨테이너 */
+.mobile-container {
+    width: 390px;
+    height: 844px;
+    background-color: #f4f4f8;
+    border: 8px solid #111;
+    border-radius: 40px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 페이지 헤더 */
+.page-header {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    color: #0D2A5C;
+}
+
+.page-header button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.page-header img {
+    width: 24px;
+    height: 24px;
+}
+
+.page-header h1 {
+    font-size: 20px;
+}
+
+/* 메인 컨텐츠 */
+.content {
+    padding: 0 30px;
+    text-align: center;
+    flex-grow: 1;
+}
+
+/* 질문 카드 */
+.question-card {
+    background-color: white;
+    border: 1px solid #0D2A5C;
+    border-radius: 15px;
+    padding: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #0D2A5C;
+    line-height: 1.5;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+.separator {
+    font-size: 20px;
+    font-weight: bold;
+    color: #0D2A5C;
+    margin: 15px 0;
+}
+
+/* 결과 이미지 */
+.result-image {
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 15px;
+    margin: 20px auto;
+    display: block;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* 정보 박스 */
+.info-box {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 15px;
+    padding: 20px;
+    text-align: left;
+    margin: 20px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.info-box p {
+    margin-bottom: 10px;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.info-box strong {
+    color: #0D2A5C;
+    font-weight: bold;
+}
+
+/* 액션 버튼들 */
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    padding: 20px;
+    background-color: white;
+    border-top: 1px solid #eee;
+}
+
+.btn {
+    flex: 1;
+    padding: 15px 20px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: #0D2A5C;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #1a3d7a;
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #545b62;
+    transform: translateY(-2px);
+}
+
+/* 하단 네비게이션 바 */
+.bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    background-color: white;
+    border-top: 1px solid #eee;
+    padding: 10px 0;
+    height: 80px;
+    align-items: center;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: gray;
+    font-size: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.nav-item:hover {
+    color: #0D2A5C;
+}
+
+.nav-item img {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 4px;
+}
+
+/* 활성화된 탭 스타일 */
+.nav-item.active {
+    color: #0D2A5C;
+    font-weight: bold;
+}
+
+
