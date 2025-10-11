@@ -132,7 +132,7 @@
             
             <div class="action-buttons bottom-buttons-floating">
                 <a href="main.html" class="btn btn-secondary">안내 종료</a>
-                <a href="map_main.html" class="btn btn-primary">음식점 선택하기</a>
+                <a href="voice_guide.html" class="btn btn-primary">키오스크 음성안내</a>
             </div>
         </div>
         
@@ -327,7 +327,7 @@
                 // 여러 번 시도하여 가장 정확한 위치 찾기
                 let bestPosition = null;
                 let attempts = 0;
-                const maxAttempts = 3;
+                const maxAttempts = 1;
                 const minAccuracy = 50; // 50m 이하의 정확도 목표
                 
                 function tryGetPosition() {
@@ -775,9 +775,9 @@
                             }
                         } else {
                             // 첫 번째 위치 설정
-                            currentPosition = newPosition;
+                                currentPosition = newPosition;
                             lastUpdateTime = now;
-                            updateMap();
+                                updateMap();
                         }
                     },
                     (error) => {
