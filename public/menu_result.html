@@ -63,8 +63,8 @@
             // localStorage에 메뉴명 저장
             localStorage.setItem('searchKeyword', menuName);
             
-            // restaurant_list.html로 이동
-            window.location.href = 'restaurant_list.html';
+            // URL 파라미터와 함께 restaurant_list.html로 이동
+            window.location.href = 'restaurant_list.html?keyword=' + encodeURIComponent(menuName);
         }
     </script>
 

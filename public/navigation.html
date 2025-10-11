@@ -113,7 +113,8 @@
             <div id="loadingMessage" class="loading-message">
                 <div>📍 현재 위치를 확인하는 중...</div>
                 <div style="font-size: 12px; margin-top: 5px; color: #666;">
-                    GPS를 사용하여 정확한 위치를 찾고 있습니다.
+                    GPS를 사용하여 정확한 위치를 찾고 있습니다.<br>
+                    <small style="color: #999;">고정밀 모드로 최대 3회 시도합니다.</small>
                 </div>
             </div>
             
@@ -151,18 +152,59 @@
         </nav>
     </div>
 
-    <!-- 카카오 지도 API -->
-    <script type="text/javascript" 
-            src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=749bffa5f8917cfcd65aae3b5addccc7"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <!-- Tmap API 직접 로드 (document.write 경고 무시) -->
+    <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=pUIcUWdIGX4FDdOOgd0SO8n46k4ZNmiV6TOOJetL"></script>
+    <script>
+        // Tmap API 로드 상태 관리
+        window.tmapApiLoaded = false;
+        window.tmapApiLoadError = false;
+        
+        // Tmap API 로드 확인 함수
+        function checkTmapApi() {
+            if (typeof Tmapv2 !== 'undefined' && Tmapv2 && typeof Tmapv2.LatLng !== 'undefined') {
+                window.tmapApiLoaded = true;
+                console.log('Tmap API 완전히 로드됨');
+                return true;
+            }
+            return false;
+        }
+        
+        // 페이지 로드 시 API 확인
+        window.addEventListener('load', function() {
+            console.log('페이지 로드 완료, Tmap API 확인 중...');
+            if (checkTmapApi()) {
+                console.log('Tmap API가 이미 로드됨');
+            } else {
+                console.log('Tmap API 로드 대기 중...');
+                // 1초마다 확인
+                var checkInterval = setInterval(function() {
+                    if (checkTmapApi()) {
+                        clearInterval(checkInterval);
+                    }
+                }, 1000);
+                
+                // 10초 후 타임아웃
+                setTimeout(function() {
+                    if (!window.tmapApiLoaded) {
+                        clearInterval(checkInterval);
+                        window.tmapApiLoadError = true;
+                        console.error('Tmap API 로드 타임아웃');
+                    }
+                }, 10000);
+            }
+        });
+    </script>
     <script>
         let map;
-        let directions;
         let currentPosition;
         let destinationPosition;
         let watchId; // 위치 추적 ID
         let currentMarkers = []; // 현재 표시된 마커들
         let currentPolylines = []; // 현재 표시된 경로들
         let currentOverlays = []; // 현재 표시된 오버레이들
+        let resultdrawArr = []; // Tmap 경로 그리기 배열
 
         // 목적지 좌표 (포핸즈 - map_main.html에서 선택된 매장)
         const destinationCoords = {
@@ -184,6 +226,14 @@
                 polyline.setMap(null);
             });
             currentPolylines = [];
+
+            // Tmap 경로 제거
+            if (resultdrawArr.length > 0) {
+                for (let i in resultdrawArr) {
+                    resultdrawArr[i].setMap(null);
+                }
+                resultdrawArr = [];
+            }
 
             // 기존 오버레이들 제거
             currentOverlays.forEach(overlay => {
@@ -264,7 +314,7 @@
             }, 5000);
         }
 
-        // 현재 위치 가져오기 (HTML5 Geolocation)
+        // 현재 위치 가져오기 (HTML5 Geolocation) - 정확도 개선
         function getCurrentLocation() {
             return new Promise((resolve, reject) => {
                 if (!navigator.geolocation) {
@@ -272,24 +322,60 @@
                     return;
                 }
 
-                console.log('현재 위치를 요청합니다...');
+                console.log('현재 위치를 요청합니다... (고정밀 모드)');
+                
+                // 여러 번 시도하여 가장 정확한 위치 찾기
+                let bestPosition = null;
+                let attempts = 0;
+                const maxAttempts = 3;
+                const minAccuracy = 50; // 50m 이하의 정확도 목표
+                
+                function tryGetPosition() {
+                    attempts++;
+                    console.log(`위치 시도 ${attempts}/${maxAttempts}`);
                 
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
+                            const accuracy = position.coords.accuracy;
+                            console.log(`시도 ${attempts} - 정확도: ${Math.round(accuracy)}m`);
+                            
+                            // 더 정확한 위치이거나 첫 번째 시도인 경우 업데이트
+                            if (!bestPosition || accuracy < bestPosition.coords.accuracy) {
+                                bestPosition = position;
+                                console.log(`더 정확한 위치 발견: ${Math.round(accuracy)}m`);
+                            }
+                            
+                            // 충분히 정확하거나 최대 시도 횟수에 도달한 경우
+                            if (accuracy <= minAccuracy || attempts >= maxAttempts) {
+                                if (bestPosition) {
                         currentPosition = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude,
-                            accuracy: position.coords.accuracy
-                        };
-                        
-                        console.log('현재 위치 정보:');
+                                        lat: bestPosition.coords.latitude,
+                                        lng: bestPosition.coords.longitude,
+                                        accuracy: bestPosition.coords.accuracy,
+                                        altitude: bestPosition.coords.altitude,
+                                        heading: bestPosition.coords.heading,
+                                        speed: bestPosition.coords.speed
+                                    };
+                                    
+                                    console.log('최종 위치 정보:');
                         console.log('- 위도:', currentPosition.lat);
                         console.log('- 경도:', currentPosition.lng);
                         console.log('- 정확도:', Math.round(currentPosition.accuracy) + 'm');
+                                    console.log('- 고도:', currentPosition.altitude ? Math.round(currentPosition.altitude) + 'm' : 'N/A');
                         
                         resolve(currentPosition);
+                                } else {
+                                    reject(new Error('유효한 위치 정보를 얻을 수 없습니다.'));
+                                }
+                            } else {
+                                // 더 정확한 위치를 위해 다시 시도
+                                setTimeout(tryGetPosition, 2000);
+                            }
                     },
                     (error) => {
+                            console.error(`시도 ${attempts} 실패:`, error);
+                            
+                            if (attempts >= maxAttempts) {
                         let errorMessage = '위치 정보를 가져올 수 없습니다.';
                         
                         switch(error.code) {
@@ -297,29 +383,37 @@
                                 errorMessage = '위치 권한이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용해주세요.';
                                 break;
                             case error.POSITION_UNAVAILABLE:
-                                errorMessage = '위치 정보를 사용할 수 없습니다.';
+                                        errorMessage = '위치 정보를 사용할 수 없습니다. GPS 신호가 약한 것 같습니다.';
                                 break;
                             case error.TIMEOUT:
                                 errorMessage = '위치 요청 시간이 초과되었습니다. 다시 시도해주세요.';
                                 break;
                         }
                         
-                        console.error('위치 오류:', error);
                         reject(new Error(errorMessage));
+                            } else {
+                                // 재시도
+                                setTimeout(tryGetPosition, 3000);
+                            }
                     },
                     {
                         enableHighAccuracy: true,    // GPS 사용
-                        timeout: 15000,              // 15초 타임아웃
-                        maximumAge: 300000          // 5분간 캐시된 위치 허용
+                            timeout: 20000,              // 20초 타임아웃 (더 길게)
+                            maximumAge: 0               // 캐시된 위치 사용 안함 (항상 새로운 위치)
                     }
                 );
+                }
+                
+                tryGetPosition();
             });
         }
 
-        // 지도 초기화
+        // Tmap 지도 초기화
         function initMap() {
-            if (typeof kakao === 'undefined' || !kakao.maps) {
-                console.error('카카오 지도 API가 로드되지 않았습니다.');
+            if (typeof Tmapv2 === 'undefined' || !Tmapv2 || typeof Tmapv2.LatLng === 'undefined') {
+                console.error('Tmap API가 완전히 로드되지 않았습니다.');
+                console.error('Tmapv2:', typeof Tmapv2);
+                console.error('Tmapv2.LatLng:', typeof Tmapv2?.LatLng);
                 showError('지도 API를 불러올 수 없습니다.');
                 return;
             }
@@ -330,57 +424,49 @@
             // 거리 체크
             const isWithinRange = checkDistanceAndShowPopup();
 
-            // 지도 생성 (현재 위치를 중심으로)
+            // Tmap 지도 생성 (현재 위치를 중심으로)
             const mapContainer = document.getElementById('map');
-            const mapOption = {
-                center: new kakao.maps.LatLng(currentPosition.lat, currentPosition.lng),
-                level: 3
-            };
+            map = new Tmapv2.Map(mapContainer, {
+                center: new Tmapv2.LatLng(currentPosition.lat, currentPosition.lng),
+                width: "100%",
+                height: "100%",
+                zoom: 15,
+                zoomControl: true,
+                scrollwheel: true
+            });
 
-            map = new kakao.maps.Map(mapContainer, mapOption);
+            // 현재 위치 마커 추가
+            if (currentPosition) {
+                const currentMarker = new Tmapv2.Marker({
+                    position: new Tmapv2.LatLng(currentPosition.lat, currentPosition.lng),
+                    icon: "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/red_b.png",
+                    iconSize: new Tmapv2.Size(24, 35),
+                    map: map
+                });
+                currentMarkers.push(currentMarker);
 
-            // 목적지 마커 추가 (깃발 마커 제거)
-            const destinationMarker = new kakao.maps.Marker({
-                position: new kakao.maps.LatLng(destinationCoords.lat, destinationCoords.lng),
-                map: map,
-                image: new kakao.maps.MarkerImage(
-                    'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/blue_drag.png',
-                    new kakao.maps.Size(24, 35)
-                )
+            }
+
+            // 목적지 마커 추가
+            const destinationMarker = new Tmapv2.Marker({
+                position: new Tmapv2.LatLng(destinationCoords.lat, destinationCoords.lng),
+                icon: "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/blue_drag.png",
+                iconSize: new Tmapv2.Size(24, 35),
+                map: map
             });
             currentMarkers.push(destinationMarker);
 
             // 목적지 인포윈도우
-            const destinationInfoWindow = new kakao.maps.InfoWindow({
-                content: `<div style="padding: 10px; text-align: center;"><strong>${destinationCoords.name}</strong></div>`
-            });
-            destinationInfoWindow.open(map, destinationMarker);
-
-            // 현재 위치 마커 추가
-            if (currentPosition) {
-                const currentMarker = new kakao.maps.Marker({
-                    position: new kakao.maps.LatLng(currentPosition.lat, currentPosition.lng),
-                    map: map,
-                    image: new kakao.maps.MarkerImage(
-                        'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/red_b.png',
-                        new kakao.maps.Size(24, 35)
-                    )
-                });
-                currentMarkers.push(currentMarker);
-
-                // 현재 위치 인포윈도우 (정확도 정보 포함)
-                const accuracy = Math.round(currentPosition.accuracy);
-                const currentInfoWindow = new kakao.maps.InfoWindow({
+            const destinationInfoWindow = new Tmapv2.InfoWindow({
+                position: new Tmapv2.LatLng(destinationCoords.lat, destinationCoords.lng),
                     content: `
-                        <div style="padding: 10px; text-align: center;">
-                            <strong>📍 현재 위치</strong><br>
-                            <small>정확도: ±${accuracy}m</small><br>
-                            <small>위도: ${currentPosition.lat.toFixed(6)}</small><br>
-                            <small>경도: ${currentPosition.lng.toFixed(6)}</small>
+                    <div style="padding: 10px; text-align: center; background: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
+                        <strong>${destinationCoords.name}</strong>
                         </div>
-                    `
+                `,
+                map: map
                 });
-                currentInfoWindow.open(map, currentMarker);
+            currentOverlays.push(destinationInfoWindow);
 
                 // 두 지점을 모두 포함하도록 지도 범위 조정
                 adjustMapBounds();
@@ -390,7 +476,6 @@
                     showRoute();
                 } else {
                     showStraightRoute();
-                }
             }
 
             // 로딩 메시지 숨기기
@@ -403,17 +488,17 @@
 
             try {
                 // 두 지점의 좌표를 LatLngBounds에 추가
-                const bounds = new kakao.maps.LatLngBounds();
-                bounds.extend(new kakao.maps.LatLng(currentPosition.lat, currentPosition.lng));
-                bounds.extend(new kakao.maps.LatLng(destinationCoords.lat, destinationCoords.lng));
+                const bounds = new Tmapv2.LatLngBounds();
+                bounds.extend(new Tmapv2.LatLng(currentPosition.lat, currentPosition.lng));
+                bounds.extend(new Tmapv2.LatLng(destinationCoords.lat, destinationCoords.lng));
 
                 // 지도 범위를 두 지점을 모두 포함하도록 조정
-                map.setBounds(bounds);
+                map.fitBounds(bounds);
 
                 // 여백을 위해 약간 확대
-                const currentLevel = map.getLevel();
-                if (currentLevel > 1) {
-                    map.setLevel(currentLevel - 1);
+                const currentZoom = map.getZoom();
+                if (currentZoom > 1) {
+                    map.setZoom(currentZoom - 1);
                 }
 
                 console.log('지도 범위가 두 지점을 포함하도록 조정되었습니다.');
@@ -422,20 +507,40 @@
             }
         }
 
-        // 카카오 길찾기 API를 사용한 실제 경로 표시
+        // Tmap 도보 경로 API를 사용한 실제 경로 표시
         function showRoute() {
             if (!currentPosition || !destinationCoords) return;
 
             try {
-                console.log('카카오 길찾기 API 호출 중...');
+                console.log('Tmap 도보 경로 API 호출 중...');
 
-                // 좌표 형식: 경도,위도
-                const origin = `${currentPosition.lng},${currentPosition.lat}`;
-                const destination = `${destinationCoords.lng},${destinationCoords.lat}`;
-                
-                // CORS 문제로 인해 직선 경로를 표시하되, 실제 도로를 따라가는 것처럼 보이도록 개선
-                console.log('직선 경로를 표시합니다 (CORS 제한으로 인해)');
+                const headers = {}; 
+                headers["appKey"] = "pUIcUWdIGX4FDdOOgd0SO8n46k4ZNmiV6TOOJetL";
+
+                $.ajax({
+                    method: "POST",
+                    headers: headers,
+                    url: "https://apis.openapi.sk.com/tmap/routes/pedestrian?version=1&format=json&callback=result",
+                    async: false,
+                    data: {
+                        "startX": currentPosition.lng.toString(),
+                        "startY": currentPosition.lat.toString(),
+                        "endX": destinationCoords.lng.toString(),
+                        "endY": destinationCoords.lat.toString(),
+                        "reqCoordType": "WGS84GEO",
+                        "resCoordType": "EPSG3857",
+                        "startName": "현재 위치",
+                        "endName": destinationCoords.name
+                    },
+                    success: function(response) {
+                        console.log('Tmap API 응답:', response);
+                        processTmapRouteData(response);
+                    },
+                    error: function(request, status, error) {
+                        console.error("Tmap API 오류:", request.status, request.responseText, error);
                 showStraightRoute();
+                    }
+                });
 
             } catch (error) {
                 console.error('경로 표시 오류:', error);
@@ -443,83 +548,92 @@
             }
         }
 
-        // JSONP 응답 처리 함수
-        function processDirectionsData(data) {
+        // Tmap API 응답 처리 함수
+        function processTmapRouteData(data) {
             try {
-                if (data.routes && data.routes[0]) {
-                    const route = data.routes[0];
-                    const sections = route.sections;
+                if (data.features && data.features[0]) {
+                    const resultData = data.features;
                     
-                    if (sections && sections[0]) {
-                        const section = sections[0];
-                        const { distance, duration, guides, roads } = section;
-                        
-                        // 상세 경로 좌표 생성
-                        let detailRoads = [];
-                        
-                        if (roads && roads.length > 0) {
-                            for (let i = 0; i < roads.length; i++) {
-                                const road = roads[i];
-                                const vertexes = road.vertexes;
-                                let cursor = 0;
-                                
-                                while (cursor < vertexes.length) {
-                                    const lat = vertexes[cursor + 1];
-                                    const lng = vertexes[cursor];
-                                    if (lat && lng) {
-                                        detailRoads.push(new kakao.maps.LatLng(lat, lng));
-                                    }
-                                    cursor += 2;
-                                    if (cursor >= 1000000) break; // 무한루프 방지
-                                }
+                    // 결과 출력
+                    const totalDistance = resultData[0].properties.totalDistance;
+                    const totalTime = resultData[0].properties.totalTime;
+                    
+                    console.log(`Tmap 경로 - 거리: ${(totalDistance / 1000).toFixed(1)}km, 시간: ${(totalTime / 60).toFixed(0)}분`);
+                    
+                    // 기존 그려진 라인 & 마커가 있다면 초기화
+                    if (resultdrawArr.length > 0) {
+                        for (let i in resultdrawArr) {
+                            resultdrawArr[i].setMap(null);
+                        }
+                        resultdrawArr = [];
+                    }
+                    
+                    let drawInfoArr = [];
+
+                    for (let i in resultData) {
+                        const geometry = resultData[i].geometry;
+                        const properties = resultData[i].properties;
+
+                        if (geometry.type == "LineString") {
+                            for (let j in geometry.coordinates) {
+                                // 경로들의 결과값(구간)들을 포인트 객체로 변환 
+                                const latlng = new Tmapv2.Point(
+                                    geometry.coordinates[j][0],
+                                    geometry.coordinates[j][1]);
+                                // 포인트 객체를 받아 좌표값으로 변환
+                                const convertPoint = new Tmapv2.Projection.convertEPSG3857ToWGS84GEO(latlng);
+                                // 포인트객체의 정보로 좌표값 변환 객체로 저장
+                                const convertChange = new Tmapv2.LatLng(
+                                    convertPoint._lat,
+                                    convertPoint._lng);
+                                // 배열에 담기
+                                drawInfoArr.push(convertChange);
                             }
                         }
-
-                        // 경로 선 표시
-                        const polyline = new kakao.maps.Polyline({
-                            path: detailRoads.length > 0 ? detailRoads : [
-                                new kakao.maps.LatLng(currentPosition.lat, currentPosition.lng),
-                                new kakao.maps.LatLng(destinationCoords.lat, destinationCoords.lng)
-                            ],
-                            strokeWeight: 5,
-                            strokeColor: '#0D2A5C',
-                            strokeOpacity: 0.8,
-                            strokeStyle: 'solid'
-                        });
-
-                        polyline.setMap(map);
-                        currentPolylines.push(polyline);
-
-                        // 경로 정보 오버레이
-                        const routeInfo = new kakao.maps.CustomOverlay({
-                            position: new kakao.maps.LatLng(
-                                (currentPosition.lat + destinationCoords.lat) / 2,
-                                (currentPosition.lng + destinationCoords.lng) / 2
-                            ),
-                            content: `
-                                <div style="padding: 15px; background: white; border: 2px solid #0D2A5C; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; min-width: 200px;">
-                                    <strong>📍 경로 정보</strong><br>
-                                    <div style="margin-top: 5px;">
-                                        <small>거리: ${Math.round(distance / 1000 * 10) / 10}km</small><br>
-                                        <small>예상 시간: ${Math.round(duration / 60)}분</small>
-                                    </div>
-                                </div>
-                            `
-                        });
-
-                        routeInfo.setMap(map);
-                        currentOverlays.push(routeInfo);
-
-                        console.log(`실제 경로 - 거리: ${Math.round(distance / 1000 * 10) / 10}km, 시간: ${Math.round(duration / 60)}분`);
                     }
+                    
+                    // 경로 그리기
+                    drawTmapLine(drawInfoArr, totalDistance, totalTime);
+
                 } else {
                     console.warn('경로 정보를 찾을 수 없습니다. 직선 경로를 표시합니다.');
                     showStraightRoute();
                 }
             } catch (error) {
-                console.error('경로 데이터 처리 오류:', error);
+                console.error('Tmap 경로 데이터 처리 오류:', error);
                 showStraightRoute();
             }
+        }
+
+        // Tmap 경로 그리기 함수
+        function drawTmapLine(arrPoint, distance, time) {
+            const polyline = new Tmapv2.Polyline({
+                path: arrPoint,
+                strokeColor: "#0D2A5C",
+                strokeWeight: 6,
+                map: map
+            });
+            resultdrawArr.push(polyline);
+
+                        // 경로 정보 오버레이
+            const routeInfo = new Tmapv2.InfoWindow({
+                position: new Tmapv2.LatLng(
+                                (currentPosition.lat + destinationCoords.lat) / 2,
+                                (currentPosition.lng + destinationCoords.lng) / 2
+                            ),
+                            content: `
+                                <div style="padding: 15px; background: white; border: 2px solid #0D2A5C; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; min-width: 200px;">
+                        <strong>📍 도보 경로</strong><br>
+                                    <div style="margin-top: 5px;">
+                            <small>거리: ${(distance / 1000).toFixed(1)}km</small><br>
+                            <small>예상 시간: ${(time / 60).toFixed(0)}분</small>
+                                    </div>
+                                </div>
+                `,
+                map: map
+                        });
+
+                        currentOverlays.push(routeInfo);
         }
 
         // 직선 경로 표시 (API 실패 시 대체)
@@ -543,14 +657,14 @@
                     // 약간의 곡선 효과를 위해 중간점들을 살짝 이동
                     if (i > 0 && i < steps) {
                         const offset = Math.sin(ratio * Math.PI) * 0.001; // 작은 오프셋
-                        pathCoords.push(new kakao.maps.LatLng(lat + offset, lng));
+                        pathCoords.push(new Tmapv2.LatLng(lat + offset, lng));
                     } else {
-                        pathCoords.push(new kakao.maps.LatLng(lat, lng));
+                        pathCoords.push(new Tmapv2.LatLng(lat, lng));
                     }
                 }
 
                 // 경로 선 표시 (점선으로 표시하여 대략적인 경로임을 나타냄)
-                const polyline = new kakao.maps.Polyline({
+                const polyline = new Tmapv2.Polyline({
                     path: pathCoords,
                     strokeWeight: 5,
                     strokeColor: '#0D2A5C',
@@ -559,7 +673,7 @@
                 });
 
                 polyline.setMap(map);
-                currentPolylines.push(polyline);
+                resultdrawArr.push(polyline);
 
                 const distance = calculateDistance(startLat, startLng, endLat, endLng);
                 
@@ -567,8 +681,8 @@
                 const distanceKm = distance / 1000;
                 const isLongDistance = distanceKm > 30;
                 
-                const routeInfo = new kakao.maps.CustomOverlay({
-                    position: new kakao.maps.LatLng(
+                const routeInfo = new Tmapv2.InfoWindow({
+                    position: new Tmapv2.LatLng(
                         (startLat + endLat) / 2,
                         (startLng + endLng) / 2
                     ),
@@ -586,10 +700,10 @@
                                 </small>
                             </div>
                         </div>
-                    `
+                    `,
+                    map: map
                 });
 
-                routeInfo.setMap(map);
                 currentOverlays.push(routeInfo);
 
                 console.log(`대략적인 경로 - 거리: ${Math.round(distance / 1000 * 10) / 10}km, 시간: ${Math.round(distance / 1000 * 15)}분`);
@@ -605,18 +719,40 @@
             document.getElementById('errorMessage').querySelector('div').textContent = message;
         }
 
-        // 위치 추적 시작
+
+        // 위치 추적 시작 - 정확도 개선
         function startLocationTracking() {
             if (navigator.geolocation) {
+                let lastUpdateTime = 0;
+                const minUpdateInterval = 5000; // 최소 5초 간격으로 업데이트
+                
                 watchId = navigator.geolocation.watchPosition(
                     (position) => {
+                        const now = Date.now();
+                        const accuracy = position.coords.accuracy;
+                        
+                        // 정확도가 너무 나쁘면 무시 (100m 이상)
+                        if (accuracy > 100) {
+                            console.log(`위치 정확도가 너무 낮음: ${Math.round(accuracy)}m - 무시`);
+                            return;
+                        }
+                        
+                        // 너무 자주 업데이트하지 않도록 제한
+                        if (now - lastUpdateTime < minUpdateInterval) {
+                            console.log('업데이트 간격이 너무 짧음 - 무시');
+                            return;
+                        }
+                        
                         const newPosition = {
                             lat: position.coords.latitude,
                             lng: position.coords.longitude,
-                            accuracy: position.coords.accuracy
+                            accuracy: position.coords.accuracy,
+                            altitude: position.coords.altitude,
+                            heading: position.coords.heading,
+                            speed: position.coords.speed
                         };
                         
-                        console.log('위치 업데이트:', newPosition);
+                        console.log(`위치 업데이트 - 정확도: ${Math.round(accuracy)}m`);
                         
                         // 위치가 크게 변경된 경우에만 업데이트
                         if (currentPosition) {
@@ -625,19 +761,39 @@
                                 newPosition.lat, newPosition.lng
                             );
                             
-                            if (distance > 10) { // 10m 이상 이동한 경우
+                            // 정확도가 개선되었거나 충분히 이동한 경우 업데이트
+                            const accuracyImproved = accuracy < currentPosition.accuracy * 0.8; // 20% 이상 개선
+                            const significantMovement = distance > 15; // 15m 이상 이동
+                            
+                            if (accuracyImproved || significantMovement) {
+                                console.log(`위치 업데이트 조건 충족 - 거리: ${Math.round(distance)}m, 정확도 개선: ${accuracyImproved}`);
                                 currentPosition = newPosition;
+                                lastUpdateTime = now;
                                 updateMap();
+                            } else {
+                                console.log(`위치 업데이트 조건 미충족 - 거리: ${Math.round(distance)}m`);
                             }
+                        } else {
+                            // 첫 번째 위치 설정
+                            currentPosition = newPosition;
+                            lastUpdateTime = now;
+                            updateMap();
                         }
                     },
                     (error) => {
                         console.error('위치 추적 오류:', error);
+                        // 오류 발생 시 재시도
+                        setTimeout(() => {
+                            if (watchId) {
+                                stopLocationTracking();
+                                startLocationTracking();
+                            }
+                        }, 10000);
                     },
                     {
                         enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 30000
+                        timeout: 15000,
+                        maximumAge: 10000 // 10초 이내의 위치만 사용
                     }
                 );
             }
@@ -678,24 +834,20 @@
                     const isWithinRange = checkDistanceAndShowPopup();
 
                     // 현재 위치 마커 업데이트
-                    const currentMarker = new kakao.maps.Marker({
-                        position: new kakao.maps.LatLng(currentPosition.lat, currentPosition.lng),
-                        map: map,
-                        image: new kakao.maps.MarkerImage(
-                            'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/red_b.png',
-                            new kakao.maps.Size(24, 35)
-                        )
+                    const currentMarker = new Tmapv2.Marker({
+                        position: new Tmapv2.LatLng(currentPosition.lat, currentPosition.lng),
+                        icon: "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/red_b.png",
+                        iconSize: new Tmapv2.Size(24, 35),
+                        map: map
                     });
                     currentMarkers.push(currentMarker);
 
                     // 목적지 마커 다시 추가
-                    const destinationMarker = new kakao.maps.Marker({
-                        position: new kakao.maps.LatLng(destinationCoords.lat, destinationCoords.lng),
-                        map: map,
-                        image: new kakao.maps.MarkerImage(
-                            'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/blue_drag.png',
-                            new kakao.maps.Size(24, 35)
-                        )
+                    const destinationMarker = new Tmapv2.Marker({
+                        position: new Tmapv2.LatLng(destinationCoords.lat, destinationCoords.lng),
+                        icon: "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/blue_drag.png",
+                        iconSize: new Tmapv2.Size(24, 35),
+                        map: map
                     });
                     currentMarkers.push(destinationMarker);
 
@@ -718,28 +870,36 @@
         window.addEventListener('load', async function() {
             try {
                 console.log('현재 위치를 가져오는 중...');
+                
                 await getCurrentLocation();
                 console.log('현재 위치:', currentPosition);
                 
-                       // 카카오 지도 API 로드 확인
-                       let retryCount = 0;
-                       const maxRetries = 5;
-
+                // Tmap API 로드 확인 및 초기화
                 function tryInitMap() {
-                    retryCount++;
-                    console.log(`카카오 지도 API 확인 시도 ${retryCount}/${maxRetries}`);
+                    console.log('Tmap API 확인 중...');
+                    console.log('Tmapv2:', typeof Tmapv2);
+                    console.log('Tmapv2.LatLng:', typeof Tmapv2?.LatLng);
+                    console.log('window.tmapApiLoaded:', window.tmapApiLoaded);
+                    console.log('window.tmapApiLoadError:', window.tmapApiLoadError);
                     
-                    if (typeof kakao !== 'undefined' && kakao.maps) {
-                        console.log('카카오 지도 API 확인됨, 지도 초기화 시작');
+                    // API 로드 오류가 발생한 경우
+                    if (window.tmapApiLoadError) {
+                        console.error('Tmap API 로드 오류 발생');
+                        showError('지도 API를 불러올 수 없습니다.');
+                        return;
+                    }
+                    
+                    // API가 완전히 로드된 경우
+                    if (window.tmapApiLoaded || (typeof Tmapv2 !== 'undefined' && Tmapv2 && typeof Tmapv2.LatLng !== 'undefined')) {
+                        console.log('Tmap API 완전히 로드됨, 지도 초기화 시작');
                         initMap();
                         
                         // 지도 초기화 후 위치 추적 시작
                         startLocationTracking();
-                    } else if (retryCount >= maxRetries) {
-                        console.error('카카오 지도 API 로드 실패');
-                        showError('지도 API를 불러올 수 없습니다.');
                     } else {
-                        setTimeout(tryInitMap, 500);
+                        console.log('Tmap API 대기 중...');
+                        // 1초 후 다시 시도
+                        setTimeout(tryInitMap, 1000);
                     }
                 }
 
