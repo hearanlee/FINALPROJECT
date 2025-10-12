@@ -25,6 +25,7 @@ let playCount = 0;
 let isVoiceGuideActive = false;
 let currentStep = 0;
 let isWaitingForUserInput = false;
+let isProcessing = false; // 중복 처리 방지 플래그
 let lastMenuExplanation = null; // 이전 메뉴 설명 저장
 
 // GitHub API 설정
@@ -228,6 +229,9 @@ async function callGPTAPI(message) {
                         content: `당신은 포핸즈 음식점의 친근한 직원입니다. 
                         고객의 질문에 대해 도움을 드리고, 메뉴를 추천해드립니다.
                         음성 대화를 위해 간결하고 명확하게 답변해주세요.
+                        
+                        고객이 메뉴 관련 질문을 하면 아래 실제 메뉴만 추천하고,
+                        일반적인 질문(가격, 위치, 영업시간, 추천 등)에 대해서도 친근하게 답변해주세요.
                         
                         ⚠️ 중요: 절대 새로운 메뉴를 생성하지 마세요. 오직 아래 실제 메뉴만 추천하세요.
                         
@@ -483,6 +487,12 @@ function initSpeechRecognition() {
     recognition.onresult = function(event) {
         console.log('음성 인식 결과 이벤트:', event);
         
+        // 이미 처리 중이면 무시 (중복 호출 방지)
+        if (isProcessing) {
+            console.log('⏳ 이미 처리 중 - 중복 호출 방지');
+            return;
+        }
+        
         let finalTranscript = '';
         let interimTranscript = '';
         
@@ -499,7 +509,7 @@ function initSpeechRecognition() {
         console.log('📝 최종 텍스트:', finalTranscript);
         console.log('🔄 중간 텍스트:', interimTranscript);
         
-        // 최종 결과가 있을 때 처리
+        // 최종 결과가 있을 때만 처리 (중간 결과는 무시하여 중복 호출 방지)
         if (finalTranscript.trim()) {
             console.log('✅ 인식된 최종 텍스트:', finalTranscript);
             
@@ -531,55 +541,28 @@ function initSpeechRecognition() {
             console.log('🎯 사용자 음성 처리 시작:', finalTranscript);
             processVoiceInput(finalTranscript);
         }
-        // 중간 결과만 있고 최종 결과가 없을 때도 처리 (불완전한 문장 처리)
-        else if (interimTranscript.trim() && interimTranscript.length > 2) {
-            console.log('🔄 중간 텍스트 처리:', interimTranscript);
-            
-            // 먼저 시스템 음성 필터링 (환영메시지 등 시스템음성 우선 차단)
-            if (isSystemVoice(interimTranscript)) {
-                console.log('❌ 시스템 음성으로 판단되어 무시 (중간):', interimTranscript);
-                return;
-            }
-            
-            // 사용자 키워드 감지 (환영메시지 중에 사용자가 말하는 경우)
-            // 단, 환영메시지에 포함된 단어들은 제외
-            const userKeywords = ['메뉴', '돈까스', '쌀국수', '주문', '음식', '추천', '도움', '안내', '카레', '카츠', '오늘', '뭐', '어떤', '네', '예', '좋아', '싫어', '맛있', '배고', '먹고', '마시', '드시', '할게', '할래', '싫어', '싫다', '좋다', '좋아', '괜찮', '괜찮아', '괜찮다', '싶어', '싶다', '원해', '원한다', '주문할게', '주문할래', '주문해', '주문해줘', '주문해주세요'];
-            const isUserKeyword = userKeywords.some(keyword => interimTranscript.toLowerCase().includes(keyword.toLowerCase()));
-            
-            // 음성 재생 중이면 즉시 중단하고 처리 (사용자 입력 최우선)
-            if (speechSynthesis.speaking) {
-                if (isUserKeyword) {
-                    console.log('⏹️ 사용자 키워드 감지 (중간) - 음성 재생 즉시 중단:', interimTranscript);
-                    speechSynthesis.cancel();
-                    console.log('🎯 사용자 키워드 처리 시작 (중간):', interimTranscript);
-                    processVoiceInput(interimTranscript);
-                    return;
-                } else {
-                    console.log('❌ 시스템이 말하는 중 - 사용자 키워드가 아님 (중간), 무시:', interimTranscript);
-                    return;
-                }
-            }
-            
-            if (isUserKeyword) {
-                console.log('🔑 사용자 키워드 감지 - 중간 텍스트 처리:', interimTranscript);
-                console.log('🎯 키워드 기반 사용자 음성 처리 시작:', interimTranscript);
-                processVoiceInput(interimTranscript);
-            }
-        }
     };
 
     recognition.onerror = function(event) {
         console.error('❌ 음성 인식 오류:', event.error);
         isRecording = false;
+        if (voiceMicIcon) {
         voiceMicIcon.style.animation = 'none';
+        }
         
         // 모든 오류에 대해 자동 재시작 (버튼을 누르기 전까지 계속)
         if (isVoiceGuideActive && isWaitingForUserInput) {
             console.log('🔄 음성 인식 오류로 인한 재시작 시도 (버튼 누를 때까지 계속)');
             setTimeout(() => {
-                if (isVoiceGuideActive && isWaitingForUserInput) {
+                if (isVoiceGuideActive && isWaitingForUserInput && !isRecording) {
                     console.log('🔄 음성 인식 재시작');
-                    recognition.start();
+                    try {
+                        recognition.start();
+                        isRecording = true;
+                    } catch (error) {
+                        console.error('❌ 음성 인식 재시작 실패:', error);
+                        isRecording = false;
+                    }
                 }
             }, 1000); // 더 빠른 재시작
         }
@@ -588,15 +571,23 @@ function initSpeechRecognition() {
     recognition.onend = function() {
         console.log('⏹️ 음성 인식 종료');
         isRecording = false;
+        if (voiceMicIcon) {
         voiceMicIcon.style.animation = 'none';
+        }
         
         // 음성 안내가 활성화되어 있고 사용자 입력을 기다리는 상태라면 즉시 다시 시작 (버튼을 누르기 전까지 계속)
         if (isVoiceGuideActive && isWaitingForUserInput) {
             console.log('🔄 음성 인식 즉시 재시작 (버튼 누를 때까지 계속)');
             setTimeout(() => {
-                if (isVoiceGuideActive && isWaitingForUserInput) {
+                if (isVoiceGuideActive && isWaitingForUserInput && !isRecording) {
                     console.log('🔄 음성 인식 재시작 실행');
-                    recognition.start();
+                    try {
+                        recognition.start();
+                        isRecording = true;
+                    } catch (error) {
+                        console.error('❌ 음성 인식 재시작 실패:', error);
+                        isRecording = false;
+                    }
                 }
             }, 500); // 더 빠른 재시작
         }
@@ -606,10 +597,14 @@ function initSpeechRecognition() {
     return true;
 }
 
-// 5. GitHub API 호출
-async function callGPTAPI(userInput) {
+// 5. GitHub API 호출 (재시도 로직 포함)
+async function callGPTAPI(userInput, retryCount = 0) {
+    const maxRetries = 3;
+    const baseDelay = 1000; // 1초
+    
     console.log('GitHub API 호출 시작');
     console.log('사용자 입력:', userInput);
+    console.log('재시도 횟수:', retryCount);
     console.log('API URL:', GITHUB_API_URL);
     console.log('API 키:', GITHUB_API_KEY ? '설정됨' : '설정되지 않음');
     
@@ -619,16 +614,60 @@ async function callGPTAPI(userInput) {
             messages: [
                 {
                     role: 'system',
-                    content: '당신은 음식점 키오스크의 음성 안내 시스템입니다. 사용자의 주문이나 질문에 친절하고 도움이 되는 답변을 해주세요. 메뉴에 대한 질문이면 메뉴를 추천해주고, 주문이면 주문을 도와주세요. 돈카츠,카레 메뉴와 1인정식 메뉴는 옵션을 선택할 수 있습니다. 옵션이 있는 메뉴를 설명할 때는 옵션 선택 가능하다는 것을 안내해주세요.'
+                    content: `당신은 포핸즈 음식점의 친근한 직원입니다.
+고객의 질문에 대해 도움을 드리고, 메뉴를 추천해드립니다.
+음성 대화를 위해 간결하고 명확하게 답변해주세요.
+
+⚠️ 중요 제약사항:
+1. 절대 새로운 메뉴를 생성하지 마세요. 오직 아래 실제 메뉴만 추천하세요.
+2. 절대 새로운 옵션을 생성하지 마세요. 오직 아래 실제 옵션만 안내하세요.
+3. 메뉴나 옵션에 대한 질문이면 반드시 아래 데이터베이스의 내용만 사용하세요.
+
+📋 실제 메뉴 데이터베이스:
+
+쌀국수 카테고리 (옵션 없음):
+- 차돌양지쌀국수 (9,900원)
+- 한우쌀국수 (10,900원)  
+- 모듬 쌀국수 (11,900원)
+
+돈카츠,카레 카테고리 (옵션 있음):
+- 프리미엄 로스카츠(등심) (11,900원)
+- 프리미엄 히레츠(안심) (12,900원)
+- 통모짜치즈돈카츠 (12,900원)
+- 시그니처 경양식돈카츠 (11,900원)
+- 모듬카츠A[등심+안심] (13,900원)
+- 모듬카츠B[등심+치즈] (13,900원)
+- 등심카츠 카레라이스 (10,900원)
+- 안심카츠 카레라이스 (12,900원)
+- 통모짜치즈 카레라이스 (12,900원)
+
+1인정식 카테고리 (옵션 있음):
+- 정식A(쌀국수S+경양식) (11,900원)
+- 정식B(쌀국수S+등심) (11,900원)
+- 정식C(쌀국수S+안심) (11,900원)
+- 정식D(쌀국수S+치즈) (11,900원)
+
+옵션 정보:
+돈카츠,카레 메뉴 옵션: 밥많이(무료), 공깃밥추가(1,000원), 레몬추가(500원), 트러플오일추가(500원)
+1인정식 메뉴 옵션: 쌀국수사이즈업(3,000원), 밥추가(1,000원), 고수추가(500원), 레몬추가(500원), 트러플오일추가(500원)
+
+고객이 메뉴 관련 질문을 하면 위 실제 메뉴만 추천하고,
+일반적인 질문(가격, 위치, 영업시간, 추천 등)에 대해서도 친근하게 답변해주세요.
+
+⚠️ 절대 금지사항:
+- 새로운 메뉴명 생성
+- 새로운 옵션명 생성  
+- 데이터베이스에 없는 메뉴나 옵션 언급
+- 가격 정보 임의 변경`
                 },
                 {
                     role: 'user',
                     content: userInput
                 }
             ],
-            max_tokens: 4096,
-            temperature: 1,
-            top_p: 1
+            max_tokens: 1000, // 토큰 수 줄임
+            temperature: 0.7, // 온도 낮춤
+            top_p: 0.9
         };
         
         console.log('요청 본문:', JSON.stringify(requestBody, null, 2));
@@ -648,6 +687,16 @@ async function callGPTAPI(userInput) {
         if (!response.ok) {
             const errorText = await response.text();
             console.error('API 응답 오류:', errorText);
+            
+            // 429 오류 (Too Many Requests)인 경우 재시도
+            if (response.status === 429 && retryCount < maxRetries) {
+                const delay = baseDelay * Math.pow(2, retryCount); // 지수 백오프
+                console.log(`429 오류 - ${delay}ms 후 재시도 (${retryCount + 1}/${maxRetries})`);
+                
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return await callGPTAPI(userInput, retryCount + 1);
+            }
+            
             throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
 
@@ -664,12 +713,31 @@ async function callGPTAPI(userInput) {
         }
     } catch (error) {
         console.error('GitHub API 호출 오류:', error);
-        return '죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.';
+        
+        // 네트워크 오류나 기타 오류인 경우 재시도
+        if (retryCount < maxRetries && !error.message.includes('HTTP error! status: 429')) {
+            const delay = baseDelay * Math.pow(2, retryCount);
+            console.log(`네트워크 오류 - ${delay}ms 후 재시도 (${retryCount + 1}/${maxRetries})`);
+            
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return await callGPTAPI(userInput, retryCount + 1);
+        }
+        
+        return '죄송합니다. 잠시 문제가 생겼네요. 메뉴에 대해 궁금한 것이 있으시면 말씀해주세요.';
     }
 }
 
 // 6. 음성 입력 처리
 async function processVoiceInput(transcript) {
+    // 중복 처리 방지
+    if (isProcessing) {
+        console.log('⏳ 이미 처리 중 - processVoiceInput 중복 호출 방지');
+        return;
+    }
+    
+    isProcessing = true;
+    console.log('🔄 음성 입력 처리 시작:', transcript);
+    
     try {
         // 음성안내 프로세스에서 사용자 입력 처리
         if (isVoiceGuideActive) {
@@ -707,6 +775,10 @@ async function processVoiceInput(transcript) {
     } catch (error) {
         console.error('음성 입력 처리 오류:', error);
         speakText('죄송합니다. 처리 중 오류가 발생했습니다.');
+    } finally {
+        // 처리 완료 후 플래그 해제
+        isProcessing = false;
+        console.log('✅ 음성 입력 처리 완료');
     }
 }
 
@@ -813,7 +885,7 @@ async function handleUserInput(userInput) {
                     message += `세번째 우측하단에 결제하기 버튼을 눌러주시고 키오스크에 카드를 넣어주세요.`;
                 }
                 
-                message += `\n\n다시 설명이 필요하시면 '다시설명해줘' 또는 '다시'라고 말씀해주세요.`;
+                message += `\n\n다시 들으시려면 다시라고 말씀해주세요.`;
                 
                 const cleanMessage = cleanTextForSpeech(message);
                 speakText(cleanMessage);
@@ -827,7 +899,59 @@ async function handleUserInput(userInput) {
             return;
         }
         
-        // 4. 불완전한 문장 처리 (GPT API 호출하지 않음)
+        // 4. 메뉴 카테고리 처리 (GPT API 호출하지 않음)
+        if (lowerInput.includes('쌀국수') || lowerInput.includes('쌀국') || 
+            lowerInput.includes('국수') || lowerInput.includes('면')) {
+            
+            console.log('쌀국수 카테고리 감지 - GPT API 호출하지 않음');
+            const phoResponse = "어떤 쌀국수를 원하세요? 차돌양지쌀국수, 한우쌀국수, 모듬 쌀국수가 있습니다. 주문하시고 싶은 메뉴를 알려달세요.";
+            speakText(phoResponse);
+            showResponse(userInput, phoResponse);
+            isWaitingForUserInput = true;
+            return;
+        }
+        
+        if (lowerInput.includes('돈까스') || lowerInput.includes('돈카츠') || 
+            lowerInput.includes('카츠') || lowerInput.includes('카레')) {
+            
+            console.log('돈까스/카레 카테고리 감지 - GPT API 호출하지 않음');
+            const katsuResponse = "어떤 돈까스를 원하세요? 프리미엄 로스카츠(등심), 프리미엄 히레츠(안심), 통모짜치즈돈카츠, 시그니처 경양식돈카츠, 모듬카츠A[등심+안심], 모듬카츠B[등심+치즈]가 있습니다. 주문하시고 싶은 메뉴를 알려달세요.";
+            speakText(katsuResponse);
+            showResponse(userInput, katsuResponse);
+            isWaitingForUserInput = true;
+            return;
+        }
+        
+        // 4-1. 돈까스/카레 개별 메뉴 처리 (GPT API 호출하지 않음)
+        const katsuMenuNames = [
+            '프리미엄 로스카츠(등심)', '프리미엄 히레츠(안심)', '통모짜치즈돈카츠', 
+            '시그니처 경양식돈카츠', '모듬카츠A[등심+안심]', '모듬카츠B[등심+치즈]',
+            '등심카츠 카레라이스', '안심카츠 카레라이스', '통모짜치즈 카레라이스'
+        ];
+        
+        const foundKatsuMenu = katsuMenuNames.find(menuName => 
+            lowerInput.includes(menuName.toLowerCase().replace(/\s+/g, '')) ||
+            menuName.toLowerCase().replace(/\s+/g, '').includes(lowerInput.replace(/\s+/g, ''))
+        );
+        
+        if (foundKatsuMenu) {
+            console.log('돈까스/카레 개별 메뉴 감지 - GPT API 호출하지 않음:', foundKatsuMenu);
+            handleSpecificMenuOrder(foundKatsuMenu);
+            isWaitingForUserInput = true;
+            return;
+        }
+        
+        if (lowerInput.includes('정식') || lowerInput.includes('1인정식')) {
+            
+            console.log('1인정식 카테고리 감지 - GPT API 호출하지 않음');
+            const setResponse = "어떤 정식을 원하세요? 정식A(쌀국수S+경양식), 정식B(쌀국수S+등심), 정식C(쌀국수S+안심), 정식D(쌀국수S+치즈)가 있습니다. 주문하시고 싶은 메뉴를 알려달세요.";
+            speakText(setResponse);
+            showResponse(userInput, setResponse);
+            isWaitingForUserInput = true;
+            return;
+        }
+        
+        // 5. 불완전한 문장 처리 (GPT API 호출하지 않음)
         if (lowerInput.includes('주문하고') || lowerInput.includes('주문하') || 
             lowerInput.includes('주문') || lowerInput.includes('하고싶')) {
             
@@ -843,7 +967,7 @@ async function handleUserInput(userInput) {
             return;
         }
         
-        // 5. 기타 사용자 입력 처리 (GPT API 호출)
+        // 6. 기타 사용자 입력 처리 (GPT API 호출)
         console.log('기타 사용자 입력 감지 - GPT API 호출');
         const response = await callGPTAPI(userInput);
         
@@ -887,11 +1011,16 @@ function cleanTextForSpeech(text) {
         .replace(/\*(.*?)\*/g, '$1')      // *텍스트* → 텍스트
         .replace(/^- /gm, '')             // - 시작하는 줄에서 - 제거
         .replace(/\n\n+/g, '\n')          // 여러 줄바꿈을 하나로
-        .replace(/1번째/g, '첫번째')       // 1번째 → 첫번째
-        .replace(/2번째/g, '두번째')       // 2번째 → 두번째
-        .replace(/3번째/g, '세번째')       // 3번째 → 세번째
-        .replace(/4번째/g, '네번째')       // 4번째 → 네번째
-        .replace(/5번째/g, '다섯번째')     // 5번째 → 다섯번째
+        .replace(/1번째/g, '첫번째,')      // 1번째 → 첫번째,
+        .replace(/2번째/g, '두번째,')      // 2번째 → 두번째,
+        .replace(/3번째/g, '세번째,')      // 3번째 → 세번째,
+        .replace(/4번째/g, '네번째,')      // 4번째 → 네번째,
+        .replace(/5번째/g, '다섯번째,')    // 5번째 → 다섯번째,
+        .replace(/첫번째 /g, '첫번째, ')   // 첫번째 → 첫번째,
+        .replace(/두번째 /g, '두번째, ')   // 두번째 → 두번째,
+        .replace(/세번째 /g, '세번째, ')   // 세번째 → 세번째,
+        .replace(/네번째 /g, '네번째, ')   // 네번째 → 네번째,
+        .replace(/마지막으로 /g, '마지막으로, ') // 마지막으로 → 마지막으로,
         .trim();
 }
 
@@ -908,13 +1037,68 @@ function isDatabaseMenuName(transcript) {
         '정식A(쌀국수S+경양식)', '정식B(쌀국수S+등심)', '정식C(쌀국수S+안심)', '정식D(쌀국수S+치즈)'
     ];
     
-    // 공백을 제거한 입력과 메뉴명 비교
-    const normalizedInput = lowerTranscript.replace(/\s+/g, '');
+    // 입력 정규화 (대소문자, 공백, 특수문자 제거)
+    const normalizedInput = lowerTranscript
+        .replace(/\s+/g, '')           // 공백 제거
+        .replace(/[()\[\]+]/g, '')     // 괄호, 대괄호, 플러스 제거
+        .replace(/[가-힣]/g, match => {
+            // 한글 발음 유사성 고려
+            const similarChars = {
+                'ㅏ': ['ㅓ', 'ㅗ', 'ㅜ'],
+                'ㅓ': ['ㅏ', 'ㅗ', 'ㅜ'],
+                'ㅗ': ['ㅏ', 'ㅓ', 'ㅜ'],
+                'ㅜ': ['ㅏ', 'ㅓ', 'ㅗ'],
+                'ㅡ': ['ㅓ', 'ㅜ'],
+                'ㅣ': ['ㅔ', 'ㅐ'],
+                'ㅔ': ['ㅣ', 'ㅐ'],
+                'ㅐ': ['ㅣ', 'ㅔ']
+            };
+            return match;
+        })
+        // 어눌한 발음 패턴 정규화
+        .replace(/통모짜치즈/gi, '통모짜치즈')
+        .replace(/돈카츠/gi, '돈카츠')
+        .replace(/돈까스/gi, '돈카츠')
+        .replace(/카츠/gi, '돈카츠')
+        .replace(/프리미엄/gi, '프리미엄')
+        .replace(/로스카츠/gi, '로스카츠')
+        .replace(/히레츠/gi, '히레츠')
+        .replace(/시그니처/gi, '시그니처')
+        .replace(/경양식/gi, '경양식')
+        .replace(/모듬카츠/gi, '모듬카츠')
+        .replace(/등심/gi, '등심')
+        .replace(/안심/gi, '안심')
+        .replace(/치즈/gi, '치즈')
+        .replace(/카레라이스/gi, '카레라이스')
+        .replace(/정식/gi, '정식')
+        .replace(/쌀국수/gi, '쌀국수')
+        .replace(/차돌양지/gi, '차돌양지')
+        .replace(/한우/gi, '한우')
+        .replace(/모듬/gi, '모듬');
     
-    // 메뉴명이 포함되어 있는지 확인 (부분 매칭, 공백 무시)
+    // 메뉴명이 포함되어 있는지 확인 (유연한 매칭)
     return menuNames.some(menuName => {
-        const normalizedMenuName = menuName.toLowerCase().replace(/\s+/g, '');
-        return normalizedInput.includes(normalizedMenuName) || normalizedMenuName.includes(normalizedInput);
+        const normalizedMenuName = menuName.toLowerCase()
+            .replace(/\s+/g, '')           // 공백 제거
+            .replace(/[()\[\]+]/g, '');    // 괄호, 대괄호, 플러스 제거
+        
+        // 정확한 매칭
+        if (normalizedInput === normalizedMenuName) {
+            return true;
+        }
+        
+        // 부분 매칭 (입력이 메뉴명에 포함되거나 그 반대)
+        if (normalizedInput.includes(normalizedMenuName) || normalizedMenuName.includes(normalizedInput)) {
+            return true;
+        }
+        
+        // 유사성 매칭 (80% 이상 일치)
+        const similarity = calculateSimilarity(normalizedInput, normalizedMenuName);
+        if (similarity >= 0.8) {
+            return true;
+        }
+        
+        return false;
     });
 }
 
@@ -931,18 +1115,97 @@ function findMenuNameInInput(transcript) {
         '정식A(쌀국수S+경양식)', '정식B(쌀국수S+등심)', '정식C(쌀국수S+안심)', '정식D(쌀국수S+치즈)'
     ];
     
-    // 공백을 제거한 입력과 메뉴명 비교
-    const normalizedInput = lowerTranscript.replace(/\s+/g, '');
+    // 입력 정규화 (대소문자, 공백, 특수문자 제거)
+    const normalizedInput = lowerTranscript
+        .replace(/\s+/g, '')           // 공백 제거
+        .replace(/[()\[\]+]/g, '')     // 괄호, 대괄호, 플러스 제거
+        // 어눌한 발음 패턴 정규화
+        .replace(/통모짜치즈/gi, '통모짜치즈')
+        .replace(/돈카츠/gi, '돈카츠')
+        .replace(/돈까스/gi, '돈카츠')
+        .replace(/카츠/gi, '돈카츠')
+        .replace(/프리미엄/gi, '프리미엄')
+        .replace(/로스카츠/gi, '로스카츠')
+        .replace(/히레츠/gi, '히레츠')
+        .replace(/시그니처/gi, '시그니처')
+        .replace(/경양식/gi, '경양식')
+        .replace(/모듬카츠/gi, '모듬카츠')
+        .replace(/등심/gi, '등심')
+        .replace(/안심/gi, '안심')
+        .replace(/치즈/gi, '치즈')
+        .replace(/카레라이스/gi, '카레라이스')
+        .replace(/정식/gi, '정식')
+        .replace(/쌀국수/gi, '쌀국수')
+        .replace(/차돌양지/gi, '차돌양지')
+        .replace(/한우/gi, '한우')
+        .replace(/모듬/gi, '모듬');
     
-    // 메뉴명이 포함되어 있는지 확인하고 해당 메뉴명 반환 (공백 무시)
+    // 메뉴명이 포함되어 있는지 확인하고 해당 메뉴명 반환 (유연한 매칭)
     for (const menuName of menuNames) {
-        const normalizedMenuName = menuName.toLowerCase().replace(/\s+/g, '');
+        const normalizedMenuName = menuName.toLowerCase()
+            .replace(/\s+/g, '')           // 공백 제거
+            .replace(/[()\[\]+]/g, '');    // 괄호, 대괄호, 플러스 제거
+        
+        // 정확한 매칭
+        if (normalizedInput === normalizedMenuName) {
+            return menuName;
+        }
+        
+        // 부분 매칭 (입력이 메뉴명에 포함되거나 그 반대)
         if (normalizedInput.includes(normalizedMenuName) || normalizedMenuName.includes(normalizedInput)) {
+            return menuName;
+        }
+        
+        // 유사성 매칭 (80% 이상 일치)
+        const similarity = calculateSimilarity(normalizedInput, normalizedMenuName);
+        if (similarity >= 0.8) {
             return menuName;
         }
     }
     
     return null;
+}
+
+// 문자열 유사성 계산 함수 (레벤슈타인 거리 기반)
+function calculateSimilarity(str1, str2) {
+    if (str1 === str2) return 1.0;
+    if (str1.length === 0 || str2.length === 0) return 0.0;
+    
+    const matrix = [];
+    const len1 = str1.length;
+    const len2 = str2.length;
+    
+    // 2차원 배열 초기화
+    for (let i = 0; i <= len1; i++) {
+        matrix[i] = [];
+        for (let j = 0; j <= len2; j++) {
+            matrix[i][j] = 0;
+        }
+    }
+    
+    // 첫 번째 행과 열 초기화
+    for (let i = 0; i <= len1; i++) {
+        matrix[i][0] = i;
+    }
+    for (let j = 0; j <= len2; j++) {
+        matrix[0][j] = j;
+    }
+    
+    // 레벤슈타인 거리 계산
+    for (let i = 1; i <= len1; i++) {
+        for (let j = 1; j <= len2; j++) {
+            const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+            matrix[i][j] = Math.min(
+                matrix[i - 1][j] + 1,      // 삭제
+                matrix[i][j - 1] + 1,      // 삽입
+                matrix[i - 1][j - 1] + cost // 치환
+            );
+        }
+    }
+    
+    const distance = matrix[len1][len2];
+    const maxLength = Math.max(len1, len2);
+    return 1 - (distance / maxLength);
 }
 
 // 특정 메뉴 주문 안내 함수
@@ -960,31 +1223,19 @@ function handleSpecificMenuOrder(menuName) {
     
     // 주문 안내 메시지 생성
     let message = `${menuName} 주문 방법을 안내해드리겠습니다.\n\n`;
-    message += `가격: ${menuInfo.price.toLocaleString()}원\n\n`;
     
-    // 옵션이 있는 메뉴인지 확인
-    if (menuInfo.options && menuInfo.options.length > 0) {
-        message += `옵션 선택 가능:\n`;
-        menuInfo.options.forEach((option, index) => {
-            message += `${index + 1}번째 ${option.name} (${option.price.toLocaleString()}원)\n`;
-        });
-        message += `\n`;
-    }
-    
-    // 주문 절차 안내
+    // 주문 절차 안내 (procedures의 instruction을 그대로 사용)
     if (menuInfo.procedures && menuInfo.procedures.length > 0) {
-        message += `주문 방법:\n`;
         menuInfo.procedures.forEach((procedure, index) => {
-            message += `${index + 1}번째 ${procedure.instruction}\n`;
+            message += `${procedure.instruction}\n`;
         });
     } else {
-        message += `주문 방법:\n`;
         message += `첫번째 쌀국수에서 ${menuName}을 눌러주세요.\n`;
         message += `두번째 하단에 메뉴가 담긴것이 보이면 + 버튼을 눌러 수량을 추가하실 수 있습니다.\n`;
         message += `세번째 우측하단에 결제하기 버튼을 눌러주시고 키오스크에 카드를 넣어주세요.`;
     }
     
-    message += `\n\n다시 설명이 필요하시면 '다시설명해줘' 또는 '다시'라고 말씀해주세요.`;
+    message += `\n\n다시 들으시려면 다시라고 말씀해주세요.`;
     
     // 이전 메뉴 설명 저장
     lastMenuExplanation = {
@@ -1003,75 +1254,142 @@ function getMenuInfo(menuName) {
     // database.py의 메뉴 데이터 (실제로는 API에서 가져와야 함)
     const menuData = {
         '차돌양지쌀국수': {
-            price: 12000,
-            options: [
-                { name: '면 추가', price: 2000 },
-                { name: '고기 추가', price: 3000 }
-            ],
+            price: 9900,
+            options: null,
             procedures: [
-                { instruction: '쌀국수 카테고리에서 차돌양지쌀국수를 선택하세요' },
-                { instruction: '옵션을 선택하세요 (면 추가, 고기 추가 등)' },
-                { instruction: '수량을 선택하고 결제하세요' }
+                { instruction: '첫번째 상단 메뉴에서 쌀국수 버튼을 누르세요' },
+                { instruction: '두번째 차돌양지쌀국수 버튼을 선택하세요' },
+                { instruction: '세번째 하단의 주문담기 버튼을 누르세요' },
+                { instruction: '마지막으로 우측 하단에 결제하기 버튼을 누르시고 카드를 키오스크에 넣어주세요' }
             ]
         },
         '한우쌀국수': {
-            price: 15000,
-            options: [
-                { name: '면 추가', price: 2000 },
-                { name: '고기 추가', price: 5000 }
-            ],
+            price: 10900,
+            options: null,
             procedures: [
-                { instruction: '쌀국수 카테고리에서 한우쌀국수를 선택하세요' },
-                { instruction: '옵션을 선택하세요 (면 추가, 고기 추가 등)' },
-                { instruction: '수량을 선택하고 결제하세요' }
+                { instruction: '첫번째 상단 메뉴에서 쌀국수 버튼을 누르세요' },
+                { instruction: '두번째 한우쌀국수 버튼을 선택하세요' },
+                { instruction: '세번째 하단의 주문담기 버튼을 누르세요' },
+                { instruction: '마지막으로 우측 하단에 결제하기 버튼을 누르시고 카드를 키오스크에 넣어주세요' }
             ]
         },
         '모듬 쌀국수': {
-            price: 13000,
-            options: [
-                { name: '면 추가', price: 2000 },
-                { name: '고기 추가', price: 3000 }
-            ],
+            price: 11900,
+            options: null,
             procedures: [
-                { instruction: '쌀국수 카테고리에서 모듬 쌀국수를 선택하세요' },
-                { instruction: '옵션을 선택하세요 (면 추가, 고기 추가 등)' },
-                { instruction: '수량을 선택하고 결제하세요' }
+                { instruction: '첫번째 상단 메뉴에서 쌀국수 버튼을 누르세요' },
+                { instruction: '두번째 모듬 쌀국수 버튼을 선택하세요' },
+                { instruction: '세번째 하단의 주문담기 버튼을 누르세요' },
+                { instruction: '마지막으로 우측 하단에 결제하기 버튼을 누르시고 카드를 키오스크에 넣어주세요' }
             ]
         },
         '프리미엄 로스카츠(등심)': {
-            price: 18000,
+            price: 11900,
             options: [
-                { name: '밥 추가', price: 1000 },
-                { name: '샐러드 추가', price: 2000 }
+                { name: '밥많이', price: 0 },
+                { name: '공깃밥 추가', price: 1000 },
+                { name: '레몬추가', price: 500 },
+                { name: '트러플오일 추가 주문', price: 500 }
             ],
             procedures: [
-                { instruction: '돈카츠,카레 카테고리에서 프리미엄 로스카츠(등심)를 선택하세요' },
-                { instruction: '옵션을 선택하세요 (밥 추가, 샐러드 추가 등)' },
-                { instruction: '수량을 선택하고 결제하세요' }
+                { instruction: '첫번째 상단 메뉴에서 돈카츠, 카레 버튼을 누르세요' },
+                { instruction: '두번째 프리미엄 로스카츠(등심) 버튼을 선택하세요' },
+                { instruction: '세번째 옵션을 선택하실 수 있습니다. 밥많이는 무료, 공깃밥추가는 1000원, 레몬추가는 500원, 트러플오일추가는 500원 입니다. 원하시는 옵션이 있으시면 선택해주시고 하단의 주문담기 버튼을 누르세요' },
+                { instruction: '마지막으로 우측 하단에 결제하기 버튼을 누르시고 카드를 키오스크에 넣어주세요' }
             ]
         },
         '프리미엄 히레츠(안심)': {
-            price: 19000,
+            price: 12900,
             options: [
-                { name: '밥 추가', price: 1000 },
-                { name: '샐러드 추가', price: 2000 }
+                { name: '밥많이', price: 0 },
+                { name: '공깃밥 추가', price: 1000 },
+                { name: '레몬추가', price: 500 },
+                { name: '트러플오일 추가 주문', price: 500 }
             ],
             procedures: [
-                { instruction: '돈카츠,카레 카테고리에서 프리미엄 히레츠(안심)를 선택하세요' },
-                { instruction: '옵션을 선택하세요 (밥 추가, 샐러드 추가 등)' },
-                { instruction: '수량을 선택하고 결제하세요' }
+                { instruction: '첫번째 상단 메뉴에서 돈카츠, 카레 버튼을 누르세요' },
+                { instruction: '두번째 프리미엄 히레츠(안심) 버튼을 선택하세요' },
+                { instruction: '세번째 옵션을 선택하실 수 있습니다. 밥많이는 무료, 공깃밥추가는 1000원, 레몬추가는 500원, 트러플오일추가는 500원 입니다. 원하시는 옵션이 있으시면 선택해주시고 하단의 주문담기 버튼을 누르세요' },
+                { instruction: '마지막으로 우측 하단에 결제하기 버튼을 누르시고 카드를 키오스크에 넣어주세요' }
             ]
         },
         '통모짜치즈돈카츠': {
-            price: 20000,
+            price: 12900,
             options: [
-                { name: '밥 추가', price: 1000 },
-                { name: '샐러드 추가', price: 2000 }
+                { name: '밥많이', price: 0 },
+                { name: '공깃밥 추가', price: 1000 },
+                { name: '레몬추가', price: 500 },
+                { name: '트러플오일 추가 주문', price: 500 }
             ],
             procedures: [
-                { instruction: '돈카츠,카레 카테고리에서 통모짜치즈돈카츠를 선택하세요' },
-                { instruction: '옵션을 선택하세요 (밥 추가, 샐러드 추가 등)' },
-                { instruction: '수량을 선택하고 결제하세요' }
+                { instruction: '첫번째 상단 메뉴에서 돈카츠, 카레 버튼을 누르세요' },
+                { instruction: '두번째 통모짜치즈돈카츠 버튼을 선택하세요' },
+                { instruction: '세번째 옵션을 선택하실 수 있습니다. 밥많이는 무료, 공깃밥추가는 1000원, 레몬추가는 500원, 트러플오일추가는 500원 입니다. 원하시는 옵션이 있으시면 선택해주시고 하단의 주문담기 버튼을 누르세요' },
+                { instruction: '마지막으로 우측 하단에 결제하기 버튼을 누르시고 카드를 키오스크에 넣어주세요' }
+            ]
+        },
+        '정식A(쌀국수S+경양식)': {
+            price: 11900,
+            options: [
+                { name: '쌀국수사이즈업', price: 3000 },
+                { name: '밥추가', price: 1000 },
+                { name: '고수추가', price: 500 },
+                { name: '레몬추가', price: 500 },
+                { name: '트러플오일 추가', price: 500 }
+            ],
+            procedures: [
+                { instruction: '첫번째 상단 메뉴에서 1인정식 버튼을 누르세요' },
+                { instruction: '두번째 정식A(쌀국수S+경양식) 버튼을 선택하세요' },
+                { instruction: '세번째 옵션을 선택하실 수 있습니다. 쌀국수 사이즈업은 3000원, 밥추가는 1000원, 고수추가는 500원, 레몬추가는 500원, 트러플오일추가는 500원 입니다. 원하시는 옵션이 있으시면 선택해주시고 하단의 주문담기 버튼을 누르세요' },
+                { instruction: '마지막으로 우측 하단에 결제하기 버튼을 누르시고 카드를 키오스크에 넣어주세요' }
+            ]
+        },
+        '정식B(쌀국수S+등심)': {
+            price: 10900,
+            options: [
+                { name: '쌀국수사이즈업', price: 3000 },
+                { name: '밥추가', price: 1000 },
+                { name: '고수추가', price: 500 },
+                { name: '레몬추가', price: 500 },
+                { name: '트러플오일 추가', price: 500 }
+            ],
+            procedures: [
+                { instruction: '첫번째 상단 메뉴에서 1인정식 버튼을 누르세요' },
+                { instruction: '두번째 정식B(쌀국수S+등심) 버튼을 선택하세요' },
+                { instruction: '세번째 옵션을 선택하실 수 있습니다. 쌀국수 사이즈업은 3000원, 밥추가는 1000원, 고수추가는 500원, 레몬추가는 500원, 트러플오일추가는 500원 입니다. 원하시는 옵션이 있으시면 선택해주시고 하단의 주문담기 버튼을 누르세요' },
+                { instruction: '마지막으로 우측 하단에 결제하기 버튼을 누르시고 카드를 키오스크에 넣어주세요' }
+            ]
+        },
+        '정식C(쌀국수S+안심)': {
+            price: 12900,
+            options: [
+                { name: '쌀국수사이즈업', price: 3000 },
+                { name: '밥추가', price: 1000 },
+                { name: '고수추가', price: 500 },
+                { name: '레몬추가', price: 500 },
+                { name: '트러플오일 추가', price: 500 }
+            ],
+            procedures: [
+                { instruction: '첫번째 상단 메뉴에서 1인정식 버튼을 누르세요' },
+                { instruction: '두번째 정식C(쌀국수S+안심) 버튼을 선택하세요' },
+                { instruction: '세번째 옵션을 선택하실 수 있습니다. 쌀국수 사이즈업은 3000원, 밥추가는 1000원, 고수추가는 500원, 레몬추가는 500원, 트러플오일추가는 500원 입니다. 원하시는 옵션이 있으시면 선택해주시고 하단의 주문담기 버튼을 누르세요' },
+                { instruction: '마지막으로 우측 하단에 결제하기 버튼을 누르시고 카드를 키오스크에 넣어주세요' }
+            ]
+        },
+        '정식D(쌀국수S+치즈)': {
+            price: 12900,
+            options: [
+                { name: '쌀국수사이즈업', price: 3000 },
+                { name: '밥추가', price: 1000 },
+                { name: '고수추가', price: 500 },
+                { name: '레몬추가', price: 500 },
+                { name: '트러플오일 추가', price: 500 }
+            ],
+            procedures: [
+                { instruction: '첫번째 상단 메뉴에서 1인정식 버튼을 누르세요' },
+                { instruction: '두번째 정식D(쌀국수S+치즈) 버튼을 선택하세요' },
+                { instruction: '세번째 옵션을 선택하실 수 있습니다. 쌀국수 사이즈업은 3000원, 밥추가는 1000원, 고수추가는 500원, 레몬추가는 500원, 트러플오일추가는 500원 입니다. 원하시는 옵션이 있으시면 선택해주시고 하단의 주문담기 버튼을 누르세요' },
+                { instruction: '마지막으로 우측 하단에 결제하기 버튼을 누르시고 카드를 키오스크에 넣어주세요' }
             ]
         }
         // 다른 메뉴들도 추가 가능
@@ -1281,30 +1599,8 @@ function handleSpecificPhoMenuOrder(userInput) {
             menuPrice = 9900;
         }
         
-        // 주문 절차 안내 메시지 생성
-        let message = `${menuName}을 선택하셨군요! 가격은 ${menuPrice.toLocaleString()}원입니다.\n\n`;
-        message += `주문 방법을 안내해드리겠습니다:\n\n`;
-        message += `첫번째 상단 메뉴에서 '쌀국수' 버튼을 누르세요.\n`;
-        message += `두번째 '${menuName}' 버튼을 선택하세요.\n`;
-        message += `세번째 하단에 메뉴가 담긴것이 보이면 + 버튼을 눌러 수량을 추가하실 수 있습니다.\n`;
-        message += `네번째 우측하단에 결제하기 버튼을 눌러주시고 키오스크에 카드를 넣어주세요.\n\n`;
-        message += `다시 설명이 필요하시면 '다시설명해줘' 또는 '다시'라고 말씀해주세요.`;
-        
-        // 이전 메뉴 설명 저장 (다시 설명 기능용)
-        lastMenuExplanation = {
-            menuName: menuName,
-            price: menuPrice,
-            procedures: [
-                { instruction: "상단 메뉴에서 '쌀국수' 버튼을 누르세요." },
-                { instruction: `'${menuName}' 버튼을 선택하세요.` },
-                { instruction: "하단에 메뉴가 담긴것이 보이면 + 버튼을 눌러 수량을 추가하실 수 있습니다." },
-                { instruction: "우측하단에 결제하기 버튼을 눌러주시고 키오스크에 카드를 넣어주세요." }
-            ]
-        };
-        
-        const cleanMessage = cleanTextForSpeech(message);
-        speakText(cleanMessage);
-        showResponse(userInput, cleanMessage);
+        // getMenuInfo를 사용하여 일관된 주문 안내 제공
+        handleSpecificMenuOrder(menuName);
         
     } catch (error) {
         console.error('쌀국수 메뉴 주문 안내 오류:', error);
@@ -1314,86 +1610,45 @@ function handleSpecificPhoMenuOrder(userInput) {
     }
 }
 
-// 특정 메뉴 주문 안내 함수 (database.py의 실제 주문 절차 사용)
+// 특정 메뉴 주문 안내 함수 (getMenuInfo의 procedures 사용)
 function handleSpecificMenuOrder(menuName) {
     console.log('특정 메뉴 주문 안내:', menuName);
     
-    try {
-        // 메뉴 검색
-        const searchResults = searchMenu(menuName);
-        
-        if (searchResults.length === 0) {
-            const message = "죄송합니다. 해당 메뉴를 찾을 수 없습니다. 다시 말씀해주시거나 '메뉴'라고 말해주세요.";
-            speakText(message);
-            return;
-        }
-        
-        // 첫 번째 검색 결과 사용
-        const menu = searchResults[0];
-        
-        // 메뉴 정보와 가격 포함한 주문 안내
-        let message = `${menu.name} 주문 방법을 안내해드리겠습니다.\n\n`;
-        message += `가격: ${menu.price.toLocaleString()}원\n\n`;
-        
-        // 옵션 정보 추가
-        if (menu.hasOptions && menu.options && menu.options.length > 0) {
-            message += `옵션: ${menu.options.join(', ')}\n\n`;
-        }
-        
-        // 데이터베이스의 실제 주문 절차 사용
-        const procedures = PROCEDURES_DATABASE[menu.id];
-        
-        if (procedures && procedures.length > 0) {
-            // 데이터베이스의 주문 절차 사용
-            message += `주문 방법:\n`;
-            procedures.forEach((procedure, index) => {
-                message += `${index + 1}번째 ${procedure.instruction}\n`;
-            });
-            
-            // 옵션이 있는 메뉴의 경우 옵션 선택 안내 추가
-            if (menu.hasOptions && menu.options && menu.options.length > 0) {
-                message += `\n옵션 선택: 메뉴 선택 후 원하는 옵션을 추가로 선택하실 수 있습니다.`;
-            }
-        } else {
-            // 기본 주문 안내 (fallback)
-            message += `주문 방법:\n`;
-            message += `첫번째 ${menu.category}에서 ${menu.name}을 눌러주세요.\n`;
-            
-            // 옵션이 있는 메뉴의 경우 옵션 선택 안내 추가
-            if (menu.hasOptions && menu.options && menu.options.length > 0) {
-                message += `두번째 원하는 옵션을 선택하세요.\n`;
-                message += `세번째 하단에 메뉴가 담긴것이 보이면 + 버튼을 눌러 수량을 추가하실 수 있습니다.\n`;
-                message += `네번째 우측하단에 결제하기 버튼을 눌러주시고 키오스크에 카드를 넣어주세요.`;
-            } else {
-                message += `두번째 하단에 메뉴가 담긴것이 보이면 + 버튼을 눌러 수량을 추가하실 수 있습니다.\n`;
-                message += `세번째 우측하단에 결제하기 버튼을 눌러주시고 키오스크에 카드를 넣어주세요.`;
-            }
-        }
-        
-        message += `\n\n다시 설명이 필요하시면 '다시설명해줘' 또는 '다시'라고 말씀해주세요.`;
-        
-        // 이전 설명 저장 (다시 설명을 위해)
-        lastMenuExplanation = {
-            menuName: menu.name,
-            price: menu.price,
-            procedures: procedures || []
-        };
-        
-        const cleanMessage = cleanTextForSpeech(message);
-        speakText(cleanMessage);
-        
-        setTimeout(() => {
-            isWaitingForUserInput = true;
-            startListening();
-        }, 5000);
-        
-    } catch (error) {
-        console.error('메뉴 주문 안내 오류:', error);
-        const message = "죄송합니다. 메뉴 정보를 가져오는 중 오류가 발생했습니다. 다시 말씀해주세요.";
+    // 메뉴 정보 가져오기
+    const menuInfo = getMenuInfo(menuName);
+    if (!menuInfo) {
+        const message = "해당 메뉴를 찾을 수 없습니다. 메뉴를 다시 확인해주세요.";
         speakText(message);
-        
-        isWaitingForUserInput = true;
+        showResponse(menuName, message);
+        return;
     }
+    
+    // 주문 안내 메시지 생성
+    let message = `${menuName} 주문 방법을 안내해드리겠습니다.\n\n`;
+    
+    // 주문 절차 안내 (procedures의 instruction을 그대로 사용)
+    if (menuInfo.procedures && menuInfo.procedures.length > 0) {
+        menuInfo.procedures.forEach((procedure, index) => {
+            message += `${procedure.instruction}\n`;
+        });
+    } else {
+        message += `첫번째 쌀국수에서 ${menuName}을 눌러주세요.\n`;
+        message += `두번째 하단에 메뉴가 담긴것이 보이면 + 버튼을 눌러 수량을 추가하실 수 있습니다.\n`;
+        message += `세번째 우측하단에 결제하기 버튼을 눌러주시고 키오스크에 카드를 넣어주세요.`;
+    }
+    
+    message += `\n\n다시 들으시려면 다시라고 말씀해주세요.`;
+    
+    // 이전 메뉴 설명 저장
+    lastMenuExplanation = {
+        menuName: menuName,
+        price: menuInfo.price,
+        procedures: menuInfo.procedures || []
+    };
+    
+    const cleanMessage = cleanTextForSpeech(message);
+    speakText(cleanMessage);
+    showResponse(menuName, cleanMessage);
 }
 
 function startListening() {
@@ -1409,17 +1664,35 @@ function startListening() {
     console.log('🎤 음성 인식 시작');
     
     if (recognition) {
-        // 이미 인식 중이면 중단 후 재시작
+        // 이미 인식 중이면 무시 (중복 시작 방지)
         if (isRecording) {
-            console.log('🔄 이미 인식 중 - 중단 후 재시작');
-            recognition.stop();
-            setTimeout(() => {
-                console.log('🔄 재시작 실행');
-                recognition.start();
-            }, 100);
-        } else {
-            console.log('🆕 새로운 음성 인식 시작');
+            console.log('⏳ 이미 인식 중 - 중복 시작 방지');
+            return;
+        }
+        
+        console.log('🆕 새로운 음성 인식 시작');
+        try {
             recognition.start();
+            isRecording = true;
+            console.log('✅ 음성 인식 시작 성공');
+        } catch (error) {
+            console.error('❌ 음성 인식 시작 실패:', error);
+            isRecording = false;
+            
+            // InvalidStateError인 경우 잠시 후 재시도
+            if (error.name === 'InvalidStateError') {
+                console.log('🔄 InvalidStateError - 500ms 후 재시도');
+                setTimeout(() => {
+                    try {
+                        recognition.start();
+                        isRecording = true;
+                        console.log('✅ 음성 인식 재시도 성공');
+                    } catch (retryError) {
+                        console.error('❌ 음성 인식 재시도 실패:', retryError);
+                        isRecording = false;
+                    }
+                }, 500);
+            }
         }
     } else {
         console.error('❌ 음성 인식 객체가 없습니다');
@@ -1568,20 +1841,23 @@ function showResponse(userInput, gptResponse) {
         </div>
     `;
     
-    // 스타일 추가 - 화면 하단에 고정
+    // 스타일 추가 - 화면 오른쪽에 고정
     responseDiv.style.cssText = `
         position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
+        top: 50%;
+        right: 20px;
+        transform: translateY(-50%);
         background: rgba(0, 0, 0, 0.9);
         color: white;
         padding: 15px 20px;
         border-radius: 10px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         z-index: 1000;
-        max-width: 90%;
-        text-align: center;
+        max-width: 400px;
+        min-width: 300px;
+        max-height: 80vh;
+        overflow-y: auto;
+        text-align: left;
         font-size: 14px;
         line-height: 1.4;
         backdrop-filter: blur(10px);
