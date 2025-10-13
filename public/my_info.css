@@ -1,0 +1,249 @@
+/* ======== 기본 스타일 (menu.css에서 복사) ======== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #333;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.mobile-container {
+    width: 390px;
+    height: 844px;
+    background-color: #f4f4f8;
+    border: 8px solid #111;
+    border-radius: 40px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.page-header {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    color: #0D2A5C;
+}
+
+.page-header img {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+}
+
+.page-header h1 {
+    font-size: 20px;
+}
+
+.content {
+    padding: 0 20px;
+    flex-grow: 1;
+}
+
+.bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    background-color: white;
+    border-top: 1px solid #eee;
+    padding: 10px 0;
+    height: 80px;
+    align-items: center;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: gray;
+    font-size: 12px;
+}
+
+.nav-item img {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 4px;
+}
+
+.nav-item.active {
+    color: #0D2A5C;
+    font-weight: bold;
+}
+
+
+/* ======== '내 정보' 페이지 전용 스타일 ======== */
+
+.settings-list {
+    margin-top: 20px;
+}
+
+.settings-button {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    cursor: pointer;
+    text-align: left;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.settings-button img {
+    width: 28px;
+    height: 28px;
+    margin-right: 15px;
+}
+
+
+/* ======== 모달 관련 스타일 (menu.css에서 그대로 복사) ======== */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.6);
+    display: none; /* 평소에는 숨김 */
+    z-index: 10;
+}
+
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    border-radius: 20px;
+    padding: 20px;
+    width: 350px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    display: none; /* 평소에는 숨김 */
+    z-index: 20;
+}
+
+.modal-overlay.active,
+.modal.active {
+    display: block; /* JS로 active 클래스가 추가되면 보이도록 설정 */
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    color: #0D2A5C;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.close-button img {
+    width: 24px;
+    height: 24px;
+}
+
+.modal-subtitle {
+    font-size: 16px;
+    color: gray;
+    margin-bottom: 30px;
+}
+
+.slider-container {
+    padding: 0 10px;
+}
+
+.slider-bar-wrapper {
+    position: relative;
+    height: 30px;
+    display: flex;
+    align-items: center;
+}
+
+.slider-track {
+    width: 100%;
+    height: 6px;
+    background-color: #e0e0e0;
+    border-radius: 3px;
+}
+
+.slider-points {
+    position: absolute;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+
+.slider-point {
+    width: 24px;
+    height: 24px;
+    background-color: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.slider-point.active {
+    background-color: #0D2A5C;
+    border-color: #0D2A5C;
+}
+
+.slider-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 16px;
+    color: #0D2A5C;
+    text-align: center;
+}
+
+.label-item {
+    width: 60px;
+}
+
+.slider-labels img {
+    width: 30px;
+    height: 30px;
+    margin-bottom: 5px;
+}
+
+.slider-labels .active {
+    font-weight: bold;
+}
+
+/* my_info.css 파일 맨 아래에 이 코드를 추가해주세요 */
+
+/* JavaScript가 .mobile-container에 이 클래스들을 추가/제거하여 글자 크기를 조절합니다 */
+
+.font-size-small .settings-button {
+    font-size: 16px; /* 작게 */
+    padding: 18px;
+}
+
+.font-size-normal .settings-button {
+    font-size: 18px; /* 보통 (기본값) */
+    padding: 20px;
+}
+
+.font-size-large .settings-button {
+    font-size: 20px; /* 크게 */
+    padding: 22px;
+}

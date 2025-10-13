@@ -452,7 +452,7 @@ function initSpeechRecognition() {
         return false;
     }
 
-    // 음성 인식 설정 (사용자 음성 인식 최적화)
+    // 음성 인식 설정(사용자 음성 인식 최적화)
     recognition.continuous = true;  // 연속 인식
     recognition.interimResults = true;  // 중간 결과도 받기
     recognition.lang = 'ko-KR';  // 한국어 설정
