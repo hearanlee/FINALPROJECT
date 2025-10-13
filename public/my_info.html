@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Info</title>
-    <link rel="stylesheet" href="menu.css">
+    <title>내 정보</title>
+    <link rel="stylesheet" href="my_info.css">
 </head>
 <body>
 
@@ -16,23 +16,25 @@
 
         <main class="content">
             <div class="settings-list">
-                <button class="settings-button">
-                    <img src="./images/icon_font_size.png" alt="">
+                <button id="fontSizeBtn" class="settings-button">
+                    <img src="./images/icon_font_size.png" alt="글자 아이콘">
                     <span>글자 크기 조절</span>
                 </button>
-                <button class="settings-button">
-                    <img src="./images/icon_voice_speed.png" alt="">
+
+                <button id="speedBtn" class="settings-button">
+                    <img src="./images/icon_voice_speed.png" alt="음성 속도 아이콘">
                     <span>음성 속도 조절</span>
                 </button>
+                
                 <button class="settings-button">
-                    <img src="./images/icon_faq.png" alt="">
+                    <img src="./images/icon_faq.png" alt="질문 아이콘">
                     <span>자주 묻는 질문</span>
                 </button>
             </div>
         </main>
-        
+
         <nav class="bottom-nav">
-             <a href="main.html" class="nav-item">
+            <a href="main.html" class="nav-item">
                 <img src="./images/icon-home.png" alt="홈">
                 <span>홈</span>
             </a>
@@ -40,11 +42,61 @@
                 <img src="./images/icon-map.png" alt="지도">
                 <span>지도</span>
             </a>
-            <a href="#" class="nav-item active"> <img src="./images/icon-user.png" alt="내정보">
+            <a href="my_info.html" class="nav-item active">
+                <img src="./images/icon-user.png" alt="내정보">
                 <span>내정보</span>
             </a>
         </nav>
     </div>
 
+    <div class="modal-overlay"></div>
+
+    <div id="fontSizeModal" class="modal">
+        <div class="modal-header">
+            <button class="close-button"><img src="./images/icon_close.png" alt="닫기"></button>
+            <h2>글자 크기 조절</h2>
+        </div>
+        <p class="modal-subtitle">원하는 크기를 선택해주세요</p>
+        <div class="slider-container">
+            <div class="slider-bar-wrapper">
+                <div class="slider-track"></div>
+                <div class="slider-points">
+                    <div class="slider-point"></div>
+                    <div class="slider-point active"></div>
+                    <div class="slider-point"></div>
+                </div>
+            </div>
+            <div class="slider-labels">
+                <div class="label-item">작게</div>
+                <div class="label-item active">보통</div>
+                <div class="label-item">크게</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="speedModal" class="modal">
+        <div class="modal-header">
+            <button class="close-button"><img src="./images/icon_close.png" alt="닫기"></button>
+            <h2>음성 속도 조절</h2>
+        </div>
+        <p class="modal-subtitle">원하는 속도를 선택해주세요</p>
+        <div class="slider-container">
+            <div class="slider-bar-wrapper">
+                <div class="slider-track"></div>
+                <div class="slider-points">
+                    <div class="slider-point"></div>
+                    <div class="slider-point active"></div>
+                    <div class="slider-point"></div>
+                </div>
+            </div>
+            <div class="slider-labels">
+                <div class="label-item"><img src="./images/icon_turtle.png" alt="느림"><br>느림</div>
+                <div class="label-item active">보통</div>
+                <div class="label-item"><img src="./images/icon_rabbit.png" alt="빠름"><br>빠름</div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="my_info.js"></script>
 </body>
 </html>
