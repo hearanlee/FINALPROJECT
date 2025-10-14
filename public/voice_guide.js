@@ -1994,6 +1994,28 @@ window.addEventListener('load', function() {
     
     console.log('초기화 완료');
 });
+let returnUrl = 'main.html'; // 기본값 (fallback)
+    const referrer = document.referrer; // 사용자가 직전에 머물렀던 페이지의 URL
+    
+    if (referrer.includes('restaurant_detail.html')) {
+        // 만약 직전 페이지 URL에 'restaurant_detail.html'이 포함되어 있다면
+        returnUrl = 'restaurant_detail.html';
+    } else if (referrer.includes('map_main.html')) {
+        // 만약 직전 페이지 URL에 'map_main.html'이 포함되어 있다면
+        returnUrl = 'map_main.html';
+    }
+    console.log('돌아갈 페이지:', returnUrl); // 디버깅용
+
+    // 2. HTML에서 ID로 '음성안내 종료' 버튼을 찾습니다.
+    const exitVoiceGuideBtn = document.getElementById('exitVoiceGuideBtn');
+
+    // 3. 버튼에 클릭 이벤트를 추가합니다.
+    if (exitVoiceGuideBtn) {
+        exitVoiceGuideBtn.addEventListener('click', function() {
+            // 1번에서 결정된 URL로 페이지를 이동시킵니다.
+            window.location.href = returnUrl;
+        });
+    }
 
 // 페이지를 벗어날 때 음성안내 종료
 window.addEventListener('beforeunload', function() {
