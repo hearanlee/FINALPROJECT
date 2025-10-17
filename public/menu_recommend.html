@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Recommendation</title>
+    <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="menu_recommend.css">
+</head>
+<body>
+
+    <div class="mobile-container">
+        <header class="page-header">
+            <a href="main.html"><img src="./images/icon-back-arrow.png" alt="뒤로 가기"></a>
+            <h1>메뉴 추천</h1>
+        </header>
+
+        <main class="content">
+            <div class="question-card" style="margin-top: 20px;">
+                <p>오늘 어떤 음식이 드시고 싶으신가요?</p>
+                <p>메뉴 추천해드릴게요 !</p>
+            </div>
+            <div class="voice-icon-container">
+                <img src="./images/icon_menu_book.png" alt="메뉴 추천받기" class="voice-mic-icon">
+                <div class="volume-controls">
+                    <span class="volume-btn">+</span>
+                    <span class="volume-btn">-</span>
+                </div>
+            </div>
+            <p class="instruction-text">메뉴 추천을 받고 싶으시다면<br>위에 있는 그림을 눌러주세요!</p>
+        </main>
+        
+        <div class="voice-action-buttons">
+            <div class="button-row">
+                <button id="speedBtn" class="btn btn-secondary"><img src="./images/icon_slow.png" class="btn-icon" alt=""> 느린 음성</button>
+                <button id="repeatBtn" class="btn btn-secondary"><img src="./images/icon_repeat.png" class="btn-icon" alt=""> 반복 재생</button>
+            </div>
+            <a href="restaurant_list.html" class="btn btn-secondary full-width" style="text-decoration: none; display: flex; justify-content: center; align-items: center;">추천 메뉴 음식점 찾기</a>
+    <a href="main.html" class="btn btn-primary full-width" style="text-decoration: none; display: flex; justify-content: center; align-items: center;">메뉴 추천 종료</a>
+        </div>
+
+        <nav class="bottom-nav">
+            <a href="main.html" class="nav-item active">
+                <img src="./images/icon-home-filled.png" alt="홈">
+                <span>홈</span>
+            </a>
+            <a href="map_main.html" class="nav-item">
+                <img src="./images/icon-map.png" alt="지도">
+                <span>지도</span>
+            </a>
+            <a href="my_info.html" class="nav-item">
+                <img src="./images/icon-user.png" alt="내정보">
+                <span>내정보</span>
+            </a>
+        </nav>
+    </div>
+
+    <div class="modal-overlay"></div>
+    <div id="speedModal" class="modal">
+        <div class="modal-header">
+            <button class="close-button"><img src="./images/icon_close.png" alt="닫기"></button>
+            <h2>음성 속도 조절</h2>
+        </div>
+        <p class="modal-subtitle">원하는 속도를 선택해주세요</p>
+        <div class="slider-container">
+            <div class="slider-bar-wrapper">
+                <div class="slider-track"></div>
+                <div class="slider-points">
+                    <div class="slider-point"></div>
+                    <div class="slider-point active"></div>
+                    <div class="slider-point"></div>
+                </div>
+            </div>
+            <div class="slider-labels">
+                <div class="label-item"><img src="./images/icon_turtle.png" alt="느림"><br>느림</div>
+                <div class="label-item active">보통</div>
+                <div class="label-item"><img src="./images/icon_rabbit.png" alt="빠름"><br>빠름</div>
+            </div>
+        </div>
+    </div>
+    <div id="repeatModal" class="modal">
+        <div class="modal-header">
+            <button class="close-button"><img src="./images/icon_close.png" alt="닫기"></button>
+            <h2>반복 재생 설정</h2>
+        </div>
+        <p class="modal-subtitle">원하는 반복 횟수를 선택해주세요</p>
+        <div class="slider-container">
+            <div class="slider-bar-wrapper">
+                <div class="slider-track"></div>
+                <div class="slider-points">
+                    <div class="slider-point active"></div>
+                    <div class="slider-point"></div>
+                    <div class="slider-point"></div>
+                </div>
+            </div>
+            <div class="slider-labels">
+                <div class="label-item active">X 1</div>
+                <div class="label-item">X 2</div>
+                <div class="label-item">X 3</div>
+            </div>
+        </div>
+    </div>
+    <script src="voice_guide.js"></script>
+</body>
+</html>
