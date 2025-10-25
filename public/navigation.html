@@ -206,12 +206,49 @@
         let currentOverlays = []; // 현재 표시된 오버레이들
         let resultdrawArr = []; // Tmap 경로 그리기 배열
 
-        // 목적지 좌표 (포핸즈 - map_main.html에서 선택된 매장)
-        const destinationCoords = {
+        // 목적지 좌표 (URL 파라미터에서 가져옴)
+        let destinationCoords = {
             lat: 37.5839449,
             lng: 127.0535993,
             name: '포핸즈'
         };
+        
+        // URL 파라미터에서 좌표 정보 가져오기
+        function getUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const startLat = parseFloat(urlParams.get('startLat'));
+            const startLng = parseFloat(urlParams.get('startLng'));
+            const endLat = parseFloat(urlParams.get('endLat'));
+            const endLng = parseFloat(urlParams.get('endLng'));
+            
+            console.log('URL 파라미터:', { startLat, startLng, endLat, endLng });
+            
+            // 목적지 좌표 설정
+            if (!isNaN(endLat) && !isNaN(endLng)) {
+                destinationCoords = {
+                    lat: endLat,
+                    lng: endLng,
+                    name: '선택된 목적지'
+                };
+                console.log('목적지 설정됨:', destinationCoords);
+            }
+            
+            // 출발지 좌표가 있으면 현재 위치로 설정
+            if (!isNaN(startLat) && !isNaN(startLng)) {
+                currentPosition = {
+                    lat: startLat,
+                    lng: startLng,
+                    accuracy: 10, // 기본 정확도
+                    altitude: null,
+                    heading: null,
+                    speed: null
+                };
+                console.log('출발지 설정됨:', currentPosition);
+                return true; // URL에서 좌표를 가져왔음을 표시
+            }
+            
+            return false; // URL에서 좌표를 가져오지 못함
+        }
 
         // 기존 마커와 경로 제거 함수
         function clearMap() {
@@ -456,17 +493,7 @@
             });
             currentMarkers.push(destinationMarker);
 
-            // 목적지 인포윈도우
-            const destinationInfoWindow = new Tmapv2.InfoWindow({
-                position: new Tmapv2.LatLng(destinationCoords.lat, destinationCoords.lng),
-                    content: `
-                    <div style="padding: 10px; text-align: center; background: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
-                        <strong>${destinationCoords.name}</strong>
-                        </div>
-                `,
-                map: map
-                });
-            currentOverlays.push(destinationInfoWindow);
+            // 목적지 인포윈도우 제거됨
 
                 // 두 지점을 모두 포함하도록 지도 범위 조정
                 adjustMapBounds();
@@ -622,11 +649,11 @@
                                 (currentPosition.lng + destinationCoords.lng) / 2
                             ),
                             content: `
-                                <div style="padding: 15px; background: white; border: 2px solid #0D2A5C; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; min-width: 200px;">
-                        <strong>📍 도보 경로</strong><br>
-                                    <div style="margin-top: 5px;">
-                            <small>거리: ${(distance / 1000).toFixed(1)}km</small><br>
-                            <small>예상 시간: ${(time / 60).toFixed(0)}분</small>
+                                <div style="padding: 8px; background: white; border: 1px solid #0D2A5C; border-radius: 6px; box-shadow: 0 1px 5px rgba(0,0,0,0.1); text-align: center; min-width: 120px; font-size: 12px;">
+                        <strong style="font-size: 11px;">📍 도보 경로</strong><br>
+                                    <div style="margin-top: 3px;">
+                            <small style="font-size: 10px;">거리: ${(distance / 1000).toFixed(1)}km</small><br>
+                            <small style="font-size: 10px;">예상 시간: ${(time / 60).toFixed(0)}분</small>
                                     </div>
                                 </div>
                 `,
@@ -687,12 +714,12 @@
                         (startLng + endLng) / 2
                     ),
                     content: `
-                        <div style="padding: 15px; background: white; border: 2px solid #0D2A5C; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; min-width: 200px;">
-                            <strong>📍 ${isLongDistance ? '직선 경로' : '대략적인 경로'}</strong><br>
-                            <div style="margin-top: 5px;">
-                                <small>직선 거리: ${Math.round(distance / 1000 * 10) / 10}km</small><br>
-                                <small>예상 시간: ${Math.round(distance / 1000 * 15)}분</small><br>
-                                <small style="color: #666;">
+                        <div style="padding: 8px; background: white; border: 1px solid #0D2A5C; border-radius: 6px; box-shadow: 0 1px 5px rgba(0,0,0,0.1); text-align: center; min-width: 120px; font-size: 12px;">
+                            <strong style="font-size: 11px;">📍 ${isLongDistance ? '직선 경로' : '대략적인 경로'}</strong><br>
+                            <div style="margin-top: 3px;">
+                                <small style="font-size: 10px;">직선 거리: ${Math.round(distance / 1000 * 10) / 10}km</small><br>
+                                <small style="font-size: 10px;">예상 시간: ${Math.round(distance / 1000 * 15)}분</small><br>
+                                <small style="color: #666; font-size: 9px;">
                                     ${isLongDistance ? 
                                         '※ 30km 초과로 도보 길찾기 제한' : 
                                         '※ 실제 도로와 다를 수 있습니다'
@@ -869,10 +896,20 @@
         // 페이지 로드 시 실행
         window.addEventListener('load', async function() {
             try {
-                console.log('현재 위치를 가져오는 중...');
+                console.log('페이지 로드 시작');
                 
-                await getCurrentLocation();
+                // URL 파라미터에서 좌표 정보 가져오기
+                const hasUrlParams = getUrlParameters();
+                
+                if (!hasUrlParams) {
+                    console.log('URL 파라미터가 없음, 현재 위치를 가져오는 중...');
+                    await getCurrentLocation();
+                } else {
+                    console.log('URL 파라미터에서 좌표를 가져왔음');
+                }
+                
                 console.log('현재 위치:', currentPosition);
+                console.log('목적지:', destinationCoords);
                 
                 // Tmap API 로드 확인 및 초기화
                 function tryInitMap() {

@@ -119,17 +119,31 @@ function onRecognitionEnd() {
 
 // 음성 입력 처리
 async function handleVoiceInput(transcript) {
+    console.log('🎯 ===== 음성 입력 처리 시작 =====');
+    console.log('📝 처리할 텍스트:', transcript);
+    
     try {
+        console.log('🔄 processVoiceInput 호출 중...');
         const result = await processVoiceInput(transcript);
+        
         if (result) {
+            console.log('✅ 음성 입력 처리 성공');
+            console.log('👤 사용자 입력:', result.userInput);
+            console.log('🤖 AI 응답:', result.response);
             showResponse(result.userInput, result.response);
+        } else {
+            console.log('⚠️ processVoiceInput 결과가 없음');
         }
     } catch (error) {
-        console.error('음성 입력 처리 오류:', error);
+        console.error('💥 음성 입력 처리 오류:', error);
+        console.error('🔍 오류 타입:', error.name);
+        console.error('📝 오류 메시지:', error.message);
         const errorMessage = '죄송합니다. 처리 중 오류가 발생했습니다.';
         speakText(errorMessage);
         showResponse(transcript, errorMessage);
     }
+    
+    console.log('🏁 ===== 음성 입력 처리 완료 =====');
 }
 
 // 메뉴 추천 시작/중지 토글
@@ -211,18 +225,27 @@ function handleVisibilityChange(state) {
 
 // GitHub API 테스트
 async function handleTestAPI() {
-    console.log('GitHub API 테스트 시작...');
+    console.log('🧪 ===== GitHub API 테스트 시작 =====');
+    console.log('⏰ 테스트 시작 시간:', new Date().toLocaleString());
+    
     try {
+        console.log('🔄 testGPTAPI 함수 호출 중...');
         const result = await testGPTAPI();
+        
         if (result.success) {
-            console.log('GitHub API 테스트 성공:', result.response);
+            console.log('✅ GitHub API 테스트 성공:', result.response);
+            console.log('🎉 ===== GitHub API 테스트 성공 =====');
             alert('GitHub API 테스트 성공!\n응답: ' + result.response);
         } else {
-            console.error('GitHub API 테스트 실패:', result.error);
+            console.error('❌ GitHub API 테스트 실패:', result.error);
+            console.log('🚫 ===== GitHub API 테스트 실패 =====');
             alert('GitHub API 테스트 실패: ' + result.error);
         }
     } catch (error) {
-        console.error('GitHub API 테스트 오류:', error);
+        console.error('💥 GitHub API 테스트 오류:', error);
+        console.error('🔍 오류 타입:', error.name);
+        console.error('📝 오류 메시지:', error.message);
+        console.log('🚫 ===== GitHub API 테스트 오류 =====');
         alert('GitHub API 테스트 오류: ' + error.message);
     }
 }

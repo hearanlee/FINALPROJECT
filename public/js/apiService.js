@@ -7,11 +7,12 @@ export async function callGPTAPI(userInput, retryCount = 0) {
     const maxRetries = CONFIG.MAX_RETRIES;
     const baseDelay = CONFIG.BASE_DELAY;
     
-    console.log('GitHub API 호출 시작');
-    console.log('사용자 입력:', userInput);
-    console.log('재시도 횟수:', retryCount);
-    console.log('API URL:', CONFIG.GITHUB_API_URL);
-    console.log('API 키:', CONFIG.GITHUB_API_KEY ? '설정됨' : '설정되지 않음');
+    console.log('🚀 ===== GPT API 호출 시작 =====');
+    console.log('📝 사용자 입력:', userInput);
+    console.log('🔄 재시도 횟수:', retryCount);
+    console.log('🌐 API URL:', CONFIG.GITHUB_API_URL);
+    console.log('🔑 API 키:', CONFIG.GITHUB_API_KEY ? '✅ 설정됨' : '❌ 설정되지 않음');
+    console.log('⏰ 호출 시간:', new Date().toLocaleString());
     
     try {
         const requestBody = {
@@ -75,8 +76,10 @@ export async function callGPTAPI(userInput, retryCount = 0) {
             top_p: 0.9
         };
         
-        console.log('요청 본문:', JSON.stringify(requestBody, null, 2));
+        console.log('📤 요청 본문:', JSON.stringify(requestBody, null, 2));
+        console.log('🌐 fetch 요청 시작...');
         
+        const startTime = Date.now();
         const response = await fetch(CONFIG.GITHUB_API_URL, {
             method: 'POST',
             headers: {
@@ -85,18 +88,23 @@ export async function callGPTAPI(userInput, retryCount = 0) {
             },
             body: JSON.stringify(requestBody)
         });
+        const endTime = Date.now();
+        const duration = endTime - startTime;
 
-        console.log('응답 상태:', response.status);
-        console.log('응답 헤더:', response.headers);
+        console.log('📡 응답 수신 완료');
+        console.log('⏱️ 응답 시간:', duration + 'ms');
+        console.log('📊 응답 상태:', response.status, response.statusText);
+        console.log('📋 응답 헤더:', Object.fromEntries(response.headers.entries()));
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('API 응답 오류:', errorText);
+            console.error('❌ API 응답 오류:', errorText);
+            console.error('🚫 오류 상태:', response.status, response.statusText);
             
             // 429 오류 (Too Many Requests)인 경우 재시도
             if (response.status === 429 && retryCount < maxRetries) {
                 const delay = baseDelay * Math.pow(2, retryCount); // 지수 백오프
-                console.log(`429 오류 - ${delay}ms 후 재시도 (${retryCount + 1}/${maxRetries})`);
+                console.log(`⏳ 429 오류 - ${delay}ms 후 재시도 (${retryCount + 1}/${maxRetries})`);
                 
                 await new Promise(resolve => setTimeout(resolve, delay));
                 return await callGPTAPI(userInput, retryCount + 1);
@@ -105,42 +113,51 @@ export async function callGPTAPI(userInput, retryCount = 0) {
             throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
 
+        console.log('✅ 응답 성공, JSON 파싱 시작...');
         const data = await response.json();
-        console.log('GitHub API 응답:', data);
+        console.log('📦 GitHub API 응답 데이터:', data);
         
         if (data.choices && data.choices[0] && data.choices[0].message) {
             const content = data.choices[0].message.content;
-            console.log('GitHub API 응답 내용:', content);
+            console.log('💬 GitHub API 응답 내용:', content);
+            console.log('🎉 ===== GPT API 호출 성공 =====');
             return content;
         } else {
-            console.error('예상치 못한 응답 구조:', data);
+            console.error('❌ 예상치 못한 응답 구조:', data);
+            console.log('🚫 ===== GPT API 호출 실패 (응답 구조 오류) =====');
             return '죄송합니다. 응답을 처리할 수 없습니다.';
         }
     } catch (error) {
-        console.error('GitHub API 호출 오류:', error);
+        console.error('💥 GitHub API 호출 오류:', error);
+        console.error('🔍 오류 타입:', error.name);
+        console.error('📝 오류 메시지:', error.message);
+        console.error('📚 오류 스택:', error.stack);
         
         // 네트워크 오류나 기타 오류인 경우 재시도
         if (retryCount < maxRetries && !error.message.includes('HTTP error! status: 429')) {
             const delay = baseDelay * Math.pow(2, retryCount);
-            console.log(`네트워크 오류 - ${delay}ms 후 재시도 (${retryCount + 1}/${maxRetries})`);
+            console.log(`🔄 네트워크 오류 - ${delay}ms 후 재시도 (${retryCount + 1}/${maxRetries})`);
             
             await new Promise(resolve => setTimeout(resolve, delay));
             return await callGPTAPI(userInput, retryCount + 1);
         }
         
+        console.log('🚫 ===== GPT API 호출 최종 실패 =====');
         return '죄송합니다. 잠시 문제가 생겼네요. 메뉴에 대해 궁금한 것이 있으시면 말씀해주세요.';
     }
 }
 
 // GPT API 테스트 함수 (개발용)
 export async function testGPTAPI() {
-    console.log('GitHub API 테스트 시작...');
+    console.log('🧪 ===== GitHub API 테스트 시작 =====');
     try {
         const testResponse = await callGPTAPI('안녕하세요');
-        console.log('GitHub API 테스트 성공:', testResponse);
+        console.log('✅ GitHub API 테스트 성공:', testResponse);
+        console.log('🎉 ===== GitHub API 테스트 완료 =====');
         return { success: true, response: testResponse };
     } catch (error) {
-        console.error('GitHub API 테스트 실패:', error);
+        console.error('❌ GitHub API 테스트 실패:', error);
+        console.log('🚫 ===== GitHub API 테스트 실패 =====');
         return { success: false, error: error.message };
     }
 }
