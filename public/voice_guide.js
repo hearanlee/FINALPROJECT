@@ -41,8 +41,8 @@ let isRecording = false;
 
 // 음성 인식 핸들러들
 function onRecognitionStart() {
-    console.log('🎤 음성 인식 시작');
-    isRecording = true;
+        console.log('🎤 음성 인식 시작');
+        isRecording = true;
     updateMicIconState(true);
 }
 
@@ -52,65 +52,65 @@ function onRecognitionResult(transcript) {
     // 시스템 음성 필터링
     if (isSystemVoice(transcript)) {
         console.log('❌ 시스템 음성으로 판단되어 무시:', transcript);
-        return;
-    }
-    
+                return;
+            }
+            
     // 사용자 키워드 감지
-    const userKeywords = ['메뉴', '돈까스', '쌀국수', '주문', '음식', '추천', '도움', '안내', '카레', '카츠', '오늘', '뭐', '어떤', '네', '예', '좋아', '싫어', '맛있', '배고', '먹고', '마시', '드시', '할게', '할래', '싫어', '싫다', '좋다', '좋아', '괜찮', '괜찮아', '괜찮다', '싶어', '싶다', '원해', '원한다', '주문할게', '주문할래', '주문해', '주문해줘', '주문해주세요'];
+            const userKeywords = ['메뉴', '돈까스', '쌀국수', '주문', '음식', '추천', '도움', '안내', '카레', '카츠', '오늘', '뭐', '어떤', '네', '예', '좋아', '싫어', '맛있', '배고', '먹고', '마시', '드시', '할게', '할래', '싫어', '싫다', '좋다', '좋아', '괜찮', '괜찮아', '괜찮다', '싶어', '싶다', '원해', '원한다', '주문할게', '주문할래', '주문해', '주문해줘', '주문해주세요'];
     const isUserKeyword = userKeywords.some(keyword => transcript.toLowerCase().includes(keyword.toLowerCase()));
-    
-    // 음성 재생 중이면 즉시 중단하고 처리 (사용자 입력 최우선)
+            
+            // 음성 재생 중이면 즉시 중단하고 처리 (사용자 입력 최우선)
     if (isSpeaking()) {
-        if (isUserKeyword) {
+                if (isUserKeyword) {
             console.log('⏹️ 사용자 키워드 감지 - 음성 재생 즉시 중단:', transcript);
             stopSpeaking();
             console.log('🎯 사용자 키워드 처리 시작:', transcript);
             handleVoiceInput(transcript);
-            return;
-        } else {
+                    return;
+                } else {
             console.log('❌ 시스템이 말하는 중 - 사용자 키워드가 아님, 무시:', transcript);
-            return;
-        }
-    }
-    
+                    return;
+                }
+            }
+            
     console.log('🎯 사용자 음성 처리 시작:', transcript);
     handleVoiceInput(transcript);
-}
+        }
 
 function onRecognitionError(event) {
-    console.error('❌ 음성 인식 오류:', event.error);
-    isRecording = false;
+        console.error('❌ 음성 인식 오류:', event.error);
+        isRecording = false;
     updateMicIconState(false);
     
     // 음성안내가 활성화되어 있고 사용자 입력을 기다리는 상태라면 재시작
     const state = getVoiceGuideState();
     if (state.isVoiceGuideActive && state.isWaitingForUserInput) {
         console.log('🔄 음성 인식 오류로 인한 재시작 시도');
-        setTimeout(() => {
+            setTimeout(() => {
             if (state.isVoiceGuideActive && state.isWaitingForUserInput && !isRecording) {
-                console.log('🔄 음성 인식 재시작');
+                    console.log('🔄 음성 인식 재시작');
                 if (startRecognition()) {
-                    isRecording = true;
+                        isRecording = true;
+                    }
                 }
-            }
         }, 1000);
-    }
+        }
 }
 
 function onRecognitionEnd() {
-    console.log('⏹️ 음성 인식 종료');
-    isRecording = false;
+        console.log('⏹️ 음성 인식 종료');
+        isRecording = false;
     updateMicIconState(false);
     
     // 음성안내가 활성화되어 있고 사용자 입력을 기다리는 상태라면 재시작
     const state = getVoiceGuideState();
     if (state.isVoiceGuideActive && state.isWaitingForUserInput) {
         console.log('🔄 음성 인식 즉시 재시작');
-        setTimeout(() => {
+            setTimeout(() => {
             if (state.isVoiceGuideActive && state.isWaitingForUserInput && !isRecording) {
-                console.log('🔄 음성 인식 재시작 실행');
+                    console.log('🔄 음성 인식 재시작 실행');
                 if (startRecognition()) {
-                    isRecording = true;
+                        isRecording = true;
                 }
             }
         }, 500);
@@ -137,17 +137,17 @@ function toggleVoiceGuide() {
     const state = getVoiceGuideState();
     
     if (state.isVoiceGuideActive) {
-        console.log('음성안내 중지');
+    console.log('음성안내 중지');
         stopVoiceGuide();
         stopRecognition();
         isRecording = false;
         updateMicIconState(false);
-    } else {
+            } else {
         console.log('음성안내 시작');
         startVoiceGuide().then(() => {
             // 환영메시지 재생 완료 후 음성 인식 시작
             if (startRecognition()) {
-                isRecording = true;
+            isRecording = true;
                 updateMicIconState(true);
             }
         });
@@ -163,8 +163,8 @@ function handleCenterButtonClick() {
         stopRecognition();
         isRecording = false;
         updateMicIconState(false);
-        stopVoiceGuide();
-    } else {
+            stopVoiceGuide();
+        } else {
         // 음성이 재생 중이 아니면 음성안내 시작
         toggleVoiceGuide();
     }
@@ -200,7 +200,7 @@ function handleVisibilityChange(state) {
         console.log('페이지 표시 - 음성안내 재개');
         const voiceState = getVoiceGuideState();
         if (voiceState.isVoiceGuideActive) {
-            resumeVoiceGuide();
+        resumeVoiceGuide();
             if (startRecognition()) {
                 isRecording = true;
                 updateMicIconState(true);

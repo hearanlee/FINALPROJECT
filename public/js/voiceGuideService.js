@@ -44,17 +44,37 @@ export async function startVoiceGuide() {
     async function proceedWithVoiceGuide() {
         console.log('음성안내 프로세스 시작');
         
-        // 기본 안내 메시지 사용 (GPT API 없이)
-        const initialMessage = "안녕하세요. 주문하고 싶은 메뉴가 있으시면 메뉴명을 말씀해주시고, 못 정하셨으면 '메뉴'라고 말해 주세요.";
-        console.log('기본 메시지 음성 재생:', initialMessage);
-        
-        // 환영메시지 재생 후 마이크 활성화
-        speakText(initialMessage, () => {
-            console.log('환영메시지 재생 완료 - 마이크 활성화');
-            // 사용자 입력 대기 상태로 설정하고 음성 인식 시작
-            isWaitingForUserInput = true;
-            // startListening은 외부에서 호출해야 함
-        });
+        try {
+            console.log('🤖 ===== GPT API 호출 시작 (환영 메시지) =====');
+            console.log('📝 GPT API에 환영 메시지 요청 중...');
+            
+            // GPT API를 사용한 환영 메시지 생성
+            const gptResponse = await callGPTAPI("안녕하세요. 메뉴 추천을 시작합니다.");
+            console.log('📦 GPT API 응답:', gptResponse);
+            
+            // GPT 응답을 음성으로 재생
+            console.log('🔊 GPT 환영 메시지 음성 재생:', gptResponse);
+            speakText(gptResponse, () => {
+                console.log('✅ GPT 환영메시지 재생 완료 - 마이크 활성화');
+                // 사용자 입력 대기 상태로 설정하고 음성 인식 시작
+                isWaitingForUserInput = true;
+                // startListening은 외부에서 호출해야 함
+            });
+            
+        } catch (error) {
+            console.error('❌ GPT API 호출 실패, 기본 메시지 사용:', error);
+            
+            // GPT API 실패 시 기본 메시지 사용
+            const fallbackMessage = "안녕하세요. 주문하고 싶은 메뉴가 있으시면 메뉴명을 말씀해주시고, 못 정하셨으면 '메뉴'라고 말해 주세요.";
+            console.log('기본 메시지 음성 재생:', fallbackMessage);
+            
+            speakText(fallbackMessage, () => {
+                console.log('기본 환영메시지 재생 완료 - 마이크 활성화');
+                // 사용자 입력 대기 상태로 설정하고 음성 인식 시작
+                isWaitingForUserInput = true;
+                // startListening은 외부에서 호출해야 함
+            });
+        }
     }
 }
 
@@ -107,7 +127,12 @@ export async function processVoiceInput(transcript) {
             await handleUserInput(transcript);
         } else {
             // GPT API 직접 호출 (음성안내가 비활성화된 경우)
+            console.log('🤖 ===== GPT API 직접 호출 시작 =====');
+            console.log('📝 사용자 입력:', transcript);
+            console.log('⏰ 호출 시간:', new Date().toLocaleString());
+            
             const response = await callGPTAPI(transcript);
+            console.log('📦 GPT API 응답 수신:', response);
             
             // 응답 유효성 검사 (문자열 응답도 처리)
             if (response) {
@@ -117,16 +142,21 @@ export async function processVoiceInput(transcript) {
                 if (typeof response === 'string') {
                     // 직접 문자열 응답
                     responseText = response;
+                    console.log('✅ 문자열 응답 처리:', responseText);
                 } else if (response.response) {
                     // 객체 형태의 응답
                     responseText = response.response;
+                    console.log('✅ 객체 응답 처리:', responseText);
                 } else {
                     // 기타 형식의 응답
                     responseText = String(response);
+                    console.log('✅ 기타 형식 응답 처리:', responseText);
                 }
         
+                console.log('🔊 GPT 응답 음성 재생 시작:', responseText);
                 // GPT 응답을 음성으로 재생
                 speakText(responseText);
+                console.log('🎉 ===== GPT API 직접 호출 성공 =====');
                 
                 // 화면에 응답 표시는 외부에서 처리
                 return { userInput: transcript, response: responseText };
@@ -279,8 +309,12 @@ async function handleUserInput(userInput) {
         }
         
         // 6. 기타 사용자 입력 처리 (GPT API 호출)
-        console.log('기타 사용자 입력 감지 - GPT API 호출');
+        console.log('🤖 ===== 기타 사용자 입력 감지 - GPT API 호출 =====');
+        console.log('📝 사용자 입력:', userInput);
+        console.log('⏰ 호출 시간:', new Date().toLocaleString());
+        
         const response = await callGPTAPI(userInput);
+        console.log('📦 GPT API 응답 수신:', response);
         
         if (response) {
             let responseText;
@@ -288,18 +322,24 @@ async function handleUserInput(userInput) {
             // GPT API 응답 형식 확인
             if (typeof response === 'string') {
                 responseText = response;
+                console.log('✅ 문자열 응답 처리:', responseText);
             } else if (response.response) {
                 responseText = response.response;
+                console.log('✅ 객체 응답 처리:', responseText);
             } else {
                 responseText = String(response);
+                console.log('✅ 기타 형식 응답 처리:', responseText);
             }
     
+            console.log('🔊 GPT 응답 음성 재생 시작:', responseText);
             // GPT 응답을 음성으로 재생
             speakText(responseText);
+            console.log('🎉 ===== GPT API 호출 성공 =====');
         } else {
-            console.error('GPT API 응답이 유효하지 않습니다:', response);
+            console.error('❌ GPT API 응답이 유효하지 않습니다:', response);
             const errorMessage = '죄송합니다. 응답을 받을 수 없습니다. 다시 말씀해주세요.';
             speakText(errorMessage);
+            console.log('🚫 ===== GPT API 호출 실패 =====');
             return { userInput, response: errorMessage };
         }
         

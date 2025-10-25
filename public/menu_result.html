@@ -54,17 +54,70 @@
     </div>
 
     <script>
+        // 안전한 URL 생성 함수
+        function createSafeUrl(baseUrl, params = {}) {
+            try {
+                let url = baseUrl;
+                
+                if (params && typeof params === 'object') {
+                    const queryString = Object.keys(params)
+                        .filter(key => params[key] !== null && params[key] !== undefined)
+                        .map(key => {
+                            const value = params[key];
+                            // 객체인 경우 JSON 문자열로 변환
+                            const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+                            return encodeURIComponent(key) + '=' + encodeURIComponent(stringValue);
+                        })
+                        .join('&');
+                    
+                    if (queryString) {
+                        url += (url.includes('?') ? '&' : '?') + queryString;
+                    }
+                }
+                
+                console.log('생성된 URL:', url);
+                return url;
+            } catch (error) {
+                console.error('URL 생성 오류:', error);
+                return baseUrl;
+            }
+        }
+        
         function searchRestaurants() {
             // 추천 메뉴명 추출
             const menuElement = document.querySelector('.info-box p:first-child');
+            
+            if (!menuElement) {
+                console.error('메뉴 요소를 찾을 수 없습니다.');
+                alert('메뉴 정보를 찾을 수 없습니다.');
+                return;
+            }
+            
             const menuText = menuElement.textContent;
+            console.log('메뉴 텍스트:', menuText);
+            
+            if (!menuText || !menuText.includes(':')) {
+                console.error('메뉴 텍스트 형식이 올바르지 않습니다:', menuText);
+                alert('메뉴 정보 형식이 올바르지 않습니다.');
+                return;
+            }
+            
             const menuName = menuText.split(':')[1].trim();
+            console.log('추출된 메뉴명:', menuName);
+            
+            if (!menuName || menuName === '') {
+                console.error('메뉴명이 비어있습니다.');
+                alert('메뉴명을 찾을 수 없습니다.');
+                return;
+            }
             
             // localStorage에 메뉴명 저장
             localStorage.setItem('searchKeyword', menuName);
             
             // URL 파라미터와 함께 restaurant_list.html로 이동
-            window.location.href = 'restaurant_list.html?keyword=' + encodeURIComponent(menuName);
+            const url = createSafeUrl('restaurant_list.html', { keyword: menuName });
+            console.log('이동할 URL:', url);
+            window.location.href = url;
         }
     </script>
 

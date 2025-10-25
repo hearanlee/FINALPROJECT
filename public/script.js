@@ -1,3 +1,46 @@
+// 전역 오류 처리기 추가
+window.addEventListener('error', function(event) {
+    console.error('JavaScript 오류 발생:', event.error);
+    console.error('오류 파일:', event.filename);
+    console.error('오류 라인:', event.lineno);
+    console.error('오류 컬럼:', event.colno);
+    
+    // [object Object] 오류 특별 처리
+    if (event.message && event.message.includes('[object Object]')) {
+        console.error('객체를 문자열로 변환하는 오류가 발생했습니다.');
+        console.error('오류 위치:', event.filename + ':' + event.lineno);
+    }
+});
+
+// 안전한 URL 생성 함수
+function createSafeUrl(baseUrl, params = {}) {
+    try {
+        let url = baseUrl;
+        
+        if (params && typeof params === 'object') {
+            const queryString = Object.keys(params)
+                .filter(key => params[key] !== null && params[key] !== undefined)
+                .map(key => {
+                    const value = params[key];
+                    // 객체인 경우 JSON 문자열로 변환
+                    const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+                    return encodeURIComponent(key) + '=' + encodeURIComponent(stringValue);
+                })
+                .join('&');
+            
+            if (queryString) {
+                url += (url.includes('?') ? '&' : '?') + queryString;
+            }
+        }
+        
+        console.log('생성된 URL:', url);
+        return url;
+    } catch (error) {
+        console.error('URL 생성 오류:', error);
+        return baseUrl;
+    }
+}
+
 class VoiceOrderSystem {
     constructor() {
         this.recognition = null;
