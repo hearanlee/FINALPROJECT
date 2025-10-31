@@ -27,39 +27,23 @@
                 <p>︾</p>
             </div>
 
-            <div class="restaurant-list">
-                
-                <div class="restaurant-item">
-                    <div class="restaurant-info">
-                        <div class="info-header">
-                            <span class="restaurant-name">샹츠마라 서울시립대점</span>
-                            <span class="restaurant-distance">327m</span>
+            <div class="restaurant-list-container">
+                <div class="restaurant-list">
+                    
+                    <div class="restaurant-item" data-restaurant="xiangcimara">
+                        <div class="restaurant-info">
+                            <div class="info-header">
+                                <span class="restaurant-name">샹츠마라 서울시립대점</span>
+                                <div class="distance-info">
+                                    <span class="restaurant-distance">⭐인기⭐</span>
+                                </div>
+                            </div>
+                            <p class="restaurant-address">서울 동대문구 서울시립대로 164 2층</p>
                         </div>
-                        <p class="restaurant-rating">★★★★★ 5.0 (10)</p>
-                        <p class="restaurant-address">서울 동대문구 서울시립대로 164 2층</p>
                     </div>
-                </div>
 
-                <div class="restaurant-item">
-                    <div class="restaurant-info">
-                        <div class="info-header">
-                            <span class="restaurant-name">친신마라탕 본점</span>
-                            <span class="restaurant-distance">608m</span>
-                        </div>
-                        <p class="restaurant-rating">★★★★☆ 4.0 (25)</p>
-                        <p class="restaurant-address">서울 동대문구 서울시립대로27길 40 201호</p>
-                    </div>
-                </div>
-
-                <div class="restaurant-item">
-                    <div class="restaurant-info">
-                        <div class="info-header">
-                            <span class="restaurant-name">마라대국 전농점</span>
-                            <span class="restaurant-distance">634m</span>
-                        </div>
-                        <p class="restaurant-rating">★★★☆☆ 3.5 (5)</p>
-                        <p class="restaurant-address">서울 동대문구 전농로20길 4 2층</p>
-                    </div>
+                    <!-- Tmap API로 동적으로 추가되는 마라탕 음식점 목록 -->
+                    <div id="tmapRestaurants"></div>
                 </div>
             </div>
         </main>
@@ -106,6 +90,6 @@
             </a>
         </div>
     </div>
-    <script src="restaurant_list.js"></script>
+    <script src="restaurant_list3.js"></script>
 </body>
 </html>

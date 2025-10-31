@@ -9,6 +9,44 @@
     text-align: center;
 }
 
+/* 메인 컨텐츠 영역 조정 */
+.content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 식당 목록 컨테이너 (스크롤 영역) */
+.restaurant-list-container {
+    width: 100%;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; /* iOS 스크롤 부드럽게 */
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    min-height: 0; /* flex에서 스크롤이 작동하도록 */
+}
+
+/* 스크롤바 스타일링 */
+.restaurant-list-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.restaurant-list-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.restaurant-list-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.restaurant-list-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
 /* 식당 목록을 감싸는 리스트 */
 .restaurant-list {
     width: 100%;
@@ -43,7 +81,7 @@
 .info-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 5px;
 }
 
@@ -53,15 +91,30 @@
     color: #0D2A5C;
 }
 
+.distance-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+}
+
 .restaurant-distance {
     font-size: 14px;
     color: gray;
+    margin-bottom: 2px;
 }
 
 .restaurant-rating {
     font-size: 15px;
     color: #f5a623; /* 별점 색상 */
     margin-bottom: 5px;
+}
+
+.restaurant-walking-time {
+    font-size: 13px;
+    color: #666;
+    margin: 0;
+    padding: 0;
 }
 
 .restaurant-address {

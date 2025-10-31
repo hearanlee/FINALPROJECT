@@ -27,39 +27,23 @@
                 <p>︾</p>
             </div>
 
-            <div class="restaurant-list">
-                
-                <div class="restaurant-item">
-                    <div class="restaurant-info">
-                        <div class="info-header">
-                            <span class="restaurant-name">사이</span>
-                            <span class="restaurant-distance">327m</span>
+            <div class="restaurant-list-container">
+                <div class="restaurant-list">
+                    
+                    <div class="restaurant-item" data-restaurant="cafesisa">
+                        <div class="restaurant-info">
+                            <div class="info-header">
+                                <span class="restaurant-name">카페시사</span>
+                                <div class="distance-info">
+                                    <span class="restaurant-distance">⭐인기⭐</span>
+                                </div>
+                            </div>
+                            <p class="restaurant-address">서울 동대문구 전농로 217 정우빌딩 1층</p>
                         </div>
-                        <p class="restaurant-rating">★★★★★ 5.0 (10)</p>
-                        <p class="restaurant-address">서울 동대문구 서울시립대로 164 104호</p>
                     </div>
-                </div>
 
-                <div class="restaurant-item">
-                    <div class="restaurant-info">
-                        <div class="info-header">
-                            <span class="restaurant-name">매머드커피 익스프레스 서울시립대점</span>
-                            <span class="restaurant-distance">344m</span>
-                        </div>
-                        <p class="restaurant-rating">★★★★☆ 4.0 (25)</p>
-                        <p class="restaurant-address">서울 동대문구 서울시립대로 160</p>
-                    </div>
-                </div>
-
-                <div class="restaurant-item">
-                    <div class="restaurant-info">
-                        <div class="info-header">
-                            <span class="restaurant-name">카페시사</span>
-                            <span class="restaurant-distance">473m</span>
-                        </div>
-                        <p class="restaurant-rating">★★★☆☆ 3.5 (5)</p>
-                        <p class="restaurant-address">서울 동대문구 전농로 217 정우빌딩 1층</p>
-                    </div>
+                    <!-- Tmap API로 동적으로 추가되는 카페 목록 -->
+                    <div id="tmapRestaurants"></div>
                 </div>
             </div>
         </main>
@@ -106,6 +90,6 @@
             </a>
         </div>
     </div>
-    <script src="restaurant_list.js"></script>
+    <script src="restaurant_list2.js"></script>
 </body>
 </html>

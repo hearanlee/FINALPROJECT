@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="restaurant_list.css">
 </head>
-<body>
+<body data-search-keyword="돈까스">
 
     <div class="mobile-container">
         <header class="page-header">
@@ -24,39 +24,23 @@
                 <p>︾</p>
             </div>
 
-            <div class="restaurant-list">
-                
-                <div class="restaurant-item">
-                    <div class="restaurant-info">
-                        <div class="info-header">
-                            <span class="restaurant-name">포핸즈</span>
-                            <span class="restaurant-distance">345m</span>
+            <div class="restaurant-list-container">
+                <div class="restaurant-list">
+                    
+                    <div class="restaurant-item" data-restaurant="pohands">
+                        <div class="restaurant-info">
+                            <div class="info-header">
+                                <span class="restaurant-name">포핸즈</span>
+                                <div class="distance-info">
+                                    <span class="restaurant-distance">⭐인기⭐</span>
+                                </div>
+                            </div>
+                            <p class="restaurant-address">서울 동대문구 전농로 222 2층</p>
                         </div>
-                        <p class="restaurant-rating">★★★★☆ 4.5 (128)</p>
-                        <p class="restaurant-address">서울 동대문구 전농로 222 2층</p>
                     </div>
-                </div>
 
-                <div class="restaurant-item">
-                    <div class="restaurant-info">
-                        <div class="info-header">
-                            <span class="restaurant-name">타인플레이트</span>
-                            <span class="restaurant-distance">463m</span>
-                        </div>
-                        <p class="restaurant-rating">★★★★☆ 4.5 (128)</p>
-                        <p class="restaurant-address">서울 동대문구 이문로 17-26 1층</p>
-                    </div>
-                </div>
-
-                <div class="restaurant-item">
-                    <div class="restaurant-info">
-                        <div class="info-header">
-                            <span class="restaurant-name">반포식스 청량리역점</span>
-                            <span class="restaurant-distance">770m</span>
-                        </div>
-                        <p class="restaurant-rating">★★★★☆ 4.5 (128)</p>
-                        <p class="restaurant-address">서울 동대문구 왕산로 214 3층</p>
-                    </div>
+                    <!-- Tmap API로 동적으로 추가되는 음식점 목록 -->
+                    <div id="tmapRestaurants"></div>
                 </div>
             </div>
         </main>
@@ -106,3 +90,4 @@
     <script src="restaurant_list.js"></script>
 </body>
 </html>
+
