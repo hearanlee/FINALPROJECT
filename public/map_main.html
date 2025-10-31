@@ -454,6 +454,13 @@
             var watchId = null; // 위치 추적 ID
             var map = null; // 지도 객체
             
+            // 현재 위치 좌표를 직접 사용하는 함수 (역지오코딩 없음)
+            function refineLocationWithTmap(lat, lon, callback) {
+                console.log('현재 위치 좌표 사용:', lat, lon);
+                // 역지오코딩 없이 바로 좌표 반환
+                callback(lat, lon, '');
+            }
+            
             // 현재 위치 가져오기 및 지도 초기화 함수
             function getCurrentLocationAndInitMap() {
                 if (navigator.geolocation) {
@@ -463,13 +470,13 @@
                             console.log('위치 정확도:', position.coords.accuracy, '미터');
                             
                             var accuracy = position.coords.accuracy;
+                            var initialLat = position.coords.latitude;
+                            var initialLon = position.coords.longitude;
                             
                             // 정확도 정보만 로그로 출력 (경고 제거)
                             if (accuracy > 100) {
                                 console.warn('위치 정확도가 낮습니다:', accuracy, '미터');
                             }
-                            
-                            userLocation = new Tmapv2.LatLng(position.coords.latitude, position.coords.longitude);
                             
                             // 정확도에 따라 줌 레벨 조정
                             var zoomLevel = 16; // 기본 줌 레벨
@@ -487,8 +494,9 @@
                             }
                             
                             // 현재 위치를 중심으로 지도 생성
+                            var initialLocation = new Tmapv2.LatLng(initialLat, initialLon);
                             map = new Tmapv2.Map(mapContainer, {
-                                center: userLocation,  // 현재 위치를 중심으로 설정
+                                center: initialLocation,  // 현재 위치를 중심으로 설정
                                 width: mapContainer.offsetWidth,
                                 height: mapContainer.offsetHeight,
                                 zoom: zoomLevel,
@@ -496,11 +504,11 @@
                                 scrollwheel: true
                             });
                             
-                            console.log('지도가 현재 위치를 중심으로 초기화됨:', userLocation);
+                            console.log('지도가 현재 위치를 중심으로 초기화됨:', initialLocation);
                             console.log('줌 레벨:', zoomLevel, '(정확도:', accuracy, '미터)');
                             
-                            // 현재 위치 마커 추가
-                            addUserLocationMarker();
+                            // Tmap API setCurrentLocation 함수로 현재 위치 설정
+                            userLocation = setCurrentLocation(initialLat, initialLon);
                             
                             // 위치 추적 시작
                             startLocationTracking();
@@ -654,15 +662,22 @@
                     watchId = navigator.geolocation.watchPosition(
                         function(position) {
                             console.log('위치 업데이트:', position.coords);
-                            var newLocation = new Tmapv2.LatLng(position.coords.latitude, position.coords.longitude);
+                            var initialLat = position.coords.latitude;
+                            var initialLon = position.coords.longitude;
                             
-                            // 위치가 크게 변했을 때만 마커 업데이트
+                            // 위치가 크게 변했을 때만 업데이트
                             if (userLocation) {
+                                var newLocation = new Tmapv2.LatLng(initialLat, initialLon);
                                 var distance = getDistance(userLocation, newLocation);
+                                
                                 if (distance > 10) { // 10미터 이상 이동했을 때만 업데이트
-                                    updateUserLocationMarker(newLocation); 
-                                    userLocation = newLocation;
+                                    console.log('위치 업데이트:', initialLat, initialLon);
+                                    // Tmap API setCurrentLocation 함수로 현재 위치 업데이트
+                                    userLocation = setCurrentLocation(initialLat, initialLon);
                                 }
+                            } else {
+                                // 첫 위치 설정
+                                userLocation = setCurrentLocation(initialLat, initialLon);
                             }
                         },
                         function(error) {
@@ -686,11 +701,46 @@
                 }
             }
             
+            // Tmap API를 사용한 현재 위치 업데이트 함수
+            function setCurrentLocation(lat, lon) {
+                if (!map) {
+                    console.error('지도 객체가 없습니다.');
+                    return;
+                }
+                
+                console.log('Tmap API setCurrentLocation 호출:', lat, lon);
+                
+                // 새로운 위치 객체 생성
+                var newLocation = new Tmapv2.LatLng(lat, lon);
+                
+                // 지도 중심을 새로운 위치로 이동
+                map.setCenter(newLocation);
+                
+                // 현재 위치 변수 업데이트
+                userLocation = newLocation;
+                
+                // 마커 업데이트
+                if (userLocationMarker) {
+                    userLocationMarker.setPosition(newLocation);
+                } else {
+                    // 마커가 없으면 새로 생성
+                    addUserLocationMarker();
+                }
+                
+                console.log('현재 위치 업데이트 완료:', lat, lon);
+                
+                return newLocation;
+            }
+            
             // 사용자 위치 마커 업데이트 함수
             function updateUserLocationMarker(newLocation) {
                 if (userLocationMarker) {
                     userLocationMarker.setPosition(newLocation);
                     console.log('현재 위치 마커 업데이트:', newLocation);
+                }
+                // Tmap API setCurrentLocation도 함께 호출
+                if (newLocation && map) {
+                    map.setCenter(newLocation);
                 }
             }
             
@@ -2049,11 +2099,8 @@
                     navigator.geolocation.getCurrentPosition(
                         function(position) {
                             console.log('현재 위치 가져오기 성공:', position.coords);
-                            var newUserLocation = new Tmapv2.LatLng(position.coords.latitude, position.coords.longitude);
-                            
-                            // 지도 중심을 현재 위치로 이동
-                            map.setCenter(newUserLocation);
-                            map.setZoom(16);
+                            var initialLat = position.coords.latitude;
+                            var initialLon = position.coords.longitude;
                             
                             // 기존 현재 위치 마커 제거 (안전한 방식)
                             if (userLocationMarker) {
@@ -2065,9 +2112,9 @@
                                 userLocationMarker = null;
                             }
                             
-                            // 새로운 현재 위치 마커 추가
-                            userLocation = newUserLocation;
-                            addUserLocationMarker();
+                            // Tmap API setCurrentLocation 함수로 현재 위치 설정
+                            userLocation = setCurrentLocation(initialLat, initialLon);
+                            map.setZoom(16);
                             
                             // 현재 위치 정보를 place 객체로 생성하여 하단 버튼들 활성화
                             var currentPlace = {

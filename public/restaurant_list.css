@@ -1,0 +1,167 @@
+/* restaurant_list.css */
+
+/* '원하는 음식점을 선택해주세요' 아래 화살표 */
+.separator {
+    font-size: 20px;
+    font-weight: bold;
+    color: #0D2A5C;
+    margin: 15px 0;
+    text-align: center;
+}
+
+/* 식당 목록을 감싸는 리스트 */
+.restaurant-list {
+    width: 100%;
+}
+
+/* 식당 아이템 하나하나 */
+.restaurant-item {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    border: 3px solid white; /* 선택 효과를 위해 미리 공간 확보 */
+    border-radius: 15px;
+    padding: 15px; /* 내부 여백을 좀 더 줍니다 */
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+/* JS로 선택되었을 때 스타일 */
+.restaurant-item.selected {
+    border-color: #007BFF;
+    background-color: #f8faff;
+}
+
+/* 식당 텍스트 정보 */
+.restaurant-info {
+    flex: 1;
+    text-align: left;
+}
+
+.info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.restaurant-name {
+    font-size: 18px; /* 이름을 더 잘보이게 키웁니다 */
+    font-weight: bold;
+    color: #0D2A5C;
+}
+
+.restaurant-distance {
+    font-size: 14px;
+    color: gray;
+}
+
+.restaurant-rating {
+    font-size: 15px;
+    color: #f5a623; /* 별점 색상 */
+    margin-bottom: 5px;
+}
+
+.restaurant-address {
+    font-size: 15px;
+    color: #333; /* 주소 글씨를 조금 더 진하게 */
+    font-weight: 500;
+}
+
+
+/* ======== 매장 상세 모달 스타일 ======== */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.6);
+    display: none; /* 평소에는 숨김 */
+    z-index: 10;
+}
+
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    border-radius: 20px;
+    padding: 20px;
+    width: 350px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    display: none; /* 평소에는 숨김 */
+    z-index: 20;
+}
+
+.modal-overlay.active,
+.modal.active {
+    display: block; /* JS로 active 클래스가 추가되면 보이도록 설정 */
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    color: #0D2A5C;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-right: 10px;
+}
+.close-button img {
+    width: 24px;
+    height: 24px;
+}
+
+/* 모달 내용물 (상세 정보) */
+.detail-modal-content {
+    text-align: left;
+    padding: 10px 5px;
+    color: #333;
+}
+
+.detail-modal-content h3 {
+    font-size: 20px;
+    font-weight: bold;
+    color: #0D2A5C;
+    margin-bottom: 8px;
+}
+
+.detail-modal-content p {
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: #555;
+    line-height: 1.4;
+}
+
+.detail-modal-content .restaurant-rating {
+    font-size: 16px;
+    color: #f5a623;
+    margin-bottom: 15px;
+}
+
+/* 엘레베이터 태그 스타일 */
+.tag {
+    display: inline-block;
+    background-color: #eaf3ff;
+    color: #007BFF;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+/* 모달 하단 버튼 정렬 */
+.modal-buttons {
+    padding: 0; 
+    margin-top: 10px;
+}
