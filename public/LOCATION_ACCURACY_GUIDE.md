@@ -176,3 +176,4 @@ watchPosition((position) => {
   - 실외: `enableHighAccuracy: true`, `timeout: 30초`
   - 실내: WiFi 기반 위치 사용 권장
 
+
