@@ -73,29 +73,50 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 5. "음식점 확인하기" 버튼 클릭 이벤트 (핵심!)
-    if (confirmBtn) {
-        confirmBtn.addEventListener('click', function() {
-            // 사용자가 식당을 선택했는지 확인
-            if (selectedItem) {
-                // 1. 선택된 아이템에서 식당 정보를 추출합니다.
-                const name = selectedItem.querySelector('.restaurant-name').textContent;
-                const address = selectedItem.querySelector('.restaurant-address').textContent;
-                const rating = selectedItem.querySelector('.restaurant-rating').textContent;
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function() {
+            // 사용자가 식당을 선택했는지 확인
+            if (selectedItem) {
+                // 1. 선택된 아이템에서 식당 정보를 추출합니다.
+                const name = selectedItem.querySelector('.restaurant-name').textContent;
+                const address = selectedItem.querySelector('.restaurant-address').textContent;
+                
+                // --- 💡 여기가 수정된 부분입니다 ---
+                // .restaurant-rating 요소가 있는지 안전하게 확인합니다.
+                const ratingElement = selectedItem.querySelector('.restaurant-rating');
+                const rating = ratingElement ? ratingElement.textContent : '⭐ 인기 ⭐'; // 없으면 기본값 (HTML의 '인기' 태그 참고)
+                
+                // 만약 Tmap API에서 평점 정보를 가져온다면, 
+                // '평점 정보 없음' 등으로 기본값을 바꿔도 됩니다.
+                // --- 💡 수정 끝 ---
 
-                // 2. 모달 내부의 텍스트를 추출한 정보로 변경합니다.
-                if (modalStoreName) modalStoreName.textContent = name;
-                if (modalStoreAddress) modalStoreAddress.textContent = address;
-                if (modalStoreRating) modalStoreRating.textContent = rating;
+                // 2. 모달 내부의 텍스트를 추출한 정보로 변경합니다.
+                if (modalStoreName) modalStoreName.textContent = name;
+                if (modalStoreAddress) modalStoreAddress.textContent = address;
+                
+                // 3. 모달의 평점란도 안전하게 업데이트
+                if (modalStoreRating) {
+                    modalStoreRating.textContent = rating;
+                    // 평점 요소가 실제로 존재할 때만 보이게 처리
+                    if (ratingElement) {
+                        modalStoreRating.style.display = 'block';
+                    } else {
+                        // '반지하돈부리'처럼 평점 요소가 아예 없으면, 
+                        // '⭐ 인기 ⭐' 텍스트가 보이되 CSS의 별점 스타일이 적용되지 않도록 하거나,
+                        // 아예 숨길 수 있습니다. 여기서는 우선 보이게 둡니다.
+                        // (CSS에서 .restaurant-rating 스타일을 확인해보세요)
+                    }
+                }
 
-                // 3. 페이지 이동 대신, 모달을 엽니다.
-                openModal(detailModal);
+                // 4. 모달을 엽니다. (이제 오류 없이 실행됩니다)
+                openModal(detailModal);
 
-            } else {
-                // 아무것도 선택하지 않았다면 경고창을 띄웁니다.
-                alert('음식점을 먼저 선택해주세요.');
-            }
-        });
-    }
+            } else {
+                // 아무것도 선택하지 않았다면 경고창을 띄웁니다.
+                alert('음식점을 먼저 선택해주세요.');
+            }
+        });
+    }
 
     // 현재 위치 가져오기
     function getCurrentLocation() {
