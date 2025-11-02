@@ -4,7 +4,7 @@ const GEMINI_API_KEY = "AIzaSyBTPdAB550YvY6hSJPZqvSNTdXx8zzm9BM"
 const GEMINI_MODEL = "gemini-2.5-pro";
 
 // 음성 속도 및 반복 설정
-let speechRate = 1.5; // 기본 속도 (보통)
+let speechRate = 1.0; // 기본 속도 (보통)
 let repeatCount = 1; // 기본 반복 횟수
 
 // 음성 인식 및 합성 초기화
@@ -17,6 +17,12 @@ let isProcessing = false; // API 호출 중인지 여부 (중복 호출 방지)
 let restartTimeout = null; // 재시작 타이머
 let maxRestartAttempts = 5; // 최대 재시작 시도 횟수
 let restartAttempts = 0; // 현재 재시작 시도 횟수
+let speechEndTimeout = null; // 말이 끝난 후 처리하는 타이머
+let lastSpeechTime = 0; // 마지막 음성 인식 시간
+
+// 대화 상태 관리
+let recommendedMenu = null; // 추천한 메뉴 (카레, 덮밥, 토스트)
+let awaitingConfirmation = false; // 사용자의 메뉴 확인을 기다리는지 여부
 
 // 모바일 환경 감지
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
@@ -46,33 +52,82 @@ window.addEventListener('focus', () => {
 // Gemini API 호출 함수
 async function callGeminiAPI(userMessage) {
     try {
-        // ▼▼▼▼▼ 여기부터 프롬프트가 수정되었습니다 ▼▼▼▼▼
+        // ▼▼▼▼▼ 여기부터 프롬프트가 수정되었습니다 ▼▼▼▼▼
 
-        // 1. AI가 추천할 메뉴 3가지를 여기에 정의합니다.
-        // (이 부분을 실제 메뉴로 변경하세요!)
-        const menuList = "덮밥, 카레, 토스트";
+        // 추천 가능한 메뉴 목록
+        const menuList = ["카레", "덮밥", "토스트"];
+        const menuListStr = menuList.join(", ");
 
-        // 2. AI에게 역할을 부여하고, 메뉴 3가지를 명확히 제한하는 프롬프트
-        const prompt = `
+        // 사용자의 긍정적인 반응을 감지하는 키워드
+        const positiveKeywords = ["좋", "괜찮", "맞", "그래", "예", "응", "네", "좋아", "좋다", "괜찮다", "맞아", "그래요", "좋아요"];
+        
+        // 대화 흐름에 따른 프롬프트 생성
+        let prompt = "";
+        
+        // 메뉴 추천 프롬프트
+        if (awaitingConfirmation && recommendedMenu) {
+            // 사용자가 메뉴를 좋다고 확인한 경우 체크
+            const userMessageLower = userMessage.toLowerCase();
+            const isPositive = positiveKeywords.some(keyword => userMessageLower.includes(keyword));
+            
+            if (isPositive) {
+                // 긍정적 반응이면 바로 응답 반환 (페이지 이동은 recognition.onresult에서 처리)
+                return `${recommendedMenu}를 파는 음식점을 추천해드릴게요.`;
+            }
+            // 확인 대기 중일 때는 확인 질문에 대한 응답 처리
+            prompt = `
 [시스템 지시]
-우리 가게의 메뉴는 오직 '${menuList}' 3가지뿐입니다.
+너는 메뉴를 추천하는 AI이다. 음식점 사장님 AI가 아니므로 "맛있게 만들어준다", "만들어드린다" 같은 표현은 절대 사용하지 말아라.
 
-[작업]
-사용자의 요청을 듣고, 반드시 '${menuList}' 3가지 메뉴 중에서만 1개를 골라 추천해야 합니다.
-절대로 이 목록에 없는 다른 메뉴를 지어내거나 언급해서는 안 됩니다.
-사용자가 "아무거나" 또는 "추천해줘"라고 말해도 3가지 메뉴 중에서 하나를 골라 추천해야 합니다.
+[현재 상황]
+이전에 ${recommendedMenu}를 추천했고, 사용자에게 "${recommendedMenu}가 좋으시면 ${recommendedMenu}를 파는 음식점을 추천해드릴까요?"라고 물어봤다.
 
-[응답 규칙]
-1. 친절하고 자연스러운 말투를 사용하세요.
-2. 반드시 3문장 이내로 간결하게 대답하세요.
-3. 한국어로 대답하세요.
+[대화 규칙]
+1. 사용자와 자연스럽게 대화하되, 친절하고 편안한 말투를 사용해라.
+2. 응답은 반드시 1문장으로 간결하게 작성해라.
+3. 한국어로 대답해라.
+4. 사용자가 긍정적인 반응을 보이면 그 메뉴가 확정된 것으로 이해해라.
+5. 사용자가 부정적인 반응을 보이면 다른 메뉴(카레, 덮밥, 토스트 중 ${recommendedMenu}가 아닌 다른 메뉴)를 특징과 함께 추천해라.
+6. 사용자가 말한 내용의 맥락을 유지해라. 이전에 어떤 메뉴에 대해 말했는지 기억하고 있어라.
 
 [사용자 요청]
 ${userMessage}
 
 [AI 응답]
 `;
-        // ▲▲▲▲▲ 여기까지 프롬프트가 수정되었습니다 ▲▲▲▲▲
+        } else {
+            // 일반적인 메뉴 추천
+            prompt = `
+[시스템 지시]
+너는 메뉴를 추천하는 AI이다. 음식점 사장님 AI가 아니므로 "맛있게 만들어준다", "만들어드린다" 같은 표현은 절대 사용하지 말아라.
+목표: 사용자가 원하는 메뉴를 찾아서 음식점 리스트 페이지까지 도달시키는 것이 목표다.
+
+[추천 가능한 메뉴 및 특징]
+오직 다음 3가지 메뉴 중에서만 추천할 수 있다:
+- 덮밥: 따뜻한 밥 위에 고기나 생선 등을 올린 일식 요리
+- 카레: 짙은 국물이 특징인 매운 맛의 요리
+- 토스트: 빵에 다양한 재료를 올린 간편한 식사
+절대로 이 목록에 없는 다른 메뉴를 추천하거나 언급해서는 안 된다.
+
+[대화 규칙]
+1. 사용자와 자연스럽게 대화하되, 친절하고 편안한 말투를 사용해라.
+2. 응답은 반드시 1문장으로 간결하게 작성해라.
+3. 한국어로 대답해라.
+4. 메뉴를 추천할 때는 해당 메뉴의 특징을 간단히 언급하면서 추천해라.
+   예: "따뜻한 덮밥 어떠세요?", "짙은 국물의 카레 어떠세요?", "간편한 토스트 어떠세요?"
+5. 메뉴 이름(덮밥, 카레, 토스트 중 하나)을 명확히 언급해라.
+6. 사용자가 이전에 추천받은 메뉴에 대해 긍정적인 반응을 보이면, 그 메뉴가 확정된 것으로 이해해라.
+7. 사용자가 이전에 추천받은 메뉴에 대해 부정적인 반응을 보이면, 다른 메뉴(3가지 중 다른 것)를 특징과 함께 추천해라.
+8. 꼭 사용자가 메뉴를 선택하도록 대화를 이끌어가라.
+9. 사용자가 말한 내용의 맥락을 유지해라. 예를 들어 "국물요리 어떠세요?"라고 했다면 사용자가 좋다고 했을 때 국물요리(카레)를 확정해야 한다.
+
+[사용자 요청]
+${userMessage}
+
+[AI 응답]
+`;
+        }
+        // ▲▲▲▲▲ 여기까지 프롬프트가 수정되었습니다 ▲▲▲▲▲
         
         // REST API로 Gemini 호출
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`, {
@@ -155,7 +210,7 @@ sponseText = responseText.replace(/#{1,6}\s+/g, '');
 }
 
 // 음성 합성 함수
-function speakText(text) {
+function speakText(text, onComplete) {
     // 이전 음성 중지
     synthesis.cancel();
     
@@ -175,8 +230,12 @@ function speakText(text) {
     const speakOnce = () => {
         if (currentRepeat >= repeatCount) {
             isSpeaking = false;
-            // 음성 합성이 끝나면 음성 인식 재개
-            if (isListening) {
+            // 음성 합성이 끝나면 콜백 실행
+            if (onComplete) {
+                onComplete();
+            }
+            // 음성 합성이 끝나면 음성 인식 재개 (콜백이 없는 경우만)
+            if (isListening && !onComplete) {
                 setTimeout(() => {
                     restartVoiceRecognition();
                 }, 500);
@@ -194,8 +253,12 @@ function speakText(text) {
                 setTimeout(speakOnce, 500);
             } else {
                 isSpeaking = false;
-                // 음성 합성이 끝나면 음성 인식 재개
-                if (isListening) {
+                // 음성 합성이 끝나면 콜백 실행
+                if (onComplete) {
+                    onComplete();
+                }
+                // 음성 합성이 끝나면 음성 인식 재개 (콜백이 없는 경우만)
+                if (isListening && !onComplete) {
                     setTimeout(() => {
                         restartVoiceRecognition();
                     }, 500);
@@ -205,8 +268,12 @@ function speakText(text) {
         
         utterance.onerror = () => {
             isSpeaking = false;
-            // 오류 발생 시에도 음성 인식 재개
-            if (isListening) {
+            // 오류 발생 시에도 콜백 실행
+            if (onComplete) {
+                onComplete();
+            }
+            // 오류 발생 시에도 음성 인식 재개 (콜백이 없는 경우만)
+            if (isListening && !onComplete) {
                 setTimeout(() => {
                     restartVoiceRecognition();
                 }, 500);
@@ -300,24 +367,21 @@ function startVoiceRecognition() {
                 return;
             }
             
-            // 마지막 결과만 가져오기 (continuous 모드이므로)
-            const resultIndex = event.results.length - 1;
+            // final 결과만 찾기
+            const finalResults = Array.from(event.results).filter(r => r.isFinal);
             
-            // 모바일에서는 final이 아닌 결과도 처리할 수 있도록 조정
-            const currentResult = event.results[resultIndex];
-            if (!isMobile && !currentResult.isFinal) {
+            // final 결과가 없으면 임시 결과만 있으므로 대기
+            if (finalResults.length === 0) {
                 return;
             }
             
-            // 모바일에서도 최종 결과 우선
-            const finalResult = Array.from(event.results).find(r => r.isFinal);
-            const useResult = finalResult || currentResult;
-            
-            if (!useResult || !useResult[0]) {
+            // 마지막 final 결과 사용
+            const lastFinalResult = finalResults[finalResults.length - 1];
+            if (!lastFinalResult || !lastFinalResult[0]) {
                 return;
             }
             
-            const transcript = useResult[0].transcript.trim();
+            const transcript = lastFinalResult[0].transcript.trim();
             
             // 빈 문자열이거나 너무 짧으면 무시
             if (!transcript || transcript.length < 1) {
@@ -330,35 +394,160 @@ function startVoiceRecognition() {
                 console.log('중복 음성 인식 무시:', transcript);
                 return;
             }
-            window.lastTranscript = transcript;
-            window.lastTranscriptTime = currentTime;
             
-            console.log('인식된 텍스트:', transcript);
+            // 마지막 음성 인식 시간 업데이트
+            lastSpeechTime = currentTime;
             
-            // 처리 시작
-            isProcessing = true;
-            
-            // 음성 인식 일시 중지 (Gemini 응답 대기)
-            try {
-                recognition.stop();
-                recognitionActive = false;
-            } catch (e) {
-                console.log('음성 인식 중지 중 오류:', e);
+            // 이전 타이머 취소
+            if (speechEndTimeout) {
+                clearTimeout(speechEndTimeout);
+                speechEndTimeout = null;
             }
             
-            // Gemini API 호출
-            try {
-                const geminiResponse = await callGeminiAPI(transcript);
+            // 사용자가 말이 끝나자마자 바로 처리 (즉시 응답)
+            speechEndTimeout = setTimeout(async () => {
+                // 처리 중이거나 음성 합성 중이면 취소
+                if (isProcessing || isSpeaking) {
+                    return;
+                }
                 
-                // 응답을 음성으로 재생 (음성 합성 중 음성 인식은 자동으로 재개됨)
-                speakText(geminiResponse);
+                // 최신 트랜스크립트 확인
+                window.lastTranscript = transcript;
+                window.lastTranscriptTime = currentTime;
+                
+                console.log('인식된 텍스트 (최종):', transcript);
+                
+                // 처리 시작
+                isProcessing = true;
+                
+                // 음성 인식 일시 중지 (Gemini 응답 대기)
+                try {
+                    recognition.stop();
+                    recognitionActive = false;
+                } catch (e) {
+                    console.log('음성 인식 중지 중 오류:', e);
+                }
+            
+                // Gemini API 호출
+                try {
+                    const geminiResponse = await callGeminiAPI(transcript);
+                
+                // 응답에서 추천된 메뉴 확인 (카레, 덮밥, 토스트)
+                const menuList = ["카레", "덮밥", "토스트"];
+                const recommendedMenuInResponse = menuList.find(menu => 
+                    geminiResponse.includes(menu)
+                );
+                
+                // 긍정적인 반응 키워드 확인
+                const positiveKeywords = ["좋", "괜찮", "맞", "그래", "예", "응", "네", "좋아", "좋다", "괜찮다", "맞아", "그래요", "좋아요", "좋아요", "그렇게", "그래요", "그렇다"];
+                const transcriptLower = transcript.toLowerCase();
+                const isPositive = positiveKeywords.some(keyword => transcriptLower.includes(keyword));
+                
+                console.log('디버그 - awaitingConfirmation:', awaitingConfirmation);
+                console.log('디버그 - isPositive:', isPositive);
+                console.log('디버그 - recommendedMenu:', recommendedMenu);
+                console.log('디버그 - transcript:', transcript);
+                
+                // 확인 대기 중이고 사용자가 긍정적으로 답한 경우 -> 메시지 재생 후 페이지 이동
+                if (awaitingConfirmation && isPositive && recommendedMenu) {
+                    console.log('페이지 이동 조건 충족:', { recommendedMenu, isPositive, awaitingConfirmation });
+                    // 음성으로 메시지 재생 (재생 완료 후 페이지 이동)
+                    const menuPages = {
+                        "카레": "restaurant_list_c.html",
+                        "덮밥": "restaurant_list_b.html",
+                        "토스트": "restaurant_list_t.html"
+                    };
+                    
+                    const targetPage = menuPages[recommendedMenu];
+                    
+                    if (targetPage) {
+                        console.log(`페이지 이동 준비: ${recommendedMenu} -> ${targetPage}`);
+                        // 메뉴 이름 저장 (콜백에서 사용하기 위해)
+                        const menuToNavigate = recommendedMenu;
+                        const pageToNavigate = targetPage;
+                        
+                        speakText(geminiResponse, () => {
+                            // 음성 재생이 완료된 후 페이지 이동
+                            console.log(`${menuToNavigate} 선택됨, 페이지 이동 실행: ${pageToNavigate}`);
+                            // 페이지 이동
+                            setTimeout(() => {
+                                console.log('실제 페이지 이동 실행:', pageToNavigate);
+                                window.location.href = pageToNavigate;
+                            }, 100);
+                        });
+                        
+                        // 상태 초기화는 페이지 이동 직전에
+                        // (콜백이 실행되지 않을 경우를 대비해서 약간의 지연 후에도 초기화)
+                    } else {
+                        console.error('타겟 페이지를 찾을 수 없음:', recommendedMenu);
+                        speakText(geminiResponse);
+                    }
+                    return;
+                }
+                // 메뉴가 추천되었고, 사용자가 긍정적인 반응을 보인 경우 -> 바로 페이지 이동
+                else if (recommendedMenuInResponse && isPositive && !awaitingConfirmation) {
+                    // 긍정적 반응이면 바로 음식점 리스트로 이동
+                    const menuPages = {
+                        "카레": "restaurant_list_c.html",
+                        "덮밥": "restaurant_list_b.html",
+                        "토스트": "restaurant_list_t.html"
+                    };
+                    
+                    const targetPage = menuPages[recommendedMenuInResponse];
+                    
+                    if (targetPage) {
+                        console.log(`긍정적 반응 - 바로 페이지 이동: ${recommendedMenuInResponse} -> ${targetPage}`);
+                        speakText(geminiResponse, () => {
+                            window.location.href = targetPage;
+                        });
+                        return;
+                    }
+                } else if (recommendedMenuInResponse && !awaitingConfirmation) {
+                    // 메뉴가 추천된 경우 -> 확인 질문 추가 (새로운 형식)
+                    recommendedMenu = recommendedMenuInResponse;
+                    awaitingConfirmation = true;
+                    const confirmationQuestion = `${recommendedMenuInResponse}가 좋으시면 ${recommendedMenuInResponse}를 파는 음식점을 추천해드릴까요?`;
+                    const fullResponse = geminiResponse + (geminiResponse.endsWith('.') || geminiResponse.endsWith('!') || geminiResponse.endsWith('?') ? ' ' : '. ') + confirmationQuestion;
+                    speakText(fullResponse);
+                } else {
+                    // 부정적 반응이거나 다른 메뉴를 요청한 경우
+                    const negativeKeywords = ["싫", "안 좋", "아니", "못", "그만", "다른", "싫어", "안 좋아"];
+                    const isNegative = negativeKeywords.some(keyword => transcriptLower.includes(keyword));
+                    
+                    if (isNegative && awaitingConfirmation && recommendedMenu) {
+                        // 부정적 반응 -> 다른 메뉴 추천하도록 상태 초기화
+                        recommendedMenu = null;
+                        awaitingConfirmation = false;
+                        // AI가 다른 메뉴를 추천하도록 응답
+                        speakText(geminiResponse);
+                    } else {
+                        // 일반 응답
+                        speakText(geminiResponse);
+                        // 응답에 메뉴가 포함되어 있으면 저장
+                        if (recommendedMenuInResponse && !awaitingConfirmation) {
+                            recommendedMenu = recommendedMenuInResponse;
+                            awaitingConfirmation = true;
+                            // 메뉴가 추천되면 바로 확인 질문 추가 (새로운 형식)
+                            setTimeout(() => {
+                                const confirmationQuestion = `${recommendedMenu}가 좋으시면 ${recommendedMenu}를 파는 음식점을 추천해드릴까요?`;
+                                speakText(confirmationQuestion);
+                            }, 2000); // AI 응답 후 2초 뒤 확인 질문
+                        } else if (!recommendedMenuInResponse && awaitingConfirmation) {
+                            // 메뉴 추천이 없으면 상태 초기화
+                            recommendedMenu = null;
+                            awaitingConfirmation = false;
+                        }
+                    }
+                }
             } catch (error) {
                 console.error('API 호출 오류:', error);
                 speakText('죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.');
             } finally {
                 // 처리 완료
                 isProcessing = false;
-            }
+                    speechEndTimeout = null;
+                }
+            }, 300); // 사용자가 말을 끝낸 후 0.3초 대기 (즉시 응답)
         };
 
         recognition.onerror = (event) => {
@@ -410,13 +599,20 @@ function startVoiceRecognition() {
             console.log('음성 인식 종료');
             recognitionActive = false;
             
-            // 의도적으로 중단된 게 아니라면 재시작
-            // 모바일에서는 더 적극적으로 재시작
-            if (isListening && !isSpeaking && isPageVisible) {
-                const delay = isMobile ? 300 : 500;
-                restartTimeout = setTimeout(() => {
-                    restartVoiceRecognition();
-                }, delay);
+            // 음성 인식이 끝난 후에도 speechEndTimeout이 실행되도록 대기
+            // 만약 아직 처리 중이 아니고 말이 끝난 상태라면 처리
+            if (isListening && !isSpeaking && isPageVisible && !isProcessing) {
+                // speechEndTimeout이 설정되어 있으면 그대로 진행
+                // 없으면 바로 재시작
+                if (!speechEndTimeout) {
+                    const delay = isMobile ? 500 : 800;
+                    restartTimeout = setTimeout(() => {
+                        restartVoiceRecognition();
+                    }, delay);
+                } else {
+                    // speechEndTimeout이 실행되면 그 후에 재시작
+                    // onresult에서 처리 완료 후 재시작하도록 함
+                }
             }
         };
     }
@@ -471,6 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (menuBookIcon) {
         menuBookIcon.addEventListener('click', async () => {
             if (!isListening) {
+                // 음성 인식 시작
                 // 모바일에서 권한 확인
                 if (isMobile && navigator.permissions) {
                     try {
@@ -493,8 +690,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     startVoiceRecognition();
                 }, isMobile ? 2500 : 2000); // 모바일에서는 조금 더 대기
             } else {
-                // 이미 활성화되어 있으면 안내 메시지만
-                speakText('음성 인식이 이미 활성화되어 있습니다. 말씀해주세요.');
+                // 이미 활성화되어 있으면 음성 인식 종료
+                isListening = false;
+                stopVoiceRecognition();
+                
+                // 타이머 정리
+                if (speechEndTimeout) {
+                    clearTimeout(speechEndTimeout);
+                    speechEndTimeout = null;
+                }
+                
+                // 상태 초기화
+                recommendedMenu = null;
+                awaitingConfirmation = false;
+                isProcessing = false;
+                
+                // 종료 메시지 재생
+                speakText('음성 대화가 종료되었습니다.');
+                console.log('음성 인식 종료됨');
             }
         });
         
@@ -554,8 +767,8 @@ document.addEventListener('DOMContentLoaded', () => {
             point.classList.add('active');
             document.querySelectorAll('#speedModal .label-item')[index].classList.add('active');
             
-            // 속도 설정 (1.0, 1.5, 2.0)
-            speechRate = [1.0, 1.5, 2.0][index];
+            // 속도 설정 (느림 0.7, 보통 1.0, 빠름 1.5)
+            speechRate = [0.7, 1.0, 1.5][index];
             console.log('음성 속도 설정:', speechRate);
         });
     });
