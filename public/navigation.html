@@ -102,6 +102,40 @@
             z-index: 20;
             color: #dc3545;
         }
+        
+        .remaining-distance-display {
+            position: absolute;
+            top: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(13, 42, 92, 0.95);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+            text-align: center;
+            min-width: 200px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .remaining-distance-display .distance-text {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        
+        .remaining-distance-display .distance-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 3px;
+        }
+        
+        .remaining-distance-display .time-text {
+            font-size: 14px;
+            opacity: 0.95;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -129,6 +163,12 @@
             </header>
 
             <a href="map_main.html" class="btn back-button-floating btn-floating-style">뒤로 가기</a>
+            
+            <div id="remainingDistanceDisplay" class="remaining-distance-display" style="display: none;">
+                <div class="distance-text" id="remainingDistanceText">-</div>
+                <div class="distance-label">남은 거리</div>
+                <div class="time-text" id="estimatedTimeText"></div>
+            </div>
             
             <div class="action-buttons bottom-buttons-floating">
                 <a href="main.html" class="btn btn-secondary">안내 종료</a>
@@ -205,13 +245,51 @@
         let currentPolylines = []; // 현재 표시된 경로들
         let currentOverlays = []; // 현재 표시된 오버레이들
         let resultdrawArr = []; // Tmap 경로 그리기 배열
+        let lastDistanceUpdatePosition = null; // 마지막으로 거리를 갱신한 위치
 
-        // 목적지 좌표 (포핸즈 - map_main.html에서 선택된 매장)
-        const destinationCoords = {
+        // 목적지 좌표 (URL 파라미터에서 가져옴)
+        let destinationCoords = {
             lat: 37.5839449,
             lng: 127.0535993,
             name: '포핸즈'
         };
+        
+        // URL 파라미터에서 좌표 정보 가져오기
+        function getUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const startLat = parseFloat(urlParams.get('startLat'));
+            const startLng = parseFloat(urlParams.get('startLng'));
+            const endLat = parseFloat(urlParams.get('endLat'));
+            const endLng = parseFloat(urlParams.get('endLng'));
+            
+            console.log('URL 파라미터:', { startLat, startLng, endLat, endLng });
+            
+            // 목적지 좌표 설정
+            if (!isNaN(endLat) && !isNaN(endLng)) {
+                destinationCoords = {
+                    lat: endLat,
+                    lng: endLng,
+                    name: '선택된 목적지'
+                };
+                console.log('목적지 설정됨:', destinationCoords);
+            }
+            
+            // 출발지 좌표가 있으면 현재 위치로 설정
+            if (!isNaN(startLat) && !isNaN(startLng)) {
+                currentPosition = {
+                    lat: startLat,
+                    lng: startLng,
+                    accuracy: 10, // 기본 정확도
+                    altitude: null,
+                    heading: null,
+                    speed: null
+                };
+                console.log('출발지 설정됨:', currentPosition);
+                return true; // URL에서 좌표를 가져왔음을 표시
+            }
+            
+            return false; // URL에서 좌표를 가져오지 못함
+        }
 
         // 기존 마커와 경로 제거 함수
         function clearMap() {
@@ -456,17 +534,7 @@
             });
             currentMarkers.push(destinationMarker);
 
-            // 목적지 인포윈도우
-            const destinationInfoWindow = new Tmapv2.InfoWindow({
-                position: new Tmapv2.LatLng(destinationCoords.lat, destinationCoords.lng),
-                    content: `
-                    <div style="padding: 10px; text-align: center; background: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
-                        <strong>${destinationCoords.name}</strong>
-                        </div>
-                `,
-                map: map
-                });
-            currentOverlays.push(destinationInfoWindow);
+            // 목적지 인포윈도우 제거됨
 
                 // 두 지점을 모두 포함하도록 지도 범위 조정
                 adjustMapBounds();
@@ -606,6 +674,8 @@
         }
 
         // Tmap 경로 그리기 함수
+        let estimatedTimeSeconds = null; // 예상 시간 저장 (초 단위)
+        
         function drawTmapLine(arrPoint, distance, time) {
             const polyline = new Tmapv2.Polyline({
                 path: arrPoint,
@@ -614,26 +684,12 @@
                 map: map
             });
             resultdrawArr.push(polyline);
-
-                        // 경로 정보 오버레이
-            const routeInfo = new Tmapv2.InfoWindow({
-                position: new Tmapv2.LatLng(
-                                (currentPosition.lat + destinationCoords.lat) / 2,
-                                (currentPosition.lng + destinationCoords.lng) / 2
-                            ),
-                            content: `
-                                <div style="padding: 15px; background: white; border: 2px solid #0D2A5C; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; min-width: 200px;">
-                        <strong>📍 도보 경로</strong><br>
-                                    <div style="margin-top: 5px;">
-                            <small>거리: ${(distance / 1000).toFixed(1)}km</small><br>
-                            <small>예상 시간: ${(time / 60).toFixed(0)}분</small>
-                                    </div>
-                                </div>
-                `,
-                map: map
-                        });
-
-                        currentOverlays.push(routeInfo);
+            
+            // 예상 시간 저장 (초 단위)
+            estimatedTimeSeconds = time;
+            
+            // 거리 갱신 (예상 시간 정보와 함께)
+            updateRemainingDistance();
         }
 
         // 직선 경로 표시 (API 실패 시 대체)
@@ -677,34 +733,11 @@
 
                 const distance = calculateDistance(startLat, startLng, endLat, endLng);
                 
-                // 거리 체크하여 다른 메시지 표시
-                const distanceKm = distance / 1000;
-                const isLongDistance = distanceKm > 30;
+                // 예상 시간 계산 (도보 평균 속도 4km/h 기준, 1km당 15분)
+                estimatedTimeSeconds = Math.round((distance / 1000) * 15 * 60);
                 
-                const routeInfo = new Tmapv2.InfoWindow({
-                    position: new Tmapv2.LatLng(
-                        (startLat + endLat) / 2,
-                        (startLng + endLng) / 2
-                    ),
-                    content: `
-                        <div style="padding: 15px; background: white; border: 2px solid #0D2A5C; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; min-width: 200px;">
-                            <strong>📍 ${isLongDistance ? '직선 경로' : '대략적인 경로'}</strong><br>
-                            <div style="margin-top: 5px;">
-                                <small>직선 거리: ${Math.round(distance / 1000 * 10) / 10}km</small><br>
-                                <small>예상 시간: ${Math.round(distance / 1000 * 15)}분</small><br>
-                                <small style="color: #666;">
-                                    ${isLongDistance ? 
-                                        '※ 30km 초과로 도보 길찾기 제한' : 
-                                        '※ 실제 도로와 다를 수 있습니다'
-                                    }
-                                </small>
-                            </div>
-                        </div>
-                    `,
-                    map: map
-                });
-
-                currentOverlays.push(routeInfo);
+                // 거리 갱신 (예상 시간 정보와 함께)
+                updateRemainingDistance();
 
                 console.log(`대략적인 경로 - 거리: ${Math.round(distance / 1000 * 10) / 10}km, 시간: ${Math.round(distance / 1000 * 15)}분`);
             } catch (error) {
@@ -769,15 +802,49 @@
                                 console.log(`위치 업데이트 조건 충족 - 거리: ${Math.round(distance)}m, 정확도 개선: ${accuracyImproved}`);
                                 currentPosition = newPosition;
                                 lastUpdateTime = now;
+                                
+                                // 100m 이동했는지 확인하여 남은 거리 갱신
+                                if (lastDistanceUpdatePosition) {
+                                    const distanceMoved = calculateDistance(
+                                        lastDistanceUpdatePosition.lat,
+                                        lastDistanceUpdatePosition.lng,
+                                        newPosition.lat,
+                                        newPosition.lng
+                                    );
+                                    
+                                    if (distanceMoved >= 100) {
+                                        console.log(`100m 이상 이동 감지: ${Math.round(distanceMoved)}m - 남은 거리 갱신`);
+                                        lastDistanceUpdatePosition = {
+                                            lat: newPosition.lat,
+                                            lng: newPosition.lng
+                                        };
+                                        updateRemainingDistance();
+                                    }
+                                } else {
+                                    // 첫 번째 거리 갱신 위치 설정 및 초기 거리 표시
+                                    lastDistanceUpdatePosition = {
+                                        lat: newPosition.lat,
+                                        lng: newPosition.lng
+                                    };
+                                    updateRemainingDistance();
+                                }
+                                
                                 updateMap();
                             } else {
                                 console.log(`위치 업데이트 조건 미충족 - 거리: ${Math.round(distance)}m`);
                             }
                         } else {
                             // 첫 번째 위치 설정
-                                currentPosition = newPosition;
+                            currentPosition = newPosition;
                             lastUpdateTime = now;
-                                updateMap();
+                            
+                            // 첫 거리 갱신 위치 설정 및 초기 거리 표시
+                            lastDistanceUpdatePosition = {
+                                lat: newPosition.lat,
+                                lng: newPosition.lng
+                            };
+                            updateRemainingDistance();
+                            updateMap();
                         }
                     },
                     (error) => {
@@ -823,6 +890,60 @@
             return R * c;
         }
 
+        // 남은 거리 업데이트 및 표시
+        function updateRemainingDistance() {
+            if (!currentPosition || !destinationCoords) return;
+
+            const remainingDistance = calculateDistance(
+                currentPosition.lat,
+                currentPosition.lng,
+                destinationCoords.lat,
+                destinationCoords.lng
+            );
+
+            const distanceDisplay = document.getElementById('remainingDistanceDisplay');
+            const distanceText = document.getElementById('remainingDistanceText');
+            const timeText = document.getElementById('estimatedTimeText');
+
+            if (distanceDisplay && distanceText && timeText) {
+                // 거리 표시 포맷팅 (km 또는 m)
+                if (remainingDistance >= 1000) {
+                    const km = (remainingDistance / 1000).toFixed(1);
+                    distanceText.textContent = `${km} km`;
+                } else {
+                    distanceText.textContent = `${Math.round(remainingDistance)} m`;
+                }
+
+                // 예상 시간 계산 및 표시
+                let estimatedMinutes;
+                if (estimatedTimeSeconds !== null) {
+                    // Tmap API에서 받은 예상 시간이 있으면 사용
+                    estimatedMinutes = Math.round(estimatedTimeSeconds / 60);
+                } else {
+                    // 직선 거리 기반 예상 시간 계산 (도보 평균 속도 4km/h, 1km당 15분)
+                    estimatedMinutes = Math.round((remainingDistance / 1000) * 15);
+                }
+                
+                // 예상 시간 표시 (1시간 이상이면 시간과 분으로 표시)
+                if (estimatedMinutes >= 60) {
+                    const hours = Math.floor(estimatedMinutes / 60);
+                    const minutes = estimatedMinutes % 60;
+                    if (minutes > 0) {
+                        timeText.textContent = `예상 시간: ${hours}시간 ${minutes}분`;
+                    } else {
+                        timeText.textContent = `예상 시간: ${hours}시간`;
+                    }
+                } else {
+                    timeText.textContent = `예상 시간: ${estimatedMinutes}분`;
+                }
+
+                // 표시 요소 보이기
+                distanceDisplay.style.display = 'block';
+            }
+
+            console.log(`남은 거리 갱신: ${remainingDistance >= 1000 ? (remainingDistance / 1000).toFixed(1) + 'km' : Math.round(remainingDistance) + 'm'}`);
+        }
+
         // 지도 업데이트
         function updateMap() {
             if (map && currentPosition) {
@@ -866,13 +987,34 @@
             }
         }
 
+        // 초기 거리 표시 설정
+        function initializeDistanceDisplay() {
+            if (currentPosition && destinationCoords && !lastDistanceUpdatePosition) {
+                lastDistanceUpdatePosition = {
+                    lat: currentPosition.lat,
+                    lng: currentPosition.lng
+                };
+                updateRemainingDistance();
+            }
+        }
+
         // 페이지 로드 시 실행
         window.addEventListener('load', async function() {
             try {
-                console.log('현재 위치를 가져오는 중...');
+                console.log('페이지 로드 시작');
                 
-                await getCurrentLocation();
+                // URL 파라미터에서 좌표 정보 가져오기
+                const hasUrlParams = getUrlParameters();
+                
+                if (!hasUrlParams) {
+                    console.log('URL 파라미터가 없음, 현재 위치를 가져오는 중...');
+                    await getCurrentLocation();
+                } else {
+                    console.log('URL 파라미터에서 좌표를 가져왔음');
+                }
+                
                 console.log('현재 위치:', currentPosition);
+                console.log('목적지:', destinationCoords);
                 
                 // Tmap API 로드 확인 및 초기화
                 function tryInitMap() {
@@ -893,6 +1035,9 @@
                     if (window.tmapApiLoaded || (typeof Tmapv2 !== 'undefined' && Tmapv2 && typeof Tmapv2.LatLng !== 'undefined')) {
                         console.log('Tmap API 완전히 로드됨, 지도 초기화 시작');
                         initMap();
+                        
+                        // 초기 거리 표시 설정
+                        initializeDistanceDisplay();
                         
                         // 지도 초기화 후 위치 추적 시작
                         startLocationTracking();

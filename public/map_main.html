@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Permissions-Policy" content="accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()">
+    <meta http-equiv="Permissions-Policy" content="accelerometer=(), camera=(), geolocation=(self), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()">
     <title>포핸즈 매장 찾기</title>
     <link rel="stylesheet" href="menu.css">
     <style>
@@ -26,6 +26,7 @@
             left: 0;
             z-index: 1;
             background-color: #e0e0e0; /* 지도 배경색 */
+            touch-action: pan-x pan-y pinch-zoom; /* 모바일 터치 최적화 */
         }
         
         .search-bar-floating {
@@ -53,6 +54,24 @@
             outline: none;
             flex: 1;
             font-size: 14px;
+        }
+        
+        .current-location-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            margin-left: 10px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        
+        .current-location-btn:hover {
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+        
+        .current-location-btn:active {
+            background-color: rgba(0, 123, 255, 0.2);
         }
 
         /* 오버레이 스타일 */
@@ -86,9 +105,18 @@
             transform: translateY(-50%);
             width: 20px;
             height: 20px;
+            min-width: 32px;
+            min-height: 32px;
             background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>') no-repeat center;
             background-size: 16px;
             cursor: pointer;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            user-select: none;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .body {
@@ -142,6 +170,14 @@
             left: 20px;
             right: 20px;
             z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .bottom-buttons-floating.active {
+            opacity: 1;
+            pointer-events: auto;
         }
         
         .button-row {
@@ -282,6 +318,42 @@
         .info .desc a:hover {
             text-decoration: underline;
         }
+        
+        /* 모든 마커에 터치 이벤트 지원 */
+        [class*="tmap_marker"],
+        [id*="marker"],
+        img[src*="icon_mappin"],
+        img[src*="current_state"] {
+            touch-action: manipulation !important;
+            -webkit-touch-callout: none !important;
+            user-select: none !important;
+            pointer-events: auto !important;
+            cursor: pointer !important;
+        }
+        
+        /* 모든 닫기 버튼에 터치 이벤트 지원 - 강화 */
+        #closeDetailBtn,
+        #closeBasicBtn,
+        .close,
+        button[id*="close"],
+        div[id*="close"] {
+            touch-action: manipulation !important;
+            -webkit-touch-callout: none !important;
+            user-select: none !important;
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            min-width: 44px !important;
+            min-height: 44px !important;
+            -webkit-tap-highlight-color: transparent !important;
+            z-index: 999999999 !important;
+            position: relative !important;
+        }
+        
+        /* 닫기 버튼의 모든 부모 요소도 터치 가능하도록 */
+        .tmap_infowindow,
+        .tmap_infowindow * {
+            pointer-events: auto !important;
+        }
     </style>
 </head>
 <body>
@@ -297,7 +369,24 @@
 
             <div class="search-bar-floating">
                 <img src="./images/icon_search.png" alt="검색" class="search-icon">
-                <input type="text" class="search-input" placeholder="매장명 또는 주소 검색" id="searchInput">
+                <input type="text" class="search-input" placeholder="매장명 또는 주소 검색" id="searchInput" readonly>
+                <button id="currentLocationBtn" class="current-location-btn" title="현재 위치로 이동">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="#007bff">
+                        <!-- 배경 원형 테두리 (두꺼운 테두리) -->
+                        <circle cx="10" cy="10" r="8" fill="none" stroke="#007bff" stroke-width="2.5"/>
+                        <!-- 중앙 채워진 파란색 원 (더 작게) -->
+                        <circle cx="10" cy="10" r="2.5" fill="#007bff"/>
+                        <!-- 십자선 팔들 (둥근 끝, 더 길게) -->
+                        <!-- 위쪽 선 -->
+                        <rect x="8" y="0" width="4" height="7" fill="#007bff" rx="2" ry="2"/>
+                        <!-- 아래쪽 선 -->
+                        <rect x="8" y="13" width="4" height="7" fill="#007bff" rx="2" ry="2"/>
+                        <!-- 왼쪽 선 -->
+                        <rect x="0" y="8" width="7" height="4" fill="#007bff" rx="2" ry="2"/>
+                        <!-- 오른쪽 선 -->
+                        <rect x="13" y="8" width="7" height="4" fill="#007bff" rx="2" ry="2"/>
+                    </svg>
+                </button>
             </div>
 
             <div class="bottom-buttons-floating">
@@ -404,47 +493,455 @@
             mapContainer.style.width = mapContainer.offsetWidth + 'px';
             mapContainer.style.height = mapContainer.offsetHeight + 'px';
             
-            var map = new Tmapv2.Map(mapContainer, {
-                center: new Tmapv2.LatLng(37.5835897, 127.0565725),  // 지도의 중심좌표는 전농관
-                width: mapContainer.offsetWidth,
-                height: mapContainer.offsetHeight,
-                zoom: 15, // 확대 레벨을 15로 증가 (더 가까이)
-                zoomControl: true,
-                scrollwheel: true
-            });
+            // 현재 위치를 먼저 가져온 후 지도 초기화
+            var defaultCenter = new Tmapv2.LatLng(37.5835897, 127.0565725); // 기본 중심좌표 (전농관)
+            var userLocation = null;
+            var userLocationMarker = null;
+            var watchId = null; // 위치 추적 ID
+            var map = null; // 지도 객체
             
-            console.log('지도 객체 생성 완료:', map);
+            // 현재 위치 좌표를 직접 사용하는 함수 (역지오코딩 없음)
+            function refineLocationWithTmap(lat, lon, callback) {
+                console.log('현재 위치 좌표 사용:', lat, lon);
+                // 역지오코딩 없이 바로 좌표 반환
+                callback(lat, lon, '');
+            }
             
-            // 지도 로드 완료 이벤트 추가
-            map.addListener('tilesloaded', function() {
-                console.log('지도 타일 로드 완료');
-                console.log('지도 객체:', map);
-                console.log('지도 중심:', map.getCenter());
-                console.log('지도 줌 레벨:', map.getZoom());
-            });
+            // 현재 위치 가져오기 및 지도 초기화 함수
+            function getCurrentLocationAndInitMap() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        function(position) {
+                            console.log('현재 위치 가져오기 성공:', position.coords);
+                            console.log('위치 정확도:', position.coords.accuracy, '미터');
+                            
+                            var accuracy = position.coords.accuracy;
+                            var initialLat = position.coords.latitude;
+                            var initialLon = position.coords.longitude;
+                            
+                            // 정확도 정보만 로그로 출력 (경고 제거)
+                            if (accuracy > 100) {
+                                console.warn('위치 정확도가 낮습니다:', accuracy, '미터');
+                            }
+                            
+                            // 정확도에 따라 줌 레벨 조정
+                            var zoomLevel = 16; // 기본 줌 레벨
+                            
+                            if (accuracy > 200) {
+                                zoomLevel = 13; // 매우 낮은 정확도
+                            } else if (accuracy > 100) {
+                                zoomLevel = 14; // 낮은 정확도
+                            } else if (accuracy > 50) {
+                                zoomLevel = 15; // 보통 정확도
+                            } else if (accuracy > 20) {
+                                zoomLevel = 16; // 좋은 정확도
+                            } else if (accuracy <= 10) {
+                                zoomLevel = 17; // 매우 좋은 정확도
+                            }
+                            
+                            // 현재 위치를 중심으로 지도 생성
+                            var initialLocation = new Tmapv2.LatLng(initialLat, initialLon);
+                            map = new Tmapv2.Map(mapContainer, {
+                                center: initialLocation,  // 현재 위치를 중심으로 설정
+                                width: mapContainer.offsetWidth,
+                                height: mapContainer.offsetHeight,
+                                zoom: zoomLevel,
+                                zoomControl: true,
+                                scrollwheel: true
+                            });
+                            
+                            console.log('지도가 현재 위치를 중심으로 초기화됨:', initialLocation);
+                            console.log('줌 레벨:', zoomLevel, '(정확도:', accuracy, '미터)');
+                            
+                            // Tmap API setCurrentLocation 함수로 현재 위치 설정
+                            userLocation = setCurrentLocation(initialLat, initialLon);
+                            
+                            // 위치 추적 시작
+                            startLocationTracking();
+                            
+                            // 지도 이벤트 리스너 추가
+                            addMapEventListeners();
+                        },
+                        function(error) {
+                            console.error('현재 위치 가져오기 실패:', error);
+                            console.log('기본 위치 사용:', defaultCenter);
+                            
+                            // 오류 발생 시 기본 중심좌표로 지도 생성
+                            map = new Tmapv2.Map(mapContainer, {
+                                center: defaultCenter,
+                                width: mapContainer.offsetWidth,
+                                height: mapContainer.offsetHeight,
+                                zoom: 15,
+                                zoomControl: true,
+                                scrollwheel: true
+                            });
+                            
+                            // 지도 이벤트 리스너 추가
+                            addMapEventListeners();
+                        },
+                        {
+                            enableHighAccuracy: true, // GPS 사용
+                            timeout: 30000, // 30초로 증가 (더 오래 기다림)
+                            maximumAge: 0 // 캐시 사용 안함 (최신 위치)
+                        }
+                    );
+                } else {
+                    console.log('Geolocation을 지원하지 않는 브라우저입니다.');
+                    
+                    // 위치 서비스 미지원 시 기본 중심좌표로 지도 생성
+                    map = new Tmapv2.Map(mapContainer, {
+                        center: defaultCenter,
+                        width: mapContainer.offsetWidth,
+                        height: mapContainer.offsetHeight,
+                        zoom: 15,
+                        zoomControl: true,
+                        scrollwheel: true
+                    });
+                    
+                    // 지도 이벤트 리스너 추가
+                    addMapEventListeners();
+                }
+            }
             
-            // 지도 클릭 이벤트 추가 (디버깅용)
-            map.addListener('click', function(event) {
+            // 현재 위치를 가져온 후 지도 초기화
+            getCurrentLocationAndInitMap();
+            
+            // 현재 위치 마커 추가 함수
+            function addUserLocationMarker() {
+                if (userLocation && !userLocationMarker) {
+                    try {
+                        // 현재 위치 마커 생성 (current_state.png 사용)
+                        userLocationMarker = new Tmapv2.Marker({
+                            map: map,
+                            position: userLocation,
+                            title: '현재 위치',
+                            icon: "./images/current_state.png",
+                            iconSize: new Tmapv2.Size(32, 32), // 아이콘 크기
+                            zIndex: -1 // 팝업보다 훨씬 낮은 z-index
+                        });
+                        
+                        // 현재 위치 정보 표시 함수
+                        var showCurrentLocationInfo = function() {
+                            console.log('현재 위치 마커 클릭/터치됨');
+                            
+                            // 현재 위치 마커 클릭 시 검색창 포커스 해제 및 readonly 재설정
+                            var searchInput = document.getElementById('searchInput');
+                            if (searchInput && document.activeElement === searchInput) {
+                                searchInput.blur();
+                                searchInput.setAttribute('readonly', 'readonly');
+                                console.log('현재 위치 마커 클릭으로 검색창 포커스 해제 및 readonly 재설정');
+                            }
+                            
+                            // 기존 모든 팝업 제거
+                            clearAllPopups();
+                            
+                            // 모든 마커 숨기기
+                            hideAllMarkers();
+                            
+                            // 현재 위치 정보를 place 객체로 생성
+                            var currentPlace = {
+                                id: 'current_location',
+                                name: '현재 위치',
+                                address: '현재 위치',
+                                lat: userLocation.lat(),
+                                lon: userLocation.lng(),
+                                category: '현재 위치',
+                                telNo: '',
+                                pkey: null
+                            };
+                            
+                            // 현재 위치 정보 표시
+                            var infoWindow = new Tmapv2.InfoWindow({
+                                content: '<div style="padding: 12px; text-align: center; background: #f8f9fa; border-radius: 8px; z-index: 99999;">' +
+                                        '<div style="color: #007bff; font-weight: bold; margin-bottom: 8px;">🎯 현재 위치</div>' +
+                                        '<div style="font-size: 11px; color: #28a745; font-weight: bold;">✓ 정확한 위치입니다</div>' +
+                                        '</div>',
+                                position: userLocation,
+                                map: map,
+                                zIndex: 1000
+                            });
+                            
+                            // 이전 정보창이 있으면 제거 (안전한 방식)
+                            if (window.currentUserLocationInfoWindow) {
+                                try {
+                                    window.currentUserLocationInfoWindow.setMap(null);
+                                } catch (e) {
+                                    console.log('기존 현재 위치 정보창 제거 중 오류 (무시):', e);
+                                }
+                                window.currentUserLocationInfoWindow = null;
+                            }
+                            
+                            // 현재 정보창 저장
+                            window.currentUserLocationInfoWindow = infoWindow;
+                            
+                            // 팝업을 맨 앞으로 가져오기
+                            setTimeout(function() {
+                                try {
+                                    var mapContainer = document.getElementById('map');
+                                    if (mapContainer) {
+                                        var popupElements = mapContainer.querySelectorAll('.tmap_infowindow');
+                                        if (popupElements.length > 0) {
+                                            var lastPopup = popupElements[popupElements.length - 1];
+                                            lastPopup.style.zIndex = '9999';
+                                            lastPopup.style.position = 'relative';
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.log('현재 위치 팝업 z-index 설정 실패:', e);
+                                }
+                            }, 200);
+                            
+                            // 하단 버튼들 활성화
+                            activateBottomButtons(currentPlace);
+                        };
+                        
+                        // Tmap API 클릭 이벤트 추가
+                        Tmapv2.event.addListener(userLocationMarker, 'click', showCurrentLocationInfo);
+                        
+                        // HTML 요소에 직접 터치 이벤트 추가 (모바일 지원)
+                        setTimeout(function() {
+                            function attachUserLocationMarkerEvents(retryCount) {
+                                retryCount = retryCount || 0;
+                                if (retryCount > 5) {
+                                    console.log('현재 위치 마커 HTML 요소를 찾을 수 없음 (재시도 실패)');
+                                    return;
+                                }
+                                
+                                try {
+                                    var markerElement = userLocationMarker._htmlElement;
+                                    if (markerElement) {
+                                        console.log('현재 위치 마커 HTML 요소 찾음:', markerElement);
+                                        
+                                        // CSS 스타일 설정 (터치 지원)
+                                        markerElement.style.cursor = 'pointer';
+                                        markerElement.style.pointerEvents = 'auto';
+                                        markerElement.style.touchAction = 'manipulation';
+                                        markerElement.style.webkitTouchCallout = 'none';
+                                        markerElement.style.userSelect = 'none';
+                                        
+                                        // 클릭 이벤트
+                                        markerElement.addEventListener('click', function(e) {
+                                            if (e) {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                            }
+                                            showCurrentLocationInfo();
+                                            return false;
+                                        }, { passive: false });
+                                        
+                                        // 터치 이벤트 (모바일 필수)
+                                        markerElement.addEventListener('touchend', function(e) {
+                                            e.stopPropagation();
+                                            e.preventDefault();
+                                            console.log('현재 위치 마커 터치됨 (touchend)');
+                                            showCurrentLocationInfo();
+                                            return false;
+                                        }, { passive: false });
+                                        
+                                        markerElement.addEventListener('touchstart', function(e) {
+                                            e.stopPropagation();
+                                            console.log('현재 위치 마커 터치 시작');
+                                        }, { passive: false });
+                                        
+                                        console.log('현재 위치 마커 HTML 요소에 모든 이벤트 추가 완료 (터치 지원)');
+                                    } else {
+                                        console.log('현재 위치 마커 HTML 요소를 찾을 수 없음, 재시도:', retryCount + 1);
+                                        setTimeout(function() {
+                                            attachUserLocationMarkerEvents(retryCount + 1);
+                                        }, 500);
+                                    }
+                                } catch (e) {
+                                    console.error('현재 위치 마커 HTML 요소 이벤트 추가 실패:', e);
+                                    if (retryCount < 5) {
+                                        setTimeout(function() {
+                                            attachUserLocationMarkerEvents(retryCount + 1);
+                                        }, 500);
+                                    }
+                                }
+                            }
+                            attachUserLocationMarkerEvents(0);
+                        }, 500);
+                        
+                        console.log('현재 위치 마커 추가됨:', userLocation);
+                    } catch (error) {
+                        console.error('현재 위치 마커 생성 오류:', error);
+                        
+                        // 오류 발생 시 기본 마커로 생성
+                        userLocationMarker = new Tmapv2.Marker({
+                            map: map,
+                            position: userLocation,
+                            title: '현재 위치'
+                        });
+                    }
+                }
+            }
+            
+            // 위치 추적 시작 함수
+            function startLocationTracking() {
+                if (navigator.geolocation && !watchId) {
+                    console.log('위치 추적 시작');
+                    watchId = navigator.geolocation.watchPosition(
+                        function(position) {
+                            console.log('위치 업데이트:', position.coords);
+                            var initialLat = position.coords.latitude;
+                            var initialLon = position.coords.longitude;
+                            
+                            // 위치가 크게 변했을 때만 업데이트
+                            if (userLocation) {
+                                var newLocation = new Tmapv2.LatLng(initialLat, initialLon);
+                                var distance = getDistance(userLocation, newLocation);
+                                
+                                if (distance > 10) { // 10미터 이상 이동했을 때만 업데이트
+                                    console.log('위치 업데이트:', initialLat, initialLon);
+                                    // Tmap API setCurrentLocation 함수로 현재 위치 업데이트
+                                    userLocation = setCurrentLocation(initialLat, initialLon);
+                                }
+                            } else {
+                                // 첫 위치 설정
+                                userLocation = setCurrentLocation(initialLat, initialLon);
+                            }
+                        },
+                        function(error) {
+                            console.error('위치 추적 오류:', error);
+                        },
+                        {
+                            enableHighAccuracy: true,
+                            timeout: 15000,
+                            maximumAge: 0 // 캐시 사용 안함 (최신 위치)
+                        }
+                    );
+                }
+            }
+            
+            // 위치 추적 중지 함수
+            function stopLocationTracking() {
+                if (watchId) {
+                    navigator.geolocation.clearWatch(watchId);
+                    watchId = null;
+                    console.log('위치 추적 중지');
+                }
+            }
+            
+            // Tmap API를 사용한 현재 위치 업데이트 함수
+            function setCurrentLocation(lat, lon) {
+                if (!map) {
+                    console.error('지도 객체가 없습니다.');
+                    return;
+                }
+                
+                console.log('Tmap API setCurrentLocation 호출:', lat, lon);
+                
+                // 새로운 위치 객체 생성
+                var newLocation = new Tmapv2.LatLng(lat, lon);
+                
+                // 지도 중심을 새로운 위치로 이동
+                map.setCenter(newLocation);
+                
+                // 현재 위치 변수 업데이트
+                userLocation = newLocation;
+                
+                // 마커 업데이트
+                if (userLocationMarker) {
+                    userLocationMarker.setPosition(newLocation);
+                } else {
+                    // 마커가 없으면 새로 생성
+                    addUserLocationMarker();
+                }
+                
+                console.log('현재 위치 업데이트 완료:', lat, lon);
+                
+                return newLocation;
+            }
+            
+            // 사용자 위치 마커 업데이트 함수
+            function updateUserLocationMarker(newLocation) {
+                if (userLocationMarker) {
+                    userLocationMarker.setPosition(newLocation);
+                    console.log('현재 위치 마커 업데이트:', newLocation);
+                }
+                // Tmap API setCurrentLocation도 함께 호출
+                if (newLocation && map) {
+                    map.setCenter(newLocation);
+                }
+            }
+            
+            // 두 좌표 간의 거리 계산 함수 (미터)
+            function getDistance(latLng1, latLng2) {
+                var R = 6371000; // 지구 반지름 (미터)
+                var dLat = (latLng2.lat() - latLng1.lat()) * Math.PI / 180;
+                var dLng = (latLng2.lng() - latLng1.lng()) * Math.PI / 180;
+                var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                        Math.cos(latLng1.lat() * Math.PI / 180) * Math.cos(latLng2.lat() * Math.PI / 180) *
+                        Math.sin(dLng/2) * Math.sin(dLng/2);
+                var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return R * c;
+            }
+            
+            // 정확도 정보 표시 함수 제거됨
+            
+            // 지도 이벤트 리스너 추가 함수
+            function addMapEventListeners() {
+                if (!map) {
+                    console.error('지도 객체가 없어서 이벤트 리스너를 추가할 수 없습니다.');
+                    return;
+                }
+                
+                // 지도 로드 완료 이벤트 추가
+                map.addListener('tilesloaded', function() {
+                    console.log('지도 타일 로드 완료');
+                    console.log('지도 객체:', map);
+                    console.log('지도 중심:', map.getCenter());
+                    console.log('지도 줌 레벨:', map.getZoom());
+                });
+                
+                // 지도 클릭 이벤트 추가 (디버깅용)
+                map.addListener('click', function(event) {
                 console.log('지도 클릭됨:', event.latLng);
                 
-                // 포핸즈 마커 근처를 클릭했는지 확인
-                var pohandsPosition = pohandsMarker.getPosition();
                 var clickPosition = event.latLng;
                 
-                // 거리 계산 (간단한 근사치)
-                var latDiff = Math.abs(clickPosition.lat() - pohandsPosition.lat());
-                var lngDiff = Math.abs(clickPosition.lng() - pohandsPosition.lng());
+                // 포핸즈 마커 근처를 클릭했는지 확인 (주석 처리됨)
+                // var pohandsPosition = pohandsMarker.getPosition();
                 
-                console.log('클릭 위치와 포핸즈 마커 거리:', latDiff, lngDiff);
-                console.log('포핸즈 마커 위치:', pohandsPosition.lat(), pohandsPosition.lng());
-                console.log('클릭 위치:', clickPosition.lat(), clickPosition.lng());
+                // 거리 계산 (간단한 근사치)
+                // var latDiff = Math.abs(clickPosition.lat() - pohandsPosition.lat());
+                // var lngDiff = Math.abs(clickPosition.lng() - pohandsPosition.lng());
+                
+                // console.log('클릭 위치와 포핸즈 마커 거리:', latDiff, lngDiff);
+                // console.log('포핸즈 마커 위치:', pohandsPosition.lat(), pohandsPosition.lng());
+                // console.log('클릭 위치:', clickPosition.lat(), clickPosition.lng());
                 
                 // 0.005도 이내면 포핸즈 근처로 간주 (약 500m) - 매우 넓은 범위
-                if (latDiff < 0.005 && lngDiff < 0.005) {
-                    console.log('포핸즈 근처 클릭됨 - 오버레이 표시');
-                    overlay.setMap(map);
-                    enableButtons();
-                }
+                // if (latDiff < 0.005 && lngDiff < 0.005) {
+                //     console.log('포핸즈 근처 클릭됨 - 오버레이 표시');
+                //     overlay.setMap(map);
+                //     enableButtons();
+                // }
+                
+                // 검색 결과 마커 근처 클릭 확인
+                searchResultMarkers.forEach(function(marker, index) {
+                    var markerPosition = marker.getPosition();
+                    var markerLatDiff = Math.abs(clickPosition.lat() - markerPosition.lat());
+                    var markerLngDiff = Math.abs(clickPosition.lng() - markerPosition.lng());
+                    
+                    console.log('검색 결과 마커 ' + index + ' 거리:', markerLatDiff, markerLngDiff);
+                    
+                    // 0.001도 이내면 검색 결과 마커 근처로 간주 (약 100m)
+                    if (markerLatDiff < 0.001 && markerLngDiff < 0.001) {
+                        console.log('검색 결과 마커 ' + index + ' 근처 클릭됨');
+                        
+                        // 마커 정보 가져오기
+                        var placeData = {
+                            name: marker.getTitle() || '알 수 없는 장소',
+                            address: '주소 정보 없음',
+                            lat: markerPosition.lat(),
+                            lon: markerPosition.lng(),
+                            category: '검색 결과'
+                        };
+                        
+                        showSimplePlaceDetail(placeData, marker);
+                    }
+                });
             });
             
             // 지도 mousedown 이벤트도 추가
@@ -452,73 +949,121 @@
                 console.log('지도 mousedown됨:', event.latLng);
             });
             
-            // 마커 HTML 요소에 직접 클릭 이벤트 추가
-            setTimeout(function() {
-                try {
-                    var markerElement = pohandsMarker._htmlElement;
-                    if (markerElement) {
-                        console.log('마커 HTML 요소 찾음:', markerElement);
-                        markerElement.style.cursor = 'pointer';
-                        markerElement.style.pointerEvents = 'auto';
-                        
-                        // 기존 이벤트 리스너 제거 후 새로 추가
-                        markerElement.onclick = function(e) {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            console.log('마커 HTML 요소 클릭됨 (onclick)');
-                            overlay.setMap(map);
-                            enableButtons();
-                        };
-                        
-                        // addEventListener도 추가
-                        markerElement.addEventListener('click', function(e) {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            console.log('마커 HTML 요소 클릭됨 (addEventListener)');
-                            overlay.setMap(map);
-                            enableButtons();
-                        });
-                        
-                        // mousedown 이벤트도 추가
-                        markerElement.addEventListener('mousedown', function(e) {
-                            e.stopPropagation();
-                            console.log('마커 HTML 요소 mousedown됨');
-                        });
-                        
-                        console.log('마커 HTML 요소에 클릭 이벤트 추가 완료');
-                    } else {
-                        console.log('마커 HTML 요소를 찾을 수 없음');
-                    }
-                } catch (e) {
-                    console.error('마커 HTML 요소 이벤트 추가 실패:', e);
-                }
-            }, 2000); // 2초로 증가
+            // 마커 HTML 요소에 직접 클릭 이벤트 추가 (모바일 터치 지원) - 포핸즈 마커 주석 처리됨
+            // function attachPohandsMarkerEvents(retryCount) {
+            //     retryCount = retryCount || 0;
+            //     if (retryCount > 5) {
+            //         console.log('포핸즈 마커 HTML 요소를 찾을 수 없음 (재시도 실패)');
+            //         return;
+            //     }
+            //     
+            //     try {
+            //         var markerElement = pohandsMarker._htmlElement;
+            //         if (markerElement) {
+            //             console.log('포핸즈 마커 HTML 요소 찾음:', markerElement);
+            //             
+            //             // CSS 스타일 설정 (터치 지원)
+            //             markerElement.style.cursor = 'pointer';
+            //             markerElement.style.pointerEvents = 'auto';
+            //             markerElement.style.touchAction = 'manipulation'; // 모바일 터치 최적화
+            //             markerElement.style.webkitTouchCallout = 'none'; // iOS 롱프레스 방지
+            //             markerElement.style.userSelect = 'none'; // 텍스트 선택 방지
+            //             
+            //             // 클릭 이벤트 핸들러 함수
+            //             var handlePohandsMarkerClick = function(e) {
+            //                 if (e) {
+            //                     e.stopPropagation();
+            //                     e.preventDefault();
+            //                 }
+            //                 console.log('포핸즈 마커 클릭/터치됨');
+            //                 overlay.setMap(map);
+            //                 enableButtons();
+            //                 return false;
+            //             };
+            //             
+            //             // 기존 이벤트 리스너 제거 후 새로 추가
+            //             markerElement.onclick = handlePohandsMarkerClick;
+            //             
+            //             // 클릭 이벤트
+            //             markerElement.addEventListener('click', handlePohandsMarkerClick, { passive: false });
+            //             
+            //             // 터치 이벤트 (모바일 필수)
+            //             markerElement.addEventListener('touchend', function(e) {
+            //                 e.stopPropagation();
+            //                 e.preventDefault();
+            //                 console.log('포핸즈 마커 터치됨 (touchend)');
+            //                 overlay.setMap(map);
+            //                 enableButtons();
+            //                 return false;
+            //             }, { passive: false });
+            //             
+            //             markerElement.addEventListener('touchstart', function(e) {
+            //                 e.stopPropagation();
+            //                 console.log('포핸즈 마커 터치 시작');
+            //             }, { passive: false });
+            //             
+            //             // mousedown 이벤트도 추가
+            //             markerElement.addEventListener('mousedown', function(e) {
+            //                 e.stopPropagation();
+            //                 console.log('포핸즈 마커 HTML 요소 mousedown됨');
+            //             }, { passive: false });
+            //             
+            //             console.log('포핸즈 마커 HTML 요소에 모든 이벤트 추가 완료 (터치 지원)');
+            //         } else {
+            //             console.log('포핸즈 마커 HTML 요소를 찾을 수 없음, 재시도:', retryCount + 1);
+            //             setTimeout(function() {
+            //                 attachPohandsMarkerEvents(retryCount + 1);
+            //             }, 500);
+            //         }
+            //     } catch (e) {
+            //         console.error('포핸즈 마커 HTML 요소 이벤트 추가 실패:', e);
+            //         if (retryCount < 5) {
+            //             setTimeout(function() {
+            //                 attachPohandsMarkerEvents(retryCount + 1);
+            //             }, 500);
+            //         }
+            //     }
+            // }
             
-            // 지도 로드 완료 후 크기 재조정
-            setTimeout(function() {
-                console.log('지도 초기화 완료');
+            // 즉시 시도 - 주석 처리됨
+            // setTimeout(function() {
+            //     attachPohandsMarkerEvents(0);
+            // }, 500); // 0.5초 후 첫 시도
+            
+            // 추가 재시도 (마커가 늦게 렌더링되는 경우 대비) - 주석 처리됨
+            // setTimeout(function() {
+            //     if (!pohandsMarker._htmlElement || !pohandsMarker._htmlElement.style.pointerEvents) {
+            //         attachPohandsMarkerEvents(0);
+            //     }
+            // }, 2000); // 2초 후 재시도
                 
-                // 지도 크기 재조정 시도
-                if (map && typeof map.relayout === 'function') {
-                    map.relayout();
-                } else if (map && typeof map.setSize === 'function') {
-                    map.setSize();
-                }
-                
-                // 지도를 다시 그리기
-                if (map && typeof map.refresh === 'function') {
-                    map.refresh();
-                }
-                
-                console.log('지도 크기 재조정 완료');
-            }, 1000); // 1초로 증가
+                // 지도 로드 완료 후 크기 재조정
+                setTimeout(function() {
+                    console.log('지도 초기화 완료');
+                    
+                    // 지도 크기 재조정 시도
+                    if (map && typeof map.relayout === 'function') {
+                        map.relayout();
+                    } else if (map && typeof map.setSize === 'function') {
+                        map.setSize();
+                    }
+                    
+                    // 지도를 다시 그리기
+                    if (map && typeof map.refresh === 'function') {
+                        map.refresh();
+                    }
+                    
+                    console.log('지도 크기 재조정 완료');
+                }, 1000); // 1초로 증가
+            }
          
             // 마커를 표시할 위치와 title 객체 배열입니다 
             var positions = [
-                {
-                    title: '포핸즈', 
-                    latlng: new Tmapv2.LatLng(37.5839449, 127.0535993)
-                },
+                // 포핸즈 마커 주석 처리됨
+                // {
+                //     title: '포핸즈', 
+                //     latlng: new Tmapv2.LatLng(37.5839449, 127.0535993)
+                // },
                 {
                     title: '카페시사', 
                     latlng: new Tmapv2.LatLng(37.58349829841931, 127.05323124137777)
@@ -526,8 +1071,8 @@
             ];
 
             // 마커 이미지의 이미지 주소입니다
-            var imageSrc = "./images/map-pin.png"; 
-                
+            var imageSrc = "./images/icon_mappin.png"; 
+
             // 마커들을 생성합니다
             var markers = [];
             for (var i = 0; i < positions.length; i++) {
@@ -540,84 +1085,85 @@
                     position: positions[i].latlng, // 마커를 표시할 위치
                     title: positions[i].title, // 마커의 타이틀
                     icon: imageSrc, // 마커 이미지 
-                    iconSize: imageSize
+                    iconSize: imageSize,
+                    zIndex: 1 // 팝업보다 낮은 z-index
                 });
                 
                 console.log('마커 생성됨:', positions[i].title, marker);
                 markers.push(marker);
             }
 
-            // 커스텀 오버레이에 표시할 컨텐츠 입니다
-            var content = '<div class="wrap">' + 
-                        '    <div class="info">' + 
-                        '        <div class="title">' + 
-                        '            포핸즈' + 
-                        '            <div class="close" onclick="closeOverlay()" title="닫기"></div>' + 
-                        '        </div>' + 
-                        '        <div class="body">' + 
-                        '            <div class="img">' +
-                        '                <img src="https://search.pstatic.net/common/?src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20250416_13%2F1744789141827jk9Fk_JPEG%2F001.jpg">' +
-                        '           </div>' + 
-                        '            <div class="desc">' + 
-                        '                <div class="ellipsis">전농로 222 씨티빌라트 상가 2층</div>' + 
-                        '                <div class="jibun ellipsis">쌀국수, 돈가츠, 카레라이스</div>' + 
-                        '                <div class="facility ellipsis">엘리베이터 사용가능</div>' + 
-                        '                <div><a href="https://map.naver.com/p/search/%ED%8F%AC%ED%95%B8%EC%A6%88/place/1411631795?placePath=/home?entry=pll&from=map&fromNxList=true&fromPanelNum=2&timestamp=202510070857&locale=ko&svcName=map_pcv5&searchText=%ED%8F%AC%ED%95%B8%EC%A6%88&searchType=place&c=15.00,0,0,0,dh">상세정보</a></div>' + 
-                        '            </div>' + 
-                        '        </div>' + 
-                        '    </div>' +    
-                        '</div>';
+            // 커스텀 오버레이에 표시할 컨텐츠 입니다 - 포핸즈 마커 주석 처리됨
+            // var content = '<div class="wrap">' + 
+            //             '    <div class="info">' + 
+            //             '        <div class="title">' + 
+            //             '            포핸즈' + 
+            //             '            <div class="close" onclick="closeOverlay()" title="닫기"></div>' + 
+            //             '        </div>' + 
+            //             '        <div class="body">' + 
+            //             '            <div class="img">' +
+            //             '                <img src="https://search.pstatic.net/common/?src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20250416_13%2F1744789141827jk9Fk_JPEG%2F001.jpg">' +
+            //             '           </div>' + 
+            //             '            <div class="desc">' + 
+            //             '                <div class="ellipsis">전농로 222 씨티빌라트 상가 2층</div>' + 
+            //             '                <div class="jibun ellipsis">쌀국수, 돈가츠, 카레라이스</div>' + 
+            //             '                <div class="facility ellipsis">엘리베이터 사용가능</div>' + 
+            //             '                <div><a href="https://map.naver.com/p/search/%ED%8F%AC%ED%95%B8%EC%A6%88/place/1411631795?placePath=/home?entry=pll&from=map&fromNxList=true&fromPanelNum=2&timestamp=202510070857&locale=ko&svcName=map_pcv5&searchText=%ED%8F%AC%ED%95%B8%EC%A6%88&searchType=place&c=15.00,0,0,0,dh">상세정보</a></div>' + 
+            //             '            </div>' + 
+            //             '        </div>' + 
+            //             '    </div>' +    
+            //             '</div>';
 
-            // 포핸즈 마커에만 커스텀 오버레이를 생성합니다 (처음에는 숨김)
-            var pohandsMarker = markers[0]; // 포핸즈 마커 (첫 번째)
-            var overlay = new Tmapv2.InfoWindow({
-                content: content,
-                map: null, // 처음에는 지도에 표시하지 않음
-                position: pohandsMarker.getPosition()       
-            });
+            // 포핸즈 마커에만 커스텀 오버레이를 생성합니다 (처음에는 숨김) - 주석 처리됨
+            // var pohandsMarker = markers[0]; // 포핸즈 마커 (첫 번째)
+            // var overlay = new Tmapv2.InfoWindow({
+            //     content: content,
+            //     map: null, // 처음에는 지도에 표시하지 않음
+            //     position: pohandsMarker.getPosition()       
+            // });
 
-            // 포핸즈 마커 클릭 이벤트 추가
-            console.log('포핸즈 마커 객체:', pohandsMarker);
-            console.log('Tmapv2.event 객체:', Tmapv2.event);
+            // 포핸즈 마커 클릭 이벤트 추가 - 주석 처리됨
+            // console.log('포핸즈 마커 객체:', pohandsMarker);
+            // console.log('Tmapv2.event 객체:', Tmapv2.event);
             
-            // 여러 방법으로 이벤트 등록 시도
-            try {
-                // 방법 1: Tmapv2.event.addListener
-                Tmapv2.event.addListener(pohandsMarker, 'click', function() {
-                    console.log('포핸즈 마커 클릭됨 (방법1)');
-                    overlay.setMap(map);
-                    enableButtons();
-                });
-                console.log('방법1 이벤트 등록 완료');
-            } catch (e) {
-                console.error('방법1 이벤트 등록 실패:', e);
-            }
+            // 여러 방법으로 이벤트 등록 시도 - 주석 처리됨
+            // try {
+            //     // 방법 1: Tmapv2.event.addListener
+            //     Tmapv2.event.addListener(pohandsMarker, 'click', function() {
+            //         console.log('포핸즈 마커 클릭됨 (방법1)');
+            //         overlay.setMap(map);
+            //         enableButtons();
+            //     });
+            //     console.log('방법1 이벤트 등록 완료');
+            // } catch (e) {
+            //     console.error('방법1 이벤트 등록 실패:', e);
+            // }
             
-            try {
-                // 방법 2: addEventListener
-                if (pohandsMarker.addEventListener) {
-                    pohandsMarker.addEventListener('click', function() {
-                        console.log('포핸즈 마커 클릭됨 (방법2)');
-                        overlay.setMap(map);
-                        enableButtons();
-                    });
-                    console.log('방법2 이벤트 등록 완료');
-                }
-            } catch (e) {
-                console.error('방법2 이벤트 등록 실패:', e);
-            }
+            // try {
+            //     // 방법 2: addEventListener
+            //     if (pohandsMarker.addEventListener) {
+            //         pohandsMarker.addEventListener('click', function() {
+            //             console.log('포핸즈 마커 클릭됨 (방법2)');
+            //             overlay.setMap(map);
+            //             enableButtons();
+            //         });
+            //         console.log('방법2 이벤트 등록 완료');
+            //     }
+            // } catch (e) {
+            //     console.error('방법2 이벤트 등록 실패:', e);
+            // }
             
-            try {
-                // 방법 3: onclick 속성
-                pohandsMarker.onclick = function() {
-                    console.log('포핸즈 마커 클릭됨 (방법3)');
-                    overlay.setMap(map);
-                    enableButtons();
-                };
-                console.log('방법3 이벤트 등록 완료');
-            } catch (e) {
-                console.error('방법3 이벤트 등록 실패:', e);
-            }
+            // try {
+            //     // 방법 3: onclick 속성
+            //     pohandsMarker.onclick = function() {
+            //         console.log('포핸즈 마커 클릭됨 (방법3)');
+            //         overlay.setMap(map);
+            //         enableButtons();
+            //     };
+            //     console.log('방법3 이벤트 등록 완료');
+            // } catch (e) {
+            //     console.error('방법3 이벤트 등록 실패:', e);
+            // }
 
             // 버튼 활성화/비활성화 함수들
             function enableButtons() {
@@ -632,12 +1178,91 @@
                 console.log('버튼 비활성화됨');
             }
 
-            // 커스텀 오버레이를 닫기 위해 호출되는 함수입니다 (전역 함수로 정의)
-            window.closeOverlay = function() {
-                overlay.setMap(null);
-                disableButtons(); // 오버레이 닫을 때 버튼 비활성화
-                console.log('오버레이 닫힘');
-            };
+            // 커스텀 오버레이를 닫기 위해 호출되는 함수입니다 (전역 함수로 정의) - 포핸즈 마커 주석 처리됨
+            // window.closeOverlay = function() {
+            //     overlay.setMap(null);
+            //     disableButtons(); // 오버레이 닫을 때 버튼 비활성화
+            //     console.log('오버레이 닫힘');
+            // };
+            
+            // 포핸즈 오버레이 닫기 버튼에 터치 이벤트 추가 - 주석 처리됨
+            // function attachCloseButtonEvents() {
+            //     setTimeout(function() {
+            //         var closeButtons = document.querySelectorAll('.close');
+            //         closeButtons.forEach(function(closeBtn) {
+            //             if (closeBtn && !closeBtn.dataset.touchAttached) {
+            //                 closeBtn.dataset.touchAttached = 'true';
+            //                 
+            //                 // CSS 스타일 추가 (터치 최적화)
+            //                 closeBtn.style.cursor = 'pointer';
+            //                 closeBtn.style.touchAction = 'manipulation';
+            //                 closeBtn.style.webkitTouchCallout = 'none';
+            //                 closeBtn.style.userSelect = 'none';
+            //                 closeBtn.style.pointerEvents = 'auto';
+            //                 closeBtn.style.minWidth = '32px';
+            //                 closeBtn.style.minHeight = '32px';
+            //                 closeBtn.style.display = 'flex';
+            //                 closeBtn.style.alignItems = 'center';
+            //                 closeBtn.style.justifyContent = 'center';
+            //                 
+            //                 // 클릭 이벤트 강화
+            //                 var handleClose = function(e) {
+            //                     if (e) {
+            //                         e.preventDefault();
+            //                         e.stopPropagation();
+            //                     }
+            //                     console.log('오버레이 닫기 버튼 클릭/터치됨');
+            //                     window.closeOverlay();
+            //                     return false;
+            //                 };
+            //                 
+            //                 // 기존 onclick 이벤트 유지하면서 추가 이벤트 등록
+            //                 closeBtn.addEventListener('click', handleClose, { passive: false });
+            //                 
+            //                 // 터치 이벤트 (모바일 필수)
+            //                 closeBtn.addEventListener('touchend', function(e) {
+            //                     e.preventDefault();
+            //                     e.stopPropagation();
+            //                     console.log('오버레이 닫기 버튼 터치됨 (touchend)');
+            //                     window.closeOverlay();
+            //                     return false;
+            //                 }, { passive: false });
+            //                 
+            //                 closeBtn.addEventListener('touchstart', function(e) {
+            //                     e.stopPropagation();
+            //                     console.log('오버레이 닫기 버튼 터치 시작');
+            //                     // 터치 시각적 피드백
+            //                     this.style.opacity = '0.7';
+            //                 }, { passive: false });
+            //                 
+            //                 closeBtn.addEventListener('touchcancel', function(e) {
+            //                     this.style.opacity = '1';
+            //                 }, { passive: false });
+            //                 
+            //                 console.log('포핸즈 오버레이 닫기 버튼 이벤트 추가 완료 (터치/클릭 지원)');
+            //             }
+            //         });
+            //     }, 500);
+            //     
+            //     // 추가 재시도
+            //     setTimeout(function() {
+            //         var closeButtons = document.querySelectorAll('.close');
+            //         closeButtons.forEach(function(closeBtn) {
+            //             if (closeBtn && !closeBtn.dataset.touchAttached) {
+            //                 attachCloseButtonEvents();
+            //             }
+            //         });
+            //     }, 1500);
+            // }
+            
+            // 오버레이가 표시될 때마다 닫기 버튼 이벤트 추가 - 주석 처리됨
+            // var originalOverlaySetMap = overlay.setMap;
+            // overlay.setMap = function(mapInstance) {
+            //     originalOverlaySetMap.call(this, mapInstance);
+            //     if (mapInstance) {
+            //         attachCloseButtonEvents();
+            //     }
+            // };
 
             // 버튼 클릭 이벤트 추가
             document.getElementById('navigationBtn').addEventListener('click', function() {
@@ -654,26 +1279,1492 @@
                 }
             });
 
-            // 커스텀 오버레이를 닫기 위해 호출되는 함수입니다 (전역 함수로 정의)
-            window.closeOverlay = function() {
-                overlay.setMap(null);
-                disableButtons(); // 오버레이 닫을 때 버튼 비활성화
-                console.log('오버레이 닫힘');
-            };
-
             // 초기 버튼 상태를 비활성화로 설정
             disableButtons();
             
 
             
-            // 검색 기능 (기본 구현)
+            // 검색 결과 마커들을 저장할 배열
+            var searchResultMarkers = [];
+            
+            // 검색 결과 마커 제거 함수 (안전한 방식)
+            function clearSearchResults() {
+                searchResultMarkers.forEach(function(marker) {
+                    try {
+                        marker.setMap(null);
+                    } catch (e) {
+                        console.log('검색 결과 마커 제거 중 오류 (무시):', e);
+                    }
+                });
+                searchResultMarkers = [];
+                console.log('검색 결과 마커 제거됨');
+            }
+            
+            // 검색 결과 마커 추가 함수
+            function addSearchResultMarker(place) {
+                console.log('마커 생성 시작:', place.name, place.lat, place.lon);
+                
+                var marker = new Tmapv2.Marker({
+                    map: map,
+                    position: new Tmapv2.LatLng(place.lat, place.lon),
+                    title: place.name,
+                    icon: "./images/icon_mappin.png",
+                    iconSize: new Tmapv2.Size(30, 30),
+                    zIndex: 1 // 팝업보다 낮은 z-index
+                });
+                
+                console.log('마커 생성 완료:', marker);
+                
+                // 마커 클릭 이벤트 추가 (여러 방법으로 시도)
+                try {
+                    // 방법 1: Tmapv2.event.addListener
+                    Tmapv2.event.addListener(marker, 'click', function() {
+                        console.log('검색 결과 마커 클릭됨 (방법1):', place.name);
+                        showSimplePlaceDetail(place, marker);
+                    });
+                    console.log('마커 클릭 이벤트 등록 완료 (방법1)');
+                } catch (e) {
+                    console.error('마커 클릭 이벤트 등록 실패 (방법1):', e);
+                }
+                
+                try {
+                    // 방법 2: addEventListener
+                    if (marker.addEventListener) {
+                        marker.addEventListener('click', function() {
+                            console.log('검색 결과 마커 클릭됨 (방법2):', place.name);
+                            showSimplePlaceDetail(place, marker);
+                        });
+                        console.log('마커 클릭 이벤트 등록 완료 (방법2)');
+                    }
+                } catch (e) {
+                    console.error('마커 클릭 이벤트 등록 실패 (방법2):', e);
+                }
+                
+                try {
+                    // 방법 3: onclick 속성
+                    marker.onclick = function() {
+                        console.log('검색 결과 마커 클릭됨 (방법3):', place.name);
+                        showSimplePlaceDetail(place, marker);
+                    };
+                    console.log('마커 클릭 이벤트 등록 완료 (방법3)');
+                } catch (e) {
+                    console.error('마커 클릭 이벤트 등록 실패 (방법3):', e);
+                }
+                
+                // 방법 4: HTML 요소에 직접 이벤트 추가 (지연 실행, 모바일 터치 지원)
+                function attachMarkerEvents(markerElement, retryCount) {
+                    retryCount = retryCount || 0;
+                    if (retryCount > 5) {
+                        console.log('마커 HTML 요소를 찾을 수 없음 (재시도 실패)');
+                        return;
+                    }
+                    
+                    try {
+                        if (!markerElement && marker._htmlElement) {
+                            markerElement = marker._htmlElement;
+                        }
+                        
+                        if (markerElement) {
+                            console.log('마커 HTML 요소 찾음:', markerElement);
+                            
+                            // CSS 스타일 설정 (터치 지원)
+                            markerElement.style.cursor = 'pointer';
+                            markerElement.style.pointerEvents = 'auto';
+                            markerElement.style.touchAction = 'manipulation'; // 모바일 터치 최적화
+                            markerElement.style.webkitTouchCallout = 'none'; // iOS 롱프레스 방지
+                            markerElement.style.userSelect = 'none'; // 텍스트 선택 방지
+                            
+                            // 클릭 이벤트 핸들러 함수
+                            var handleMarkerClick = function(e) {
+                                if (e) {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                }
+                                console.log('마커 클릭/터치됨:', place.name);
+                                showSimplePlaceDetail(place, marker);
+                                return false;
+                            };
+                            
+                            // 기존 이벤트 리스너 제거 후 새로 추가
+                            markerElement.onclick = handleMarkerClick;
+                            
+                            // 클릭 이벤트
+                            markerElement.addEventListener('click', handleMarkerClick, { passive: false });
+                            
+                            // 터치 이벤트 (모바일 필수)
+                            markerElement.addEventListener('touchend', function(e) {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                console.log('마커 터치됨 (touchend):', place.name);
+                                showSimplePlaceDetail(place, marker);
+                                return false;
+                            }, { passive: false });
+                            
+                            markerElement.addEventListener('touchstart', function(e) {
+                                e.stopPropagation();
+                                console.log('마커 터치 시작:', place.name);
+                            }, { passive: false });
+                            
+                            // mousedown 이벤트도 추가 (웹 호환성)
+                            markerElement.addEventListener('mousedown', function(e) {
+                                e.stopPropagation();
+                                console.log('마커 mousedown:', place.name);
+                            }, { passive: false });
+                            
+                            console.log('마커 HTML 요소에 모든 이벤트 추가 완료 (터치 지원)');
+                        } else {
+                            console.log('마커 HTML 요소를 찾을 수 없음, 재시도:', retryCount + 1);
+                            setTimeout(function() {
+                                attachMarkerEvents(null, retryCount + 1);
+                            }, 500);
+                        }
+                    } catch (e) {
+                        console.error('마커 HTML 요소 이벤트 추가 실패:', e);
+                        if (retryCount < 5) {
+                            setTimeout(function() {
+                                attachMarkerEvents(null, retryCount + 1);
+                            }, 500);
+                        }
+                    }
+                }
+                
+                // 즉시 시도
+                setTimeout(function() {
+                    attachMarkerEvents(marker._htmlElement, 0);
+                }, 500); // 0.5초 후 첫 시도
+                
+                // 추가 재시도 (마커가 늦게 렌더링되는 경우 대비)
+                setTimeout(function() {
+                    if (!marker._htmlElement || !marker._htmlElement.style.pointerEvents) {
+                        attachMarkerEvents(null, 0);
+                    }
+                }, 1500); // 1.5초 후 재시도
+                
+                searchResultMarkers.push(marker);
+                return marker;
+            }
+            
+            // 상세 정보 팝업 표시 함수
+            function showSimplePlaceDetail(place, marker) {
+                console.log('상세 정보 팝업 표시:', place.name);
+                
+                // 마커 클릭 시 검색창 포커스 해제 및 readonly 재설정
+                if (searchInput && document.activeElement === searchInput) {
+                    searchInput.blur();
+                    searchInput.setAttribute('readonly', 'readonly');
+                    console.log('마커 클릭으로 검색창 포커스 해제 및 readonly 재설정');
+                }
+                
+                // 기존 정보창 제거 (안전한 방식)
+                if (window.currentDetailInfoWindow) {
+                    try {
+                        window.currentDetailInfoWindow.setMap(null);
+                    } catch (e) {
+                        console.log('기존 정보창 제거 중 오류 (무시):', e);
+                    }
+                    window.currentDetailInfoWindow = null;
+                }
+                
+                // 로딩 상태 표시
+                var loadingContent = '<div style="padding: 20px; text-align: center; background: #f8f9fa; border-radius: 8px; min-width: 250px;">' +
+                                   '<div style="color: #007bff; font-weight: bold; margin-bottom: 10px; font-size: 16px;">🏪 ' + place.name + '</div>' +
+                                   '<div style="font-size: 14px; color: #666; margin-bottom: 10px;">정보를 불러오는 중...</div>' +
+                                   '<div style="font-size: 12px; color: #ffc107;">⏳ 처리 중</div>' +
+                                   '</div>';
+                
+                var loadingWindow = new Tmapv2.InfoWindow({
+                    content: loadingContent,
+                    position: new Tmapv2.LatLng(place.lat, place.lon),
+                    map: map
+                });
+                
+                // Tmap API 장소 상세 정보 검색
+                searchPlaceDetailAPI(place, loadingWindow);
+            }
+            
+            // 장소 상세 정보 검색 (실제 Tmap API 사용)
+            function searchPlaceDetailAPI(place, loadingWindow) {
+                console.log('장소 상세 정보 검색 시작:', place.name);
+                
+                // POI ID가 있는 경우 장소 상세 정보 검색 사용
+                if (place.id) {
+                    var detailUrl = 'https://apis.openapi.sk.com/tmap/pois/' + place.id;
+                    var detailQueryString = 'version=1&findOption=id&resCoordType=WGS84GEO';
+                    var fullDetailUrl = detailUrl + '?' + detailQueryString;
+                    
+                    console.log('장소 상세 정보 검색 URL:', fullDetailUrl);
+                    
+                    // fetch를 사용한 API 호출
+                    fetch(fullDetailUrl, {
+                        method: 'GET',
+                        headers: {
+                            'appKey': 'pUIcUWdIGX4FDdOOgd0SO8n46k4ZNmiV6TOOJetL'
+                        }
+                    })
+                    .then(response => {
+                        console.log('장소 상세 정보 응답 상태:', response.status);
+                        if (!response.ok) {
+                            throw new Error('장소 상세 정보 요청 실패: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('장소 상세 정보 데이터:', data);
+                        
+                        // 로딩 창 제거
+                        loadingWindow.setMap(null);
+                        
+                        // 상세 정보 표시
+                        showDetailedPlaceInfo(place, data);
+                    })
+                    .catch(error => {
+                        console.error('장소 상세 정보 검색 오류:', error);
+                        
+                        // 로딩 창 제거
+                        loadingWindow.setMap(null);
+                        
+                        // 기본 정보 표시
+                        showBasicPlaceInfo(place);
+                    });
+                } else {
+                    // POI ID가 없는 경우 주변 카테고리 검색 사용
+                    var detailUrl = 'https://apis.openapi.sk.com/tmap/pois';
+                    var detailQueryString = 'version=1&searchKeyword=' + encodeURIComponent(place.category || '음식점') +
+                                           '&centerLon=' + place.lon.toString() + 
+                                           '&centerLat=' + place.lat.toString() +
+                                           '&reqCoordType=WGS84GEO&resCoordType=WGS84GEO&count=20&radius=3';
+                    var fullDetailUrl = detailUrl + '?' + detailQueryString;
+                    
+                    console.log('주변 카테고리 검색 URL:', fullDetailUrl);
+                    
+                    // fetch를 사용한 API 호출
+                    fetch(fullDetailUrl, {
+                        method: 'GET',
+                        headers: {
+                            'appKey': 'pUIcUWdIGX4FDdOOgd0SO8n46k4ZNmiV6TOOJetL'
+                        }
+                    })
+                    .then(response => {
+                        console.log('주변 카테고리 검색 응답 상태:', response.status);
+                        if (!response.ok) {
+                            throw new Error('주변 카테고리 검색 요청 실패: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('주변 카테고리 검색 데이터:', data);
+                        
+                        // 로딩 창 제거
+                        loadingWindow.setMap(null);
+                        
+                        // 상세 정보 표시
+                        showDetailedPlaceInfo(place, data);
+                    })
+                    .catch(error => {
+                        console.error('주변 카테고리 검색 오류:', error);
+                        
+                        // 로딩 창 제거
+                        loadingWindow.setMap(null);
+                        
+                        // 기본 정보 표시
+                        showBasicPlaceInfo(place);
+                    });
+                }
+            }
+            
+            // 시뮬레이션 함수들 제거됨 (실제 API 사용)
+            
+            // 하단 버튼들 활성화 함수
+            window.activateBottomButtons = function(place) {
+                console.log('하단 버튼들 활성화:', place.name);
+                
+                // 하단 버튼 컨테이너 활성화
+                var bottomButtonsContainer = document.querySelector('.bottom-buttons-floating');
+                if (bottomButtonsContainer) {
+                    bottomButtonsContainer.classList.add('active');
+                }
+                
+                // 길찾기 버튼 활성화
+                var navigationBtn = document.getElementById('navigationBtn');
+                if (navigationBtn) {
+                    navigationBtn.disabled = false;
+                    navigationBtn.onclick = function() {
+                        navigateToPlace(place.lat, place.lon);
+                    };
+                }
+                
+                // 음성안내 버튼 활성화
+                var voiceGuideBtn = document.getElementById('voiceGuideBtn');
+                if (voiceGuideBtn) {
+                    voiceGuideBtn.disabled = false;
+                    voiceGuideBtn.onclick = function() {
+                        startVoiceGuideForPlace(place);
+                    };
+                }
+                
+                // 현재 선택된 장소 저장
+                window.currentSelectedPlace = place;
+            };
+            
+            // 장소별 음성안내 시작 함수
+            window.startVoiceGuideForPlace = function(place) {
+                console.log('장소별 음성안내 시작:', place.name);
+                
+                // 음성안내 페이지로 이동
+                window.location.href = 'voice_guide.html?place=' + encodeURIComponent(place.name) + 
+                                     '&lat=' + place.lat + '&lon=' + place.lon;
+            };
+            
+            // 모든 팝업 제거 함수
+            function clearAllPopups() {
+                console.log('모든 팝업 제거 시작');
+                
+                // 상세 정보 팝업 제거
+                if (window.currentDetailInfoWindow) {
+                    try {
+                        window.currentDetailInfoWindow.setMap(null);
+                        console.log('상세 정보 팝업 제거됨');
+                    } catch (e) {
+                        console.log('상세 정보 팝업 제거 중 오류:', e);
+                    }
+                    window.currentDetailInfoWindow = null;
+                }
+                
+                // 현재 위치 정보 팝업 제거
+                if (window.currentUserLocationInfoWindow) {
+                    try {
+                        window.currentUserLocationInfoWindow.setMap(null);
+                        console.log('현재 위치 정보 팝업 제거됨');
+                    } catch (e) {
+                        console.log('현재 위치 정보 팝업 제거 중 오류:', e);
+                    }
+                    window.currentUserLocationInfoWindow = null;
+                }
+                
+                // 하단 버튼들 비활성화
+                deactivateBottomButtons();
+                
+                // 마커들 다시 표시
+                showAllMarkers();
+                
+                console.log('모든 팝업 제거 완료');
+            }
+            
+            // 모든 마커 숨기기 함수
+            function hideAllMarkers() {
+                console.log('모든 마커 숨기기 시작');
+                
+                // 검색 결과 마커들 숨기기
+                if (searchResultMarkers && searchResultMarkers.length > 0) {
+                    searchResultMarkers.forEach(function(marker) {
+                        try {
+                            marker.setMap(null);
+                        } catch (e) {
+                            console.log('검색 결과 마커 숨기기 중 오류:', e);
+                        }
+                    });
+                }
+                
+                // 현재 위치 마커 숨기기
+                if (userLocationMarker) {
+                    try {
+                        userLocationMarker.setMap(null);
+                    } catch (e) {
+                        console.log('현재 위치 마커 숨기기 중 오류:', e);
+                    }
+                }
+                
+                console.log('모든 마커 숨기기 완료');
+            }
+            
+            // 모든 마커 표시하기 함수
+            function showAllMarkers() {
+                console.log('모든 마커 표시하기 시작');
+                
+                // 검색 결과 마커들 다시 표시
+                if (searchResultMarkers && searchResultMarkers.length > 0) {
+                    searchResultMarkers.forEach(function(marker) {
+                        try {
+                            marker.setMap(map);
+                        } catch (e) {
+                            console.log('검색 결과 마커 표시 중 오류:', e);
+                        }
+                    });
+                }
+                
+                // 현재 위치 마커 다시 표시
+                if (userLocationMarker) {
+                    try {
+                        userLocationMarker.setMap(map);
+                    } catch (e) {
+                        console.log('현재 위치 마커 표시 중 오류:', e);
+                    }
+                }
+                
+                console.log('모든 마커 표시하기 완료');
+            }
+            
+            // 상세 정보 표시 함수 (장소 상세 정보 검색 결과 활용)
+            function showDetailedPlaceInfo(place, detailData) {
+                // 모달 표시 시 검색창 포커스 해제 및 readonly 재설정
+                if (searchInput && document.activeElement === searchInput) {
+                    searchInput.blur();
+                    searchInput.setAttribute('readonly', 'readonly');
+                    console.log('모달 표시로 검색창 포커스 해제 및 readonly 재설정');
+                }
+                
+                // 기존 모든 팝업 제거
+                clearAllPopups();
+                
+                // 모든 마커 숨기기
+                hideAllMarkers();
+                
+                var detailContent = '<div style="position: relative; padding: 20px; background: #f8f9fa; border-radius: 8px; min-width: 300px; max-width: 350px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999999; isolation: isolate; transform: translateZ(0); backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px);">';
+                
+                // 기본 정보
+                detailContent += '<div style="color: #007bff; font-weight: bold; margin-bottom: 12px; font-size: 18px;">🏪 ' + place.name + '</div>';
+                detailContent += '<div style="font-size: 14px; color: #666; margin-bottom: 10px;">📍 ' + place.address + '</div>';
+                
+                // 장소 상세 정보 검색 결과 처리
+                if (detailData && detailData.poiDetailInfo) {
+                    var poiDetail = detailData.poiDetailInfo;
+                    
+                    // 전화번호
+                    if (poiDetail.tel && poiDetail.tel !== '') {
+                        detailContent += '<div style="font-size: 13px; color: #333; margin-bottom: 8px;">📞 ' + poiDetail.tel + '</div>';
+                    }
+                    
+                    // 업종명
+                    if (poiDetail.bizCatName && poiDetail.bizCatName !== '') {
+                        detailContent += '<div style="font-size: 13px; color: #666; margin-bottom: 8px;">🏢 ' + poiDetail.bizCatName + '</div>';
+                    }
+                    
+                    // 주소 정보
+                    if (poiDetail.lcdName && poiDetail.mcdName && poiDetail.scdName) {
+                        var fullAddress = poiDetail.lcdName + ' ' + poiDetail.mcdName + ' ' + poiDetail.scdName;
+                        if (poiDetail.dcdName) {
+                            fullAddress += ' ' + poiDetail.dcdName;
+                        }
+                        detailContent += '<div style="font-size: 13px; color: #666; margin-bottom: 8px;">🏠 ' + fullAddress + '</div>';
+                    }
+                    
+                    // 도로명 주소
+                    if (poiDetail.roadName && poiDetail.bldNo1) {
+                        var roadAddress = poiDetail.roadName + ' ' + poiDetail.bldNo1;
+                        if (poiDetail.bldNo2 && poiDetail.bldNo2 !== '') {
+                            roadAddress += '-' + poiDetail.bldNo2;
+                        }
+                        detailContent += '<div style="font-size: 13px; color: #666; margin-bottom: 8px;">🛣️ ' + roadAddress + '</div>';
+                    }
+                    
+                    // 주차 가능 여부
+                    if (poiDetail.parkFlag !== undefined && poiDetail.parkFlag !== '') {
+                        var parkStatus = poiDetail.parkFlag === '1' ? '주차 가능' : '주차 불가';
+                        var parkColor = poiDetail.parkFlag === '1' ? '#28a745' : '#dc3545';
+                        detailContent += '<div style="font-size: 13px; color: ' + parkColor + '; margin-bottom: 8px;">🚗 ' + parkStatus + '</div>';
+                    }
+                    
+                    // 24시간 영업 여부
+                    if (poiDetail.twFlag === '1') {
+                        detailContent += '<div style="font-size: 13px; color: #28a745; margin-bottom: 8px;">🕐 24시간 영업</div>';
+                    }
+                    
+                    // 연중 무휴 여부
+                    if (poiDetail.yaFlag === '1') {
+                        detailContent += '<div style="font-size: 13px; color: #28a745; margin-bottom: 8px;">📅 연중 무휴</div>';
+                    }
+                    
+                    // 홈페이지
+                    if (poiDetail.homepageURL && poiDetail.homepageURL !== '') {
+                        detailContent += '<div style="font-size: 13px; color: #007bff; margin-bottom: 8px;">🌐 <a href="' + poiDetail.homepageURL + '" target="_blank">홈페이지</a></div>';
+                    }
+                    
+                    // 부대시설
+                    if (poiDetail.facility && poiDetail.facility !== '') {
+                        detailContent += '<div style="font-size: 13px; color: #666; margin-bottom: 8px;">🏢 부대시설: ' + poiDetail.facility + '</div>';
+                    }
+                    
+                    // 가맹점 정보
+                    if (poiDetail.merchantFlag && poiDetail.merchantFlag !== '') {
+                        var merchants = poiDetail.merchantFlag.split(';');
+                        var merchantNames = {
+                            'OKCB': 'OKCashbag',
+                            'GIFT': '기프티콘',
+                            'TMEM': 'T멤버십',
+                            'SSCD': '삼성카드',
+                            'OKMY': 'OK마이샵'
+                        };
+                        var merchantList = merchants.map(function(m) {
+                            return merchantNames[m] || m;
+                        }).join(', ');
+                        detailContent += '<div style="font-size: 12px; color: #28a745; margin-bottom: 8px;">💳 ' + merchantList + '</div>';
+                    }
+                    
+                    // 별점 정보
+                    if (poiDetail.point && poiDetail.point !== '') {
+                        var stars = '⭐'.repeat(Math.floor(parseFloat(poiDetail.point)));
+                        detailContent += '<div style="font-size: 13px; color: #ffc107; margin-bottom: 8px;">' + stars + ' ' + poiDetail.point + '점 (' + poiDetail.participant + '명 참여)</div>';
+                    }
+                    
+                    // 메뉴 정보
+                    var menuItems = [];
+                    for (var i = 1; i <= 5; i++) {
+                        var menuKey = 'menu' + i;
+                        if (poiDetail[menuKey] && poiDetail[menuKey] !== '') {
+                            menuItems.push(poiDetail[menuKey]);
+                        }
+                    }
+                    if (menuItems.length > 0) {
+                        detailContent += '<div style="font-size: 13px; color: #666; margin-bottom: 8px;">🍽️ 메뉴: ' + menuItems.join(', ') + '</div>';
+                    }
+                }
+                // 주변 카테고리 검색 결과 처리 (fallback)
+                else if (detailData && detailData.searchPoiInfo && detailData.searchPoiInfo.pois && detailData.searchPoiInfo.pois.poi) {
+                    var poiData = detailData.searchPoiInfo.pois.poi;
+                    if (Array.isArray(poiData)) {
+                        poiData = poiData[0];
+                    }
+                    
+                    // 전화번호
+                    if (poiData.telNo && poiData.telNo !== '') {
+                        detailContent += '<div style="font-size: 13px; color: #333; margin-bottom: 8px;">📞 ' + poiData.telNo + '</div>';
+                    }
+                    
+                    // 주소 정보
+                    if (poiData.upperAddrName && poiData.middleAddrName && poiData.lowerAddrName) {
+                        var fullAddress = poiData.upperAddrName + ' ' + poiData.middleAddrName + ' ' + poiData.lowerAddrName;
+                        if (poiData.detailAddrName) {
+                            fullAddress += ' ' + poiData.detailAddrName;
+                        }
+                        detailContent += '<div style="font-size: 13px; color: #666; margin-bottom: 8px;">🏠 ' + fullAddress + '</div>';
+                    }
+                    
+                    // 도로명 주소
+                    if (poiData.roadName && poiData.buildingNo1) {
+                        var roadAddress = poiData.roadName + ' ' + poiData.buildingNo1;
+                        if (poiData.buildingNo2 && poiData.buildingNo2 !== '0') {
+                            roadAddress += '-' + poiData.buildingNo2;
+                        }
+                        detailContent += '<div style="font-size: 13px; color: #666; margin-bottom: 8px;">🛣️ ' + roadAddress + '</div>';
+                    }
+                    
+                    // 주차 가능 여부
+                    if (poiData.parkFlag !== undefined) {
+                        var parkStatus = poiData.parkFlag === '1' ? '주차 가능' : '주차 불가';
+                        var parkColor = poiData.parkFlag === '1' ? '#28a745' : '#dc3545';
+                        detailContent += '<div style="font-size: 13px; color: ' + parkColor + '; margin-bottom: 8px;">🚗 ' + parkStatus + '</div>';
+                    }
+                    
+                    // 거리 정보
+                    if (poiData.radius) {
+                        detailContent += '<div style="font-size: 12px; color: #666; margin-bottom: 8px;">📏 거리: ' + poiData.radius + 'km</div>';
+                    }
+                    
+                    // 가맹점 정보
+                    if (poiData.merchantFlag && poiData.merchantFlag !== '') {
+                        var merchants = poiData.merchantFlag.split(';');
+                        var merchantNames = {
+                            'OKCB': 'OKCashbag',
+                            'GIFT': '기프티콘',
+                            'TMEM': 'T멤버십',
+                            'SSCD': '삼성카드',
+                            'OKMY': 'OK마이샵'
+                        };
+                        var merchantList = merchants.map(function(m) {
+                            return merchantNames[m] || m;
+                        }).join(', ');
+                        detailContent += '<div style="font-size: 12px; color: #28a745; margin-bottom: 8px;">💳 ' + merchantList + '</div>';
+                    }
+                }
+                
+                // 좌표 정보 제거됨
+                
+                // 상태 정보
+                detailContent += '<div style="font-size: 12px; color: #28a745; font-weight: bold; margin-bottom: 12px;">✓ 상세 정보 로드 완료</div>';
+                
+                // 우측 상단 닫기 버튼 (완전히 새로운 방식 - 모바일 터치 최적화)
+                detailContent += '<div id="closeDetailBtn" onclick="window.closeDetailInfo(); return false;" style="position: absolute !important; top: 10px !important; right: 10px !important; width: 44px !important; height: 44px !important; min-width: 44px !important; min-height: 44px !important; background: #dc3545 !important; color: white !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; cursor: pointer !important; font-size: 20px !important; font-weight: bold !important; border: 3px solid white !important; box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important; transition: all 0.2s ease !important; z-index: 999999999 !important; touch-action: manipulation !important; -webkit-touch-callout: none !important; user-select: none !important; pointer-events: auto !important; -webkit-tap-highlight-color: transparent !important;" title="닫기">×</div>';
+                
+                detailContent += '</div>';
+                
+                // 상세 정보창 표시
+                var detailInfoWindow = new Tmapv2.InfoWindow({
+                    content: detailContent,
+                    position: new Tmapv2.LatLng(place.lat, place.lon),
+                    map: map,
+                    zIndex: 9999999 // 팝업을 맨 앞으로 (최고 값)
+                });
+                
+                // 전역 변수로 저장
+                window.currentDetailInfoWindow = detailInfoWindow;
+                
+                // 팝업을 맨 앞으로 가져오기 및 닫기 버튼 이벤트 추가 (강화된 버전)
+                function attachCloseButtonEventsAdvanced() {
+                    var attempts = 0;
+                    var maxAttempts = 10;
+                    
+                    function tryAttach() {
+                        attempts++;
+                        try {
+                            // 여러 방법으로 닫기 버튼 찾기
+                            var closeBtn = null;
+                            
+                            // 방법 1: 모달 내부에서 찾기
+                            var mapContainer = document.getElementById('map');
+                            if (mapContainer) {
+                                var popupElements = mapContainer.querySelectorAll('.tmap_infowindow');
+                                if (popupElements.length > 0) {
+                                    var lastPopup = popupElements[popupElements.length - 1];
+                                    lastPopup.style.zIndex = '9999999';
+                                    lastPopup.style.position = 'relative';
+                                    lastPopup.style.pointerEvents = 'auto';
+                                    closeBtn = lastPopup.querySelector('#closeDetailBtn');
+                                }
+                            }
+                            
+                            // 방법 2: 전체 문서에서 찾기
+                            if (!closeBtn) {
+                                closeBtn = document.querySelector('#closeDetailBtn');
+                            }
+                            
+                            // 방법 3: ID로 직접 찾기
+                            if (!closeBtn) {
+                                closeBtn = document.getElementById('closeDetailBtn');
+                            }
+                            
+                            if (closeBtn) {
+                                console.log('닫기 버튼 찾음 (시도 ' + attempts + '):', closeBtn);
+                                
+                                // CSS 스타일 강화 (터치 최적화) - 모든 속성 강제 적용
+                                closeBtn.style.setProperty('position', 'absolute', 'important');
+                                closeBtn.style.setProperty('top', '10px', 'important');
+                                closeBtn.style.setProperty('right', '10px', 'important');
+                                closeBtn.style.setProperty('width', '44px', 'important');
+                                closeBtn.style.setProperty('height', '44px', 'important');
+                                closeBtn.style.setProperty('min-width', '44px', 'important');
+                                closeBtn.style.setProperty('min-height', '44px', 'important');
+                                closeBtn.style.setProperty('z-index', '999999999', 'important');
+                                closeBtn.style.setProperty('touch-action', 'manipulation', 'important');
+                                closeBtn.style.setProperty('-webkit-touch-callout', 'none', 'important');
+                                closeBtn.style.setProperty('user-select', 'none', 'important');
+                                closeBtn.style.setProperty('pointer-events', 'auto', 'important');
+                                closeBtn.style.setProperty('cursor', 'pointer', 'important');
+                                closeBtn.style.setProperty('-webkit-tap-highlight-color', 'transparent', 'important');
+                                
+                                // 부모 요소들도 pointer-events 확인 및 수정
+                                var parent = closeBtn.parentElement;
+                                while (parent && parent !== document.body) {
+                                    parent.style.setProperty('pointer-events', 'auto', 'important');
+                                    parent = parent.parentElement;
+                                }
+                                
+                                // 닫기 핸들러 함수
+                                var handleCloseDetail = function(e) {
+                                    if (e) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        e.stopImmediatePropagation();
+                                    }
+                                    console.log('상세 정보 닫기 버튼 클릭/터치됨');
+                                    window.closeDetailInfo();
+                                    return false;
+                                };
+                                
+                                // 기존 이벤트 모두 제거 후 새로 등록
+                                var newCloseBtn = closeBtn.cloneNode(true);
+                                closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+                                closeBtn = newCloseBtn;
+                                
+                                // 클릭 이벤트 (여러 방법으로 등록)
+                                closeBtn.addEventListener('click', handleCloseDetail, { passive: false, capture: true });
+                                closeBtn.addEventListener('click', handleCloseDetail, { passive: false });
+                                closeBtn.onclick = handleCloseDetail;
+                                
+                                // 터치 이벤트 (모바일 필수) - 여러 방법으로 등록
+                                closeBtn.addEventListener('touchend', function(e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.stopImmediatePropagation();
+                                    console.log('상세 정보 닫기 버튼 터치됨 (touchend)');
+                                    window.closeDetailInfo();
+                                    return false;
+                                }, { passive: false, capture: true });
+                                
+                                closeBtn.addEventListener('touchend', function(e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.stopImmediatePropagation();
+                                    console.log('상세 정보 닫기 버튼 터치됨 (touchend - capture: false)');
+                                    window.closeDetailInfo();
+                                    return false;
+                                }, { passive: false });
+                                
+                                closeBtn.addEventListener('touchstart', function(e) {
+                                    e.stopPropagation();
+                                    console.log('상세 정보 닫기 버튼 터치 시작');
+                                    this.style.backgroundColor = '#c82333';
+                                    this.style.transform = 'scale(0.95)';
+                                }, { passive: false });
+                                
+                                closeBtn.addEventListener('touchcancel', function(e) {
+                                    this.style.backgroundColor = '#dc3545';
+                                    this.style.transform = 'scale(1)';
+                                }, { passive: false });
+                                
+                                // mousedown 이벤트도 추가
+                                closeBtn.addEventListener('mousedown', function(e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.log('상세 정보 닫기 버튼 mousedown');
+                                    window.closeDetailInfo();
+                                    return false;
+                                }, { passive: false });
+                                
+                                // 마우스 오버 효과
+                                closeBtn.addEventListener('mouseover', function() {
+                                    this.style.backgroundColor = '#c82333';
+                                    this.style.transform = 'scale(1.1)';
+                                });
+                                
+                                closeBtn.addEventListener('mouseout', function() {
+                                    this.style.backgroundColor = '#dc3545';
+                                    this.style.transform = 'scale(1)';
+                                });
+                                
+                                // 전역 이벤트 위임으로도 처리
+                                var globalClickHandler = function(e) {
+                                    if (e.target === closeBtn || closeBtn.contains(e.target)) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        console.log('전역 클릭 핸들러에서 닫기 버튼 감지');
+                                        window.closeDetailInfo();
+                                        document.removeEventListener('click', globalClickHandler, true);
+                                        return false;
+                                    }
+                                };
+                                document.addEventListener('click', globalClickHandler, true);
+                                
+                                var globalTouchHandler = function(e) {
+                                    if (e.target === closeBtn || closeBtn.contains(e.target)) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        console.log('전역 터치 핸들러에서 닫기 버튼 감지');
+                                        window.closeDetailInfo();
+                                        document.removeEventListener('touchend', globalTouchHandler, true);
+                                        return false;
+                                    }
+                                };
+                                document.addEventListener('touchend', globalTouchHandler, true);
+                                
+                                console.log('상세 정보 닫기 버튼 이벤트 리스너 추가 완료 (강화된 버전)');
+                                return true; // 성공
+                            } else {
+                                if (attempts < maxAttempts) {
+                                    console.log('닫기 버튼을 찾을 수 없음, 재시도 중... (' + attempts + '/' + maxAttempts + ')');
+                                    setTimeout(tryAttach, 200);
+                                } else {
+                                    console.error('닫기 버튼을 찾을 수 없음 (최대 시도 횟수 초과)');
+                                }
+                                return false;
+                            }
+                        } catch (e) {
+                            console.error('닫기 버튼 이벤트 추가 중 오류:', e);
+                            if (attempts < maxAttempts) {
+                                setTimeout(tryAttach, 200);
+                            }
+                            return false;
+                        }
+                    }
+                    
+                    // 즉시 시도
+                    tryAttach();
+                }
+                
+                // 즉시 실행 및 여러 시점에서 재시도
+                attachCloseButtonEventsAdvanced();
+                setTimeout(attachCloseButtonEventsAdvanced, 200);
+                setTimeout(attachCloseButtonEventsAdvanced, 500);
+                setTimeout(attachCloseButtonEventsAdvanced, 1000);
+                setTimeout(attachCloseButtonEventsAdvanced, 1500);
+                
+                // 하단 버튼들 활성화
+                activateBottomButtons(place);
+                
+                console.log('상세 정보 팝업 표시 완료');
+            }
+            
+            // 기본 정보 표시 함수 (개선된 버전)
+            function showBasicPlaceInfo(place) {
+                // 모달 표시 시 검색창 포커스 해제 및 readonly 재설정
+                if (searchInput && document.activeElement === searchInput) {
+                    searchInput.blur();
+                    searchInput.setAttribute('readonly', 'readonly');
+                    console.log('기본 정보 모달 표시로 검색창 포커스 해제 및 readonly 재설정');
+                }
+                
+                // 기존 모든 팝업 제거
+                clearAllPopups();
+                
+                // 모든 마커 숨기기
+                hideAllMarkers();
+                
+                var basicContent = '<div style="padding: 20px; background: #f8f9fa; border-radius: 8px; min-width: 300px; max-width: 350px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999999; isolation: isolate; transform: translateZ(0); backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px);">' +
+                                 '<div style="color: #007bff; font-weight: bold; margin-bottom: 12px; font-size: 18px;">🏪 ' + place.name + '</div>' +
+                                 '<div style="font-size: 14px; color: #666; margin-bottom: 10px;">📍 ' + place.address + '</div>';
+                
+                // 카테고리 정보 (있는 경우)
+                if (place.category) {
+                    basicContent += '<div style="font-size: 13px; color: #28a745; margin-bottom: 8px;">🏷️ ' + place.category + '</div>';
+                }
+                
+                // 추가 정보
+                basicContent += '<div style="font-size: 12px; color: #333; margin-bottom: 8px; background: #fff; padding: 8px; border-radius: 4px;">' +
+                               '<div style="margin-bottom: 4px;">📊 검색 결과 정보</div>' +
+                               '<div style="font-size: 11px; color: #666;">• 검색된 장소입니다</div>' +
+                               '<div style="font-size: 11px; color: #666;">• 정확한 위치가 표시됩니다</div>' +
+                               '</div>';
+                
+                // 좌표 정보 제거됨
+                
+                // 상태 정보
+                basicContent += '<div style="font-size: 12px; color: #28a745; font-weight: bold; margin-bottom: 12px;">✓ 기본 정보 로드 완료</div>';
+                
+                // 버튼들 (강화된 스타일)
+                basicContent += '<div style="display: flex; gap: 10px; margin-top: 15px;">' +
+                               '<button id="closeBasicBtn" style="flex: 1; padding: 10px 16px; background: #dc3545; color: white; border: 2px solid #c82333; border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: all 0.2s ease;">닫기</button>' +
+                               '<button id="navigateBasicBtn" style="flex: 1; padding: 10px 16px; background: #007bff; color: white; border: 2px solid #0056b3; border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: all 0.2s ease;">길찾기</button>' +
+                               '</div>' +
+                               '</div>';
+                
+                var basicInfoWindow = new Tmapv2.InfoWindow({
+                    content: basicContent,
+                    position: new Tmapv2.LatLng(place.lat, place.lon),
+                    map: map,
+                    zIndex: 9999999 // 팝업을 맨 앞으로 (최고 값)
+                });
+                
+                // 전역 변수로 저장
+                window.currentDetailInfoWindow = basicInfoWindow;
+                
+                // 팝업을 맨 앞으로 가져오기 및 버튼 이벤트 추가 (강화된 버전)
+                function attachBasicCloseButtonEventsAdvanced() {
+                    var attempts = 0;
+                    var maxAttempts = 10;
+                    
+                    function tryAttach() {
+                        attempts++;
+                        try {
+                            var closeBtn = null;
+                            var navigateBtn = null;
+                            
+                            var mapContainer = document.getElementById('map');
+                            if (mapContainer) {
+                                var popupElements = mapContainer.querySelectorAll('.tmap_infowindow');
+                                if (popupElements.length > 0) {
+                                    var lastPopup = popupElements[popupElements.length - 1];
+                                    lastPopup.style.zIndex = '9999999';
+                                    lastPopup.style.position = 'relative';
+                                    lastPopup.style.pointerEvents = 'auto';
+                                    closeBtn = lastPopup.querySelector('#closeBasicBtn');
+                                    navigateBtn = lastPopup.querySelector('#navigateBasicBtn');
+                                }
+                            }
+                            
+                            if (!closeBtn) {
+                                closeBtn = document.querySelector('#closeBasicBtn');
+                            }
+                            
+                            if (!closeBtn) {
+                                closeBtn = document.getElementById('closeBasicBtn');
+                            }
+                            
+                            if (closeBtn) {
+                                console.log('기본 정보 닫기 버튼 찾음 (시도 ' + attempts + '):', closeBtn);
+                                
+                                // CSS 스타일 강화
+                                closeBtn.style.setProperty('touch-action', 'manipulation', 'important');
+                                closeBtn.style.setProperty('-webkit-touch-callout', 'none', 'important');
+                                closeBtn.style.setProperty('user-select', 'none', 'important');
+                                closeBtn.style.setProperty('pointer-events', 'auto', 'important');
+                                closeBtn.style.setProperty('cursor', 'pointer', 'important');
+                                closeBtn.style.setProperty('min-width', '44px', 'important');
+                                closeBtn.style.setProperty('min-height', '44px', 'important');
+                                
+                                // 부모 요소들도 pointer-events 확인
+                                var parent = closeBtn.parentElement;
+                                while (parent && parent !== document.body) {
+                                    parent.style.setProperty('pointer-events', 'auto', 'important');
+                                    parent = parent.parentElement;
+                                }
+                                
+                                // 닫기 핸들러 함수
+                                var handleCloseBasic = function(e) {
+                                    if (e) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        e.stopImmediatePropagation();
+                                    }
+                                    console.log('기본 정보 닫기 버튼 클릭/터치됨');
+                                    window.closeDetailInfo();
+                                    return false;
+                                };
+                                
+                                // 기존 이벤트 제거 후 새로 등록
+                                var newCloseBtn = closeBtn.cloneNode(true);
+                                closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+                                closeBtn = newCloseBtn;
+                                
+                                // 클릭 이벤트
+                                closeBtn.addEventListener('click', handleCloseBasic, { passive: false, capture: true });
+                                closeBtn.addEventListener('click', handleCloseBasic, { passive: false });
+                                closeBtn.onclick = handleCloseBasic;
+                                
+                                // 터치 이벤트 (모바일 필수)
+                                closeBtn.addEventListener('touchend', function(e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.stopImmediatePropagation();
+                                    console.log('기본 정보 닫기 버튼 터치됨 (touchend)');
+                                    window.closeDetailInfo();
+                                    return false;
+                                }, { passive: false, capture: true });
+                                
+                                closeBtn.addEventListener('touchend', function(e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.stopImmediatePropagation();
+                                    console.log('기본 정보 닫기 버튼 터치됨 (touchend - capture: false)');
+                                    window.closeDetailInfo();
+                                    return false;
+                                }, { passive: false });
+                                
+                                closeBtn.addEventListener('touchstart', function(e) {
+                                    e.stopPropagation();
+                                    console.log('기본 정보 닫기 버튼 터치 시작');
+                                    this.style.backgroundColor = '#c82333';
+                                    this.style.transform = 'scale(0.95)';
+                                }, { passive: false });
+                                
+                                closeBtn.addEventListener('touchcancel', function(e) {
+                                    this.style.backgroundColor = '#dc3545';
+                                    this.style.transform = 'scale(1)';
+                                }, { passive: false });
+                                
+                                // 마우스 오버 효과
+                                closeBtn.addEventListener('mouseover', function() {
+                                    this.style.backgroundColor = '#c82333';
+                                    this.style.transform = 'scale(1.05)';
+                                });
+                                
+                                closeBtn.addEventListener('mouseout', function() {
+                                    this.style.backgroundColor = '#dc3545';
+                                    this.style.transform = 'scale(1)';
+                                });
+                                
+                                // 전역 이벤트 위임
+                                var globalClickHandler = function(e) {
+                                    if (e.target === closeBtn || closeBtn.contains(e.target)) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        console.log('전역 클릭 핸들러에서 기본 정보 닫기 버튼 감지');
+                                        window.closeDetailInfo();
+                                        document.removeEventListener('click', globalClickHandler, true);
+                                        return false;
+                                    }
+                                };
+                                document.addEventListener('click', globalClickHandler, true);
+                                
+                                var globalTouchHandler = function(e) {
+                                    if (e.target === closeBtn || closeBtn.contains(e.target)) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        console.log('전역 터치 핸들러에서 기본 정보 닫기 버튼 감지');
+                                        window.closeDetailInfo();
+                                        document.removeEventListener('touchend', globalTouchHandler, true);
+                                        return false;
+                                    }
+                                };
+                                document.addEventListener('touchend', globalTouchHandler, true);
+                                
+                                console.log('기본 정보 닫기 버튼 이벤트 리스너 추가 완료 (강화된 버전)');
+                            }
+                            
+                            // 길찾기 버튼 이벤트 추가
+                            if (navigateBtn) {
+                                navigateBtn.addEventListener('click', function(e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.log('기본 정보 길찾기 버튼 클릭됨');
+                                    navigateToPlace(place.lat, place.lon);
+                                });
+                            }
+                            
+                            if (closeBtn) {
+                                return true;
+                            } else {
+                                if (attempts < maxAttempts) {
+                                    console.log('기본 정보 닫기 버튼을 찾을 수 없음, 재시도 중... (' + attempts + '/' + maxAttempts + ')');
+                                    setTimeout(tryAttach, 200);
+                                } else {
+                                    console.error('기본 정보 닫기 버튼을 찾을 수 없음 (최대 시도 횟수 초과)');
+                                }
+                                return false;
+                            }
+                        } catch (e) {
+                            console.error('기본 정보 닫기 버튼 이벤트 추가 중 오류:', e);
+                            if (attempts < maxAttempts) {
+                                setTimeout(tryAttach, 200);
+                            }
+                            return false;
+                        }
+                    }
+                    
+                    tryAttach();
+                }
+                
+                // 즉시 실행 및 여러 시점에서 재시도
+                attachBasicCloseButtonEventsAdvanced();
+                setTimeout(attachBasicCloseButtonEventsAdvanced, 200);
+                setTimeout(attachBasicCloseButtonEventsAdvanced, 500);
+                setTimeout(attachBasicCloseButtonEventsAdvanced, 1000);
+                setTimeout(attachBasicCloseButtonEventsAdvanced, 1500);
+                
+                // 하단 버튼들 활성화
+                activateBottomButtons(place);
+                
+                console.log('기본 정보 팝업 표시 완료');
+            }
+            
+            // 기존 복잡한 상세 정보 검색 함수들 제거됨
+            
+            // 새로운 닫기 함수 (완전히 새로운 방식)
+            window.closePopupNow = function() {
+                console.log('새로운 닫기 함수 호출됨');
+                
+                try {
+                    // 모든 팝업 제거
+                    if (window.currentDetailInfoWindow) {
+                        window.currentDetailInfoWindow.setMap(null);
+                        window.currentDetailInfoWindow = null;
+                        console.log('상세 정보 팝업 제거됨');
+                    }
+                    
+                    if (window.currentUserLocationInfoWindow) {
+                        window.currentUserLocationInfoWindow.setMap(null);
+                        window.currentUserLocationInfoWindow = null;
+                        console.log('현재 위치 정보 팝업 제거됨');
+                    }
+                    
+                    // 하단 버튼들 비활성화
+                    if (typeof deactivateBottomButtons === 'function') {
+                        deactivateBottomButtons();
+                    }
+                    
+                    console.log('팝업 닫기 완료');
+                } catch (e) {
+                    console.log('팝업 닫기 중 오류:', e);
+                }
+            };
+            
+            // 기존 닫기 함수도 유지 (호환성)
+            window.closeDetailInfo = window.closePopupNow;
+            
+            // 하단 버튼들 비활성화 함수
+            window.deactivateBottomButtons = function() {
+                console.log('하단 버튼들 비활성화');
+                
+                // 하단 버튼 컨테이너 비활성화
+                var bottomButtonsContainer = document.querySelector('.bottom-buttons-floating');
+                if (bottomButtonsContainer) {
+                    bottomButtonsContainer.classList.remove('active');
+                }
+                
+                // 길찾기 버튼 비활성화
+                var navigationBtn = document.getElementById('navigationBtn');
+                if (navigationBtn) {
+                    navigationBtn.disabled = true;
+                }
+                
+                // 음성안내 버튼 비활성화
+                var voiceGuideBtn = document.getElementById('voiceGuideBtn');
+                if (voiceGuideBtn) {
+                    voiceGuideBtn.disabled = true;
+                }
+                
+                // 현재 선택된 장소 초기화
+                window.currentSelectedPlace = null;
+            };
+            
+            // 장소로 길찾기 함수
+            window.navigateToPlace = function(lat, lng) {
+                console.log('길찾기 시작:', lat, lng);
+                
+                // 현재 위치 정보 가져오기
+                if (userLocation) {
+                    var currentLat = userLocation.lat();
+                    var currentLng = userLocation.lng();
+                    
+                    // navigation.html로 이동하면서 현재 위치와 목적지 정보 전달
+                    var navigationUrl = 'navigation.html?' +
+                        'startLat=' + currentLat + 
+                        '&startLng=' + currentLng + 
+                        '&endLat=' + lat + 
+                        '&endLng=' + lng;
+                    
+                    console.log('길찾기 URL:', navigationUrl);
+                    window.location.href = navigationUrl;
+                } else {
+                    alert('현재 위치를 가져올 수 없습니다. 위치 권한을 확인해주세요.');
+                }
+            };
+            
+            // Tmap API를 사용한 주변 검색 함수
+            function searchNearbyPlaces(searchText, centerLat, centerLng) {
+                console.log('주변 검색 시작:', searchText, '위치:', centerLat, centerLng);
+                
+                // 기존 검색 결과 제거
+                clearSearchResults();
+                
+                // Tmap API 주변 검색 요청 (올바른 엔드포인트 사용)
+                var searchUrl = 'https://apis.openapi.sk.com/tmap/pois';
+                
+                // URL 파라미터를 직접 구성
+                var queryString = 'version=1&searchKeyword=' + encodeURIComponent(searchText) + 
+                                 '&centerLon=' + centerLng.toString() + 
+                                 '&centerLat=' + centerLat.toString() + 
+                                 '&reqCoordType=WGS84GEO&resCoordType=WGS84GEO' +
+                                 '&radius=3&count=20&sort=distance';
+                var fullUrl = searchUrl + '?' + queryString;
+                
+                console.log('검색 요청 URL:', fullUrl);
+                
+                // fetch를 사용한 API 호출
+                fetch(fullUrl, {
+                    method: 'GET',
+                    headers: {
+                            'appKey': 'pUIcUWdIGX4FDdOOgd0SO8n46k4ZNmiV6TOOJetL'
+                        }
+                })
+                .then(response => {
+                    console.log('검색 응답 상태:', response.status);
+                    if (!response.ok) {
+                        throw new Error('검색 요청 실패: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('검색 결과 데이터:', data);
+                    
+                    if (data.searchPoiInfo && data.searchPoiInfo.pois && data.searchPoiInfo.pois.poi) {
+                        var places = data.searchPoiInfo.pois.poi;
+                        
+                        // 단일 결과인 경우 배열로 변환
+                        if (!Array.isArray(places)) {
+                            places = [places];
+                        }
+                        
+                        console.log('검색된 장소 수:', places.length);
+                        
+                        // 검색 결과를 지도에 표시
+                        places.forEach(function(place, index) {
+                            console.log('장소 ' + (index + 1) + ':', place.name, place.address);
+                            
+                            // 안전한 좌표 파싱
+                            var lat = parseFloat(place.frontLat || place.noorLat || place.lat);
+                            var lon = parseFloat(place.frontLon || place.noorLon || place.lon);
+                            
+                            // 안전한 주소 파싱
+                            var address = place.address || 
+                                        (place.newAddressList && place.newAddressList.newAddress && place.newAddressList.newAddress[0] && place.newAddressList.newAddress[0].fullAddressRoad) ||
+                                        [place.upperAddrName, place.middleAddrName, place.roadName].filter(Boolean).join(' ') ||
+                                        '주소 정보 없음';
+                            
+                            var placeData = {
+                                id: place.id || null, // POI ID 저장
+                                name: place.name || '이름 없음',
+                                address: address,
+                                lat: lat,
+                                lon: lon,
+                                category: place.category || '기타',
+                                telNo: place.telNo || '',
+                                pkey: place.pkey || null
+                            };
+                            
+                            addSearchResultMarker(placeData);
+                        });
+                        
+                        // 검색 결과가 있으면 지도 중심을 첫 번째 결과로 이동
+                        if (places.length > 0) {
+                            var firstPlace = places[0];
+                            var searchCenter = new Tmapv2.LatLng(parseFloat(firstPlace.frontLat), parseFloat(firstPlace.frontLon));
+                            map.setCenter(searchCenter);
+                            map.setZoom(16);
+                            console.log('지도 중심을 검색 결과로 이동');
+                        }
+                        
+                        // 검색 완료 메시지 표시
+                        showSearchResultMessage(places.length, searchText);
+                        
+                    } else {
+                        console.log('검색 결과가 없습니다.');
+                        showSearchResultMessage(0, searchText);
+                    }
+                })
+                .catch(error => {
+                    console.error('검색 오류:', error);
+                    showSearchResultMessage(-1, searchText);
+                });
+            }
+            
+            // 검색 결과 메시지 표시 함수
+            function showSearchResultMessage(count, searchText) {
+                // 기존 메시지 제거
+                var existingMessage = document.getElementById('search-result-message');
+                if (existingMessage) {
+                    existingMessage.remove();
+                }
+                
+                var message = '';
+                var color = '#28a745';
+                
+                if (count === -1) {
+                    message = '검색 중 오류가 발생했습니다.';
+                    color = '#dc3545';
+                } else if (count === 0) {
+                    message = '"' + searchText + '"에 대한 검색 결과가 없습니다.';
+                    color = '#ffc107';
+                } else {
+                    message = '"' + searchText + '" 검색 결과 ' + count + '개를 찾았습니다.';
+                    color = '#28a745';
+                }
+                
+                var messageDiv = document.createElement('div');
+                messageDiv.id = 'search-result-message';
+                messageDiv.style.cssText = `
+                    position: absolute;
+                    top: 80px;
+                    left: 20px;
+                    right: 20px;
+                    background: rgba(255, 255, 255, 0.95);
+                    padding: 12px 16px;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    color: ${color};
+                    font-weight: bold;
+                    z-index: 1000;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    text-align: center;
+                `;
+                messageDiv.innerHTML = message;
+                
+                document.querySelector('.map-container').appendChild(messageDiv);
+                
+                // 3초 후 자동으로 사라지게
+                setTimeout(function() {
+                    if (messageDiv && messageDiv.parentNode) {
+                        messageDiv.remove();
+                    }
+                }, 3000);
+            }
+            
+            // 검색 실행 함수
+            function executeSearch() {
+                var searchText = document.getElementById('searchInput').value.trim();
+                if (searchText !== '') {
+                    console.log('검색어: ' + searchText);
+                    
+                    // 검색 실행 후 검색창 포커스 해제 및 readonly 재설정
+                    if (searchInput && document.activeElement === searchInput) {
+                        searchInput.blur();
+                        searchInput.setAttribute('readonly', 'readonly');
+                        console.log('검색 실행 후 검색창 포커스 해제 및 readonly 재설정');
+                    }
+                    
+                    // 현재 지도 중심 좌표 가져오기
+                    var center = map.getCenter();
+                    var centerLat = center.lat();
+                    var centerLng = center.lng();
+                    
+                    console.log('검색 중심 좌표:', centerLat, centerLng);
+                    
+                    // 주변 검색 실행
+                    searchNearbyPlaces(searchText, centerLat, centerLng);
+                }
+            }
+            
+            // 검색 기능 구현 (Enter 키)
             document.getElementById('searchInput').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
-                    var searchText = this.value;
-                    if (searchText.trim() !== '') {
-                        // 검색 로직 구현 (추후 확장 가능)
-                        console.log('검색어: ' + searchText);
+                    executeSearch();
+                }
+            });
+            
+            // 검색 아이콘 클릭 이벤트
+            document.querySelector('.search-icon').addEventListener('click', function() {
+                console.log('검색 아이콘 클릭됨');
+                executeSearch();
+            });
+            
+            // 검색 입력창 관리
+            var searchInput = document.getElementById('searchInput');
+            
+            // 검색 입력창에 직접 클릭/터치했을 때만 readonly 제거하고 포커스
+            searchInput.addEventListener('touchstart', function(e) {
+                // readonly 제거하여 키패드 표시 가능하게 함
+                this.removeAttribute('readonly');
+                console.log('검색창 직접 터치 - readonly 제거');
+            }, { passive: true });
+            
+            searchInput.addEventListener('mousedown', function(e) {
+                // readonly 제거하여 키패드 표시 가능하게 함
+                this.removeAttribute('readonly');
+                console.log('검색창 직접 클릭 - readonly 제거');
+            }, { passive: true });
+            
+            // 검색 입력창 포커스 이벤트
+            searchInput.addEventListener('focus', function() {
+                console.log('검색창 포커스됨');
+            });
+            
+            // 검색 입력창 블러 이벤트 - 포커스 해제 시 다시 readonly 설정
+            searchInput.addEventListener('blur', function() {
+                // 포커스를 잃으면 다시 readonly 설정하여 의도하지 않은 포커스 방지
+                this.setAttribute('readonly', 'readonly');
+                console.log('검색창 블러됨 - readonly 재설정');
+            });
+            
+            // 다른 곳 클릭/터치 시 검색창 포커스 해제
+            document.addEventListener('click', function(e) {
+                // 검색 입력창이나 검색 바를 클릭한 경우가 아닐 때
+                var searchBar = document.querySelector('.search-bar-floating');
+                if (searchBar && !searchBar.contains(e.target)) {
+                    if (searchInput && document.activeElement === searchInput) {
+                        searchInput.blur();
+                        searchInput.setAttribute('readonly', 'readonly');
+                        console.log('외부 클릭으로 검색창 포커스 해제 및 readonly 재설정');
                     }
+                }
+            }, false);
+            
+            // 모바일 터치 이벤트 처리
+            document.addEventListener('touchend', function(e) {
+                // 검색 입력창이나 검색 바를 터치한 경우가 아닐 때
+                var searchBar = document.querySelector('.search-bar-floating');
+                if (searchBar && !searchBar.contains(e.target)) {
+                    if (searchInput && document.activeElement === searchInput) {
+                        // 약간의 지연을 두어 다른 이벤트 처리 후 포커스 해제
+                        setTimeout(function() {
+                            if (document.activeElement === searchInput) {
+                                searchInput.blur();
+                                searchInput.setAttribute('readonly', 'readonly');
+                                console.log('외부 터치로 검색창 포커스 해제 및 readonly 재설정');
+                            }
+                        }, 100);
+                    }
+                }
+            }, false);
+            
+            // 지도 클릭/터치 시 검색창 포커스 해제
+            map.addListener('click', function(event) {
+                if (searchInput && document.activeElement === searchInput) {
+                    searchInput.blur();
+                    searchInput.setAttribute('readonly', 'readonly');
+                    console.log('지도 클릭으로 검색창 포커스 해제 및 readonly 재설정');
+                }
+            });
+            
+            map.addListener('mousedown', function(event) {
+                if (searchInput && document.activeElement === searchInput) {
+                    searchInput.blur();
+                    searchInput.setAttribute('readonly', 'readonly');
+                    console.log('지도 mousedown으로 검색창 포커스 해제 및 readonly 재설정');
+                }
+            });
+            
+            map.addListener('touchstart', function(event) {
+                if (searchInput && document.activeElement === searchInput) {
+                    searchInput.blur();
+                    searchInput.setAttribute('readonly', 'readonly');
+                    console.log('지도 터치로 검색창 포커스 해제 및 readonly 재설정');
+                }
+            });
+            
+            // 검색창 초기화 버튼 추가
+            document.getElementById('searchInput').addEventListener('input', function() {
+                var searchText = this.value.trim();
+                if (searchText === '') {
+                    // 검색어가 비어있으면 검색 결과 제거
+                    clearSearchResults();
+                    console.log('검색어가 비어있어 검색 결과 제거');
+                }
+            });
+            
+            // 현재 위치 버튼 클릭 이벤트
+            document.getElementById('currentLocationBtn').addEventListener('click', function() {
+                console.log('현재 위치 버튼 클릭됨');
+                
+                if (navigator.geolocation) {
+                    // 로딩 상태 표시
+                    this.style.opacity = '0.5';
+                    this.style.pointerEvents = 'none';
+                    
+                    navigator.geolocation.getCurrentPosition(
+                        function(position) {
+                            console.log('현재 위치 가져오기 성공:', position.coords);
+                            var initialLat = position.coords.latitude;
+                            var initialLon = position.coords.longitude;
+                            
+                            // 기존 현재 위치 마커 제거 (안전한 방식)
+                            if (userLocationMarker) {
+                                try {
+                                    userLocationMarker.setMap(null);
+                                } catch (e) {
+                                    console.log('기존 현재 위치 마커 제거 중 오류 (무시):', e);
+                                }
+                                userLocationMarker = null;
+                            }
+                            
+                            // Tmap API setCurrentLocation 함수로 현재 위치 설정
+                            userLocation = setCurrentLocation(initialLat, initialLon);
+                            map.setZoom(16);
+                            
+                            // 현재 위치 정보를 place 객체로 생성하여 하단 버튼들 활성화
+                            var currentPlace = {
+                                id: 'current_location',
+                                name: '현재 위치',
+                                address: '현재 위치',
+                                lat: userLocation.lat(),
+                                lon: userLocation.lng(),
+                                category: '현재 위치',
+                                telNo: '',
+                                pkey: null
+                            };
+                            
+                            // 하단 버튼들 활성화
+                            activateBottomButtons(currentPlace);
+                            
+                            console.log('지도 중심을 현재 위치로 이동:', newUserLocation);
+                            
+                            // 버튼 상태 복원
+                            document.getElementById('currentLocationBtn').style.opacity = '1';
+                            document.getElementById('currentLocationBtn').style.pointerEvents = 'auto';
+                        },
+                        function(error) {
+                            console.error('현재 위치 가져오기 실패:', error);
+                            alert('현재 위치를 가져올 수 없습니다. 위치 권한을 확인해주세요.');
+                            
+                            // 버튼 상태 복원
+                            document.getElementById('currentLocationBtn').style.opacity = '1';
+                            document.getElementById('currentLocationBtn').style.pointerEvents = 'auto';
+                        },
+                        {
+                            enableHighAccuracy: true, // GPS 사용
+                            timeout: 30000, // 30초로 증가
+                            maximumAge: 0 // 캐시 사용 안함 (최신 위치)
+                        }
+                    );
+                } else {
+                    alert('이 브라우저에서는 위치 서비스를 지원하지 않습니다.');
                 }
             });
         }
@@ -738,6 +2829,16 @@
 
             // 즉시 시도
             tryInitMap();
+            
+            // 하단 버튼들 초기 비활성화
+            setTimeout(function() {
+                deactivateBottomButtons();
+            }, 100);
+            
+            // 페이지를 떠날 때 위치 추적 중지
+            window.addEventListener('beforeunload', function() {
+                stopLocationTracking();
+            });
         });
     </script>
 

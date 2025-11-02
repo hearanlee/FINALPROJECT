@@ -19,6 +19,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Favicon handler to avoid 404s when the browser requests /favicon.ico
+app.get('/favicon.ico', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'images', 'chef-hat.png'));
+});
+
 // 메뉴 데이터를 가져오는 함수
 async function getMenuData() {
     try {
@@ -344,8 +349,161 @@ app.post('/api/order-guidance', async (req, res) => {
     }
 });
 
+// Tmap API 프록시 엔드포인트 - 주변 카테고리 검색
+app.get('/api/tmap/pois/search/around', async (req, res) => {
+    try {
+        const { version, categories, centerLon, centerLat, reqCoordType, resCoordType, count, radius } = req.query;
+        
+        // 필수 파라미터 확인
+        if (!version || !centerLon || !centerLat) {
+            return res.status(400).json({ error: '필수 파라미터가 누락되었습니다.' });
+        }
+        
+        // Tmap API URL 구성
+        const tmapUrl = 'https://apis.openapi.sk.com/tmap/pois/search/around';
+        const queryParams = new URLSearchParams({
+            version: version || '1',
+            categories: categories || '음식점',
+            centerLon: centerLon,
+            centerLat: centerLat,
+            reqCoordType: reqCoordType || 'WGS84GEO',
+            resCoordType: resCoordType || 'WGS84GEO',
+            count: count || '5',
+            radius: radius || '1'
+        });
+        
+        const fullUrl = `${tmapUrl}?${queryParams.toString()}`;
+        console.log('Tmap API 요청 URL:', fullUrl);
+        
+        // Tmap API 호출
+        const response = await fetch(fullUrl, {
+            method: 'GET',
+            headers: {
+                'appKey': 'pUIcUWdIGX4FDdOOgd0SO8n46k4ZNmiV6TOOJetL',
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Tmap API 오류: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('Tmap API 응답 성공:', data.searchPoiInfo?.totalCount || 0, '개 결과');
+        
+        res.json(data);
+        
+    } catch (error) {
+        console.error('Tmap API 프록시 오류:', error);
+        res.status(500).json({ 
+            error: 'Tmap API 호출 중 오류가 발생했습니다.',
+            details: error.message 
+        });
+    }
+});
+
+// Tmap API 프록시 엔드포인트 - 역지오코딩 (좌표 -> 주소 변환)
+app.get('/api/tmap/geo/reversegeocoding', async (req, res) => {
+    try {
+        const { version, lat, lon, coordType, addressType } = req.query;
+        
+        // 필수 파라미터 확인
+        if (!lat || !lon) {
+            return res.status(400).json({ error: '위도(lat)와 경도(lon)가 필요합니다.' });
+        }
+        
+        // Tmap API URL 구성
+        const tmapUrl = 'https://apis.openapi.sk.com/tmap/geo/reversegeocoding';
+        const queryParams = new URLSearchParams({
+            version: version || '1',
+            lat: lat,
+            lon: lon,
+            coordType: coordType || 'WGS84GEO',
+            addressType: addressType || 'A02'
+        });
+        
+        const fullUrl = `${tmapUrl}?${queryParams.toString()}`;
+        console.log('Tmap 역지오코딩 API 요청 URL:', fullUrl);
+        
+        // Tmap API 호출
+        const response = await fetch(fullUrl, {
+            method: 'GET',
+            headers: {
+                'appKey': 'pUIcUWdIGX4FDdOOgd0SO8n46k4ZNmiV6TOOJetL',
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Tmap API 오류: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('Tmap 역지오코딩 API 응답 성공');
+        
+        res.json(data);
+        
+    } catch (error) {
+        console.error('Tmap 역지오코딩 API 프록시 오류:', error);
+        res.status(500).json({ 
+            error: 'Tmap 역지오코딩 API 호출 중 오류가 발생했습니다.',
+            details: error.message 
+        });
+    }
+});
+
+// Tmap API 프록시 엔드포인트 - 장소 상세 정보 검색
+app.get('/api/tmap/pois/:poiId', async (req, res) => {
+    try {
+        const { poiId } = req.params;
+        const { version, findOption, resCoordType } = req.query;
+        
+        // 필수 파라미터 확인
+        if (!poiId) {
+            return res.status(400).json({ error: 'POI ID가 필요합니다.' });
+        }
+        
+        // Tmap API URL 구성
+        const tmapUrl = `https://apis.openapi.sk.com/tmap/pois/${poiId}`;
+        const queryParams = new URLSearchParams({
+            version: version || '1',
+            findOption: findOption || 'id',
+            resCoordType: resCoordType || 'WGS84GEO'
+        });
+        
+        const fullUrl = `${tmapUrl}?${queryParams.toString()}`;
+        console.log('Tmap API 장소 상세 정보 요청 URL:', fullUrl);
+        
+        // Tmap API 호출
+        const response = await fetch(fullUrl, {
+            method: 'GET',
+            headers: {
+                'appKey': 'pUIcUWdIGX4FDdOOgd0SO8n46k4ZNmiV6TOOJetL',
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Tmap API 오류: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('Tmap API 장소 상세 정보 응답 성공:', data.poiDetailInfo?.name || '알 수 없음');
+        
+        res.json(data);
+        
+    } catch (error) {
+        console.error('Tmap API 장소 상세 정보 프록시 오류:', error);
+        res.status(500).json({ 
+            error: 'Tmap API 장소 상세 정보 호출 중 오류가 발생했습니다.',
+            details: error.message 
+        });
+    }
+});
+
 // 서버 시작
 app.listen(PORT, () => {
     console.log(`🚀 서버가 http://localhost:${PORT}에서 실행 중입니다.`);
     console.log(`🎤 음성 대화를 시작하려면 브라우저에서 접속하세요!`);
+    console.log(`🗺️ Tmap API 프록시가 활성화되었습니다.`);
 });

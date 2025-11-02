@@ -24,7 +24,30 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     try:
         with socketserver.TCPServer(("", PORT), MyHTTPRequestHandler) as httpd:
-            print(f"프론트엔드 서버가 http://localhost:{PORT} 에서 실행 중입니다.")
+            import socket
+            hostname = socket.gethostname()
+            local_ip = socket.gethostbyname(hostname)
+            
+            # 모든 네트워크 인터페이스의 IP 주소 찾기
+            try:
+                # 가장 일반적인 로컬 IP 주소 가져오기
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.connect(("8.8.8.8", 80))
+                local_ip = s.getsockname()[0]
+                s.close()
+            except:
+                pass
+            
+            print("=" * 60)
+            print(f"✅ 프론트엔드 서버가 실행 중입니다!")
+            print("=" * 60)
+            print(f"📍 로컬 접속:")
+            print(f"   http://localhost:{PORT}")
+            print(f"   http://127.0.0.1:{PORT}")
+            print(f"")
+            print(f"📱 모바일 접속 (같은 Wi-Fi 필요):")
+            print(f"   http://{local_ip}:{PORT}")
+            print("=" * 60)
             print("종료하려면 Ctrl+C를 누르세요.")
             httpd.serve_forever()
     except KeyboardInterrupt:
