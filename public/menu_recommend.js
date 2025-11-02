@@ -1,5 +1,6 @@
 // Gemini API 설정
-const GEMINI_API_KEY = "AIzaSyBZ7INgGfYNVrJ54CQdk7veNtHQ9f12xJs";
+//const GEMINI_API_KEY = "AIzaSyBZ7INgGfYNVrJ54CQdk7veNtHQ9f12xJs";
+const GEMINI_API_KEY = "AIzaSyBTPdAB550YvY6hSJPZqvSNTdXx8zzm9BM"
 const GEMINI_MODEL = "gemini-2.5-pro";
 
 // 음성 속도 및 반복 설정
@@ -45,97 +46,112 @@ window.addEventListener('focus', () => {
 // Gemini API 호출 함수
 async function callGeminiAPI(userMessage) {
     try {
-        // 프롬프트 구성 (3문장 이내로 응답 요청)
-        const prompt = `당신은 음식점 메뉴 추천 전문가입니다. 사용자의 요청에 대해 친절하고 자연스럽게 메뉴를 추천해주세요. 반드시 3문장 이내로 짧고 간결하게 대답해주세요. 한국어로 대답해주세요.\n\n사용자 요청: ${userMessage}`;
-        
-        // REST API로 Gemini 호출
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: prompt
-                    }]
-                }]
-            })
-        });
+        // ▼▼▼▼▼ 여기부터 프롬프트가 수정되었습니다 ▼▼▼▼▼
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(`API 호출 실패: ${response.status} - ${JSON.stringify(errorData)}`);
-        }
+        // 1. AI가 추천할 메뉴 3가지를 여기에 정의합니다.
+        // (이 부분을 실제 메뉴로 변경하세요!)
+        const menuList = "덮밥, 카레, 토스트";
 
-        const data = await response.json();
-        
-        // 응답 파싱
-        if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
-            let responseText = data.candidates[0].content.parts[0].text;
-            // 마크다운 형식 제거 (순수 텍스트만 추출)
-            // 코드 블록 먼저 제거
-            responseText = responseText.replace(/```[\s\S]*?```/g, '');
-            // 인라인 코드 제거 (내용은 유지)
-            responseText = responseText.replace(/`([^`]+)`/g, '$1');
-            // 링크 마크다운 제거 (텍스트만 유지)
-            responseText = responseText.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
-            // 헤더 마크다운 제거
-            responseText = responseText.replace(/#{1,6}\s+/g, '');
-            // 볼드/이탤릭 마크다운 제거 (순서 중요: **, __ 먼저, 그 다음 *, _)
-            responseText = responseText.replace(/\*\*/g, ''); // ** 제거
-            responseText = responseText.replace(/__/g, ''); // __ 제거
-            responseText = responseText.replace(/\*/g, ''); // 나머지 * 제거
-            responseText = responseText.replace(/_/g, ''); // 나머지 _ 제거
-            // 기타 마크다운 제거
-            responseText = responseText.replace(/~~[\s\S]*?~~/g, ''); // 취소선 텍스트 제거
-            responseText = responseText.replace(/>\s+/g, ''); // 인용 부호 제거
-            // 대시(-) 기호를 공백으로 변환하여 음성 합성 시 읽히지 않도록 처리
-            // 숫자 사이의 하이픈은 유지하기 위해 숫자-숫자 패턴은 보호
-            // 먼저 숫자 사이의 하이픈을 임시로 보호
-            const phonePattern = /\d+-\d+/g;
-            const datePattern = /\d{4}-\d{2}-\d{2}/g;
-            const protected = [];
-            let match;
-            let tempText = responseText;
-            
-            // 전화번호 패턴 보호
-            while ((match = phonePattern.exec(responseText)) !== null) {
-                protected.push(match[0]);
-                tempText = tempText.replace(match[0], `__PROTECTED_${protected.length - 1}__`);
-            }
-            
-            // 날짜 패턴 보호
-            while ((match = datePattern.exec(tempText)) !== null) {
-                protected.push(match[0]);
-                tempText = tempText.replace(match[0], `__PROTECTED_${protected.length - 1}__`);
-            }
-            
-            // 나머지 대시를 공백으로 변환
-            tempText = tempText.replace(/\s*-\s*/g, ' ');
-            
-            // 보호된 패턴 복원
-            protected.forEach((pattern, index) => {
-                tempText = tempText.replace(`__PROTECTED_${index}__`, pattern);
-            });
-            
-            responseText = tempText;
-            // 문장 길이 제한: 3문장으로 제한 (마침표 기준으로 나누고 처음 3문장만)
-            const sentences = responseText.split(/[.!?]\s+/).filter(s => s.trim().length > 0);
-            if (sentences.length > 3) {
-                responseText = sentences.slice(0, 3).join('. ') + '.';
-            }
-            // 공백 정리
-            responseText = responseText.replace(/\s+/g, ' '); // 연속된 공백을 하나로
-            responseText = responseText.trim();
-            return responseText;
-        } else {
-            throw new Error('응답 형식이 올바르지 않습니다.');
-        }
-    } catch (error) {
-        console.error('Gemini API 호출 중 오류:', error);
-        return '죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.';
-    }
+        // 2. AI에게 역할을 부여하고, 메뉴 3가지를 명확히 제한하는 프롬프트
+        const prompt = `
+[시스템 지시]
+우리 가게의 메뉴는 오직 '${menuList}' 3가지뿐입니다.
+
+[작업]
+사용자의 요청을 듣고, 반드시 '${menuList}' 3가지 메뉴 중에서만 1개를 골라 추천해야 합니다.
+절대로 이 목록에 없는 다른 메뉴를 지어내거나 언급해서는 안 됩니다.
+사용자가 "아무거나" 또는 "추천해줘"라고 말해도 3가지 메뉴 중에서 하나를 골라 추천해야 합니다.
+
+[응답 규칙]
+1. 친절하고 자연스러운 말투를 사용하세요.
+2. 반드시 3문장 이내로 간결하게 대답하세요.
+3. 한국어로 대답하세요.
+
+[사용자 요청]
+${userMessage}
+
+[AI 응답]
+`;
+        // ▲▲▲▲▲ 여기까지 프롬프트가 수정되었습니다 ▲▲▲▲▲
+        
+        // REST API로 Gemini 호출
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: prompt
+                    }]
+                }]
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`API 호출 실패: ${response.status} - ${JSON.stringify(errorData)}`);
+        }
+
+        const data = await response.json();
+        
+        // 응답 파싱
+        if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+            let responseText = data.candidates[0].content.parts[0].text;
+            
+            // ... (이하 마크다운 제거 및 텍스트 처리 부분은 그대로 유지) ...
+            
+            // (마크다운 제거 코드...)
+            responseText = responseText.replace(/```[\s\S]*?```/g, '');
+            responseText = responseText.replace(/`([^`]+)`/g, '$1');
+            responseText = responseText.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+sponseText = responseText.replace(/#{1,6}\s+/g, '');
+            responseText = responseText.replace(/\*\*/g, ''); 
+            responseText = responseText.replace(/__/g, ''); 
+            responseText = responseText.replace(/\*/g, ''); 
+            responseText = responseText.replace(/_/g, ''); 
+            responseText = responseText.replace(/~~[\s\S]*?~~/g, '');
+            responseText = responseText.replace(/>\s+/g, ''); 
+
+            // (대시 기호 처리 코드...)
+            const phonePattern = /\d+-\d+/g;
+            const datePattern = /\d{4}-\d{2}-\d{2}/g;
+            const protected = [];
+            let match;
+            let tempText = responseText;
+            
+            while ((match = phonePattern.exec(responseText)) !== null) {
+                protected.push(match[0]);
+                tempText = tempText.replace(match[0], `__PROTECTED_${protected.length - 1}__`);
+            }
+            while ((match = datePattern.exec(tempText)) !== null) {
+                protected.push(match[0]);
+                tempText = tempText.replace(match[0], `__PROTECTED_${protected.length - 1}__`);
+            }
+            tempText = tempText.replace(/\s*-\s*/g, ' ');
+            protected.forEach((pattern, index) => {
+                tempText = tempText.replace(`__PROTECTED_${index}__`, pattern);
+            });
+            
+            responseText = tempText;
+
+            // (문장 길이 제한 및 공백 정리 코드...)
+            const sentences = responseText.split(/[.!?]\s+/).filter(s => s.trim().length > 0);
+            if (sentences.length > 3) {
+                responseText = sentences.slice(0, 3).join('. ') + '.';
+            }
+            responseText = responseText.replace(/\s+/g, ' ');
+            responseText = responseText.trim();
+            return responseText;
+
+        } else {
+            throw new Error('응답 형식이 올바르지 않습니다.');
+        }
+    } catch (error) {
+        console.error('Gemini API 호출 중 오류:', error);
+        return '죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.';
+    }
 }
 
 // 음성 합성 함수
