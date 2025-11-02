@@ -63,13 +63,89 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 4. 모달 닫기 이벤트 연결 (X 버튼, '뒤로 가기' 버튼, 뒷배경)
+    // 4. 모달 닫기 이벤트 연결 (X 버튼, 뒷배경)
     closeButtons.forEach(button => {
         button.addEventListener('click', closeModal);
     });
 
     if (overlay) {
         overlay.addEventListener('click', closeModal);
+    }
+
+    // 매장별 목적지 좌표 설정 함수
+    function getDestinationCoordinates(restaurantName) {
+        // 반지하돈부리 좌표 (서울 동대문구 망우로18다길 44)
+        if (restaurantName.includes('반지하돈부리')) {
+            return {
+                lat: 37.585331772,
+                lng: 127.060852169,
+                name: '반지하돈부리'
+            };
+        }
+        // 이삭토스트 서울시립대점 좌표 (서울 동대문구 전농제2동 서울시립대로 160)
+        else if (restaurantName.includes('이삭토스트')) {
+            return {
+                lat: 37.583403112,
+                lng: 127.054558179,
+                name: '이삭토스트 서울시립대점'
+            };
+        }
+        // 기본값 (반지하돈부리)
+        return {
+            lat: 37.585331772,
+            lng: 127.060852169,
+            name: '반지하돈부리'
+        };
+    }
+
+    // 길찾기 안내 버튼 클릭 이벤트
+    const navigationBtn = document.querySelector('.navigation-btn');
+    if (navigationBtn) {
+        navigationBtn.addEventListener('click', async function() {
+            if (!selectedItem) {
+                alert('음식점을 먼저 선택해주세요.');
+                return;
+            }
+
+            // 선택된 매장 정보 가져오기
+            const restaurantName = selectedItem.querySelector('.restaurant-name').textContent;
+            
+            // Tmap API로 검색된 매장인지 확인 (data-lat, data-lng 속성 확인)
+            const restaurantLat = selectedItem.getAttribute('data-lat');
+            const restaurantLng = selectedItem.getAttribute('data-lng');
+            
+            let destinationCoords;
+            
+            if (restaurantLat && restaurantLng) {
+                // Tmap API로 검색된 매장인 경우
+                destinationCoords = {
+                    lat: parseFloat(restaurantLat),
+                    lng: parseFloat(restaurantLng),
+                    name: restaurantName
+                };
+            } else {
+                // 고정된 매장(반지하돈부리, 이삭토스트)인 경우
+                destinationCoords = getDestinationCoordinates(restaurantName);
+            }
+
+            // 현재 위치 가져오기
+            try {
+                await getCurrentLocation();
+                
+                if (!currentPosition) {
+                    alert('현재 위치를 가져올 수 없습니다.');
+                    return;
+                }
+
+                // navigation.html로 이동하면서 좌표 정보 전달
+                const navUrl = `navigation.html?startLat=${currentPosition.lat}&startLng=${currentPosition.lng}&endLat=${destinationCoords.lat}&endLng=${destinationCoords.lng}`;
+                window.location.href = navUrl;
+                
+            } catch (error) {
+                console.error('위치 가져오기 실패:', error);
+                alert('현재 위치를 가져올 수 없습니다. 위치 권한을 허용해주세요.');
+            }
+        });
     }
 
     // 5. "음식점 확인하기" 버튼 클릭 이벤트 (핵심!)
