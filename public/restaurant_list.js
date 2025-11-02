@@ -162,29 +162,87 @@ document.addEventListener('DOMContentLoaded', function() {
 
             console.log(`검색 시작 [키워드: ${searchKeyword}]`, currentPosition);
 
-            // Tmap API 호출
+            // Tmap API 호출 - POI 검색
             const searchUrl = 'https://apis.openapi.sk.com/tmap/pois';
-            const queryString = 'version=1&searchKeyword=' + encodeURIComponent(searchKeyword) +
+            
+            // Tmap API는 radius를 km 단위로 사용 (1-10 범위 권장)
+            // 직접 쿼리 문자열 구성 (URLSearchParams 사용 시 일부 특수문자 인코딩 문제 가능)
+            const queryString = 'version=1' +
+                              '&searchKeyword=' + encodeURIComponent(searchKeyword) +
                               '&centerLon=' + currentPosition.lng.toString() +
                               '&centerLat=' + currentPosition.lat.toString() +
-                              '&reqCoordType=WGS84GEO&resCoordType=WGS84GEO' +
-                              '&radius=5&count=10&sort=distance';
+                              '&reqCoordType=WGS84GEO' +
+                              '&resCoordType=WGS84GEO' +
+                              '&radius=3' +  // 3km (서버.js와 map_main.html에서 사용하는 값 참고)
+                              '&count=10' +
+                              '&sort=distance';
 
             const fullUrl = searchUrl + '?' + queryString;
             console.log('검색 URL:', fullUrl);
 
-            const response = await fetch(fullUrl, {
-                method: 'GET',
-                headers: {
-                    'appKey': 'pUIcUWdIGX4FDdOOgd0SO8n46k4ZNmiV6TOOJetL'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('검색 요청 실패: ' + response.status);
+            let response;
+            try {
+                response = await fetch(fullUrl, {
+                    method: 'GET',
+                    headers: {
+                        'appKey': 'pUIcUWdIGX4FDdOOgd0SO8n46k4ZNmiV6TOOJetL',
+                        'Accept': 'application/json'
+                    }
+                });
+            } catch (fetchError) {
+                console.error('네트워크 요청 실패:', fetchError);
+                throw new Error('네트워크 요청 실패: ' + fetchError.message);
             }
 
-            const data = await response.json();
+            // 응답 상태 및 헤더 확인
+            console.log('응답 상태:', response.status, response.statusText);
+            console.log('응답 헤더:', Object.fromEntries(response.headers.entries()));
+
+            // 응답 본문을 텍스트로 먼저 가져와서 확인
+            const responseText = await response.text().catch(err => {
+                console.error('응답 본문 읽기 실패:', err);
+                return '';
+            });
+            
+            console.log('응답 본문 길이:', responseText.length);
+            console.log('응답 본문 시작 부분:', responseText.substring(0, 200));
+            
+            // 응답이 비어있는지 확인
+            if (!responseText || responseText.trim().length === 0) {
+                console.warn('API 응답이 비어있습니다.');
+                // 상태 코드 확인
+                if (!response.ok) {
+                    console.error(`HTTP 오류: ${response.status} ${response.statusText}`);
+                }
+                return;
+            }
+
+            // 응답 상태가 200이 아니면 에러 처리
+            if (!response.ok) {
+                console.error(`API 오류 응답: ${response.status} ${response.statusText}`);
+                console.error('응답 내용:', responseText);
+                // JSON 형식의 에러 응답인지 확인
+                if (responseText.trim().startsWith('{')) {
+                    try {
+                        const errorData = JSON.parse(responseText);
+                        console.error('API 에러 상세:', errorData);
+                    } catch (e) {
+                        // JSON이 아니면 그대로 출력
+                    }
+                }
+                return;
+            }
+
+            // JSON 파싱 시도
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('JSON 파싱 실패:', parseError);
+                console.error('응답 내용 (전체):', responseText);
+                throw new Error('응답 형식이 올바르지 않습니다: ' + parseError.message);
+            }
+            
             console.log('검색 결과:', data);
 
             if (data.searchPoiInfo && data.searchPoiInfo.pois && data.searchPoiInfo.pois.poi) {
@@ -241,10 +299,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
             } else {
                 console.log('검색 결과가 없습니다.');
+                // 응답 구조가 예상과 다른 경우 로깅
+                if (data.error) {
+                    console.error('API 오류:', data.error);
+                } else {
+                    console.warn('예상하지 못한 응답 구조:', data);
+                }
             }
 
         } catch (error) {
             console.error('키워드 검색 오류:', error);
+            // 에러 메시지에 더 자세한 정보 추가
+            if (error.message) {
+                console.error('오류 상세:', error.message);
+            }
+            // 사용자에게는 에러를 조용히 처리 (기존 매장 정보는 표시됨)
         }
     }
 
@@ -300,5 +369,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // 페이지 로드 시 검색 실행 - 페이지에서 키워드 가져오기
     const defaultKeyword = '쌀국수';
     const pageKeyword = document.body.getAttribute('data-search-keyword') || defaultKeyword;
-    searchPlacesByKeyword(pageKeyword);
+    console.log('페이지 검색 키워드:', pageKeyword);
+    if (pageKeyword) {
+        searchPlacesByKeyword(pageKeyword);
+    } else {
+        console.warn('검색 키워드가 설정되지 않았습니다.');
+    }
 });
