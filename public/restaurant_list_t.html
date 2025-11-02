@@ -3,14 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Restaurant List 2</title>
-    
+    <title>Restaurant List</title>
     <link rel="stylesheet" href="menu.css">
-    
     <link rel="stylesheet" href="restaurant_list.css">
-
 </head>
-<body>
+<body data-search-keyword="토스트">
 
     <div class="mobile-container">
         <header class="page-header">
@@ -30,19 +27,19 @@
             <div class="restaurant-list-container">
                 <div class="restaurant-list">
                     
-                    <div class="restaurant-item" data-restaurant="cafesisa">
+                    <div class="restaurant-item" data-restaurant="pohands">
                         <div class="restaurant-info">
                             <div class="info-header">
-                                <span class="restaurant-name">카페시사</span>
+                                <span class="restaurant-name">이삭토스트</span>
                                 <div class="distance-info">
                                     <span class="restaurant-distance">⭐인기⭐</span>
                                 </div>
                             </div>
-                            <p class="restaurant-address">서울 동대문구 전농로 217 정우빌딩 1층</p>
+                            <p class="restaurant-address">서울 동대문구 전농제2동 서울시립대로 160</p>
                         </div>
                     </div>
 
-                    <!-- Tmap API로 동적으로 추가되는 카페 목록 -->
+                    <!-- Tmap API로 동적으로 추가되는 음식점 목록 -->
                     <div id="tmapRestaurants"></div>
                 </div>
             </div>
@@ -90,6 +87,7 @@
             </a>
         </div>
     </div>
-    <script src="restaurant_list2.js"></script>
+    <script src="restaurant_list.js"></script>
 </body>
 </html>
+
