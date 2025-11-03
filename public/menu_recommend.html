@@ -4,8 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menu Recommendation</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="menu_recommend.css">
+    <script type="importmap">
+    {
+      "imports": {
+        "@google/genai": "/lib/index.mjs"
+      }
+    }
+    </script>
 </head>
 <body>
 
@@ -100,6 +108,6 @@
             </div>
         </div>
     </div>
-    <script src="menu_recommend.js"></script>
+    <script type="module" src="menu_recommend.js?v=2"></script>
 </body>
 </html>

@@ -241,11 +241,15 @@
         let currentPosition;
         let destinationPosition;
         let watchId; // 위치 추적 ID
+        let locationUpdateInterval = null; // 10초마다 위치 갱신하는 interval ID
         let currentMarkers = []; // 현재 표시된 마커들
         let currentPolylines = []; // 현재 표시된 경로들
         let currentOverlays = []; // 현재 표시된 오버레이들
         let resultdrawArr = []; // Tmap 경로 그리기 배열
         let lastDistanceUpdatePosition = null; // 마지막으로 거리를 갱신한 위치
+        let lastRouteUpdatePosition = null; // 마지막으로 경로를 갱신한 위치
+        const ROUTE_UPDATE_DISTANCE = 50; // 경로 갱신 최소 거리 (미터)
+        const LOCATION_UPDATE_INTERVAL = 10000; // 10초마다 위치 갱신 (밀리초)
 
         // 목적지 좌표 (URL 파라미터에서 가져옴)
         let destinationCoords = {
@@ -504,11 +508,30 @@
 
             // Tmap 지도 생성 (현재 위치를 중심으로)
             const mapContainer = document.getElementById('map');
+            // 목적지까지의 거리에 따라 초기 줌 레벨 결정
+            const initialDistance = calculateDistance(
+                currentPosition.lat,
+                currentPosition.lng,
+                destinationCoords.lat,
+                destinationCoords.lng
+            );
+            
+            let initialZoom = 18; // 기본 줌 레벨
+            if (initialDistance < 100) {
+                initialZoom = 19; // 100m 이내: 매우 확대
+            } else if (initialDistance < 500) {
+                initialZoom = 18; // 500m 이내: 확대
+            } else if (initialDistance < 1000) {
+                initialZoom = 17; // 1km 이내
+            } else {
+                initialZoom = 16; // 1km 이상
+            }
+            
             map = new Tmapv2.Map(mapContainer, {
                 center: new Tmapv2.LatLng(currentPosition.lat, currentPosition.lng),
                 width: "100%",
                 height: "100%",
-                zoom: 15,
+                zoom: initialZoom, // 보행 경로가 잘 보이도록 줌 레벨 설정
                 zoomControl: true,
                 scrollwheel: true
             });
@@ -536,40 +559,70 @@
 
             // 목적지 인포윈도우 제거됨
 
-                // 두 지점을 모두 포함하도록 지도 범위 조정
-                adjustMapBounds();
+            // 처음 로드 시 현재 위치를 중심으로 지도 설정 (이미 위에서 initialZoom으로 설정됨)
+            // 현재 위치 중심을 유지하면서 적절한 줌 레벨은 이미 지도 생성 시 설정됨
+            console.log(`지도 초기 로드 완료 - 현재 위치 중심 (줌: ${map.getZoom()}, 거리: ${Math.round(initialDistance)}m)`);
 
-                // 경로 표시 (30km 이내면 상세 경로, 초과하면 직선 경로)
-                if (isWithinRange) {
-                    showRoute();
-                } else {
-                    showStraightRoute();
+            // 경로 표시 (30km 이내면 상세 경로, 초과하면 직선 경로)
+            if (isWithinRange) {
+                showRoute();
+            } else {
+                showStraightRoute();
             }
 
             // 로딩 메시지 숨기기
             document.getElementById('loadingMessage').style.display = 'none';
         }
 
-        // 지도 범위 조정 (두 지점을 모두 포함)
+        // 지도 범위 조정 (현재 위치 중심, 경로가 잘 보이도록 줌 확대)
         function adjustMapBounds() {
-            if (!currentPosition || !destinationCoords) return;
+            if (!currentPosition || !destinationCoords || !map) return;
 
             try {
-                // 두 지점의 좌표를 LatLngBounds에 추가
-                const bounds = new Tmapv2.LatLngBounds();
-                bounds.extend(new Tmapv2.LatLng(currentPosition.lat, currentPosition.lng));
-                bounds.extend(new Tmapv2.LatLng(destinationCoords.lat, destinationCoords.lng));
-
-                // 지도 범위를 두 지점을 모두 포함하도록 조정
-                map.fitBounds(bounds);
-
-                // 여백을 위해 약간 확대
-                const currentZoom = map.getZoom();
-                if (currentZoom > 1) {
-                    map.setZoom(currentZoom - 1);
+                // 현재 위치를 지도 중심으로 설정
+                map.setCenter(new Tmapv2.LatLng(currentPosition.lat, currentPosition.lng));
+                
+                // 보행 경로가 잘 보이도록 줌 레벨을 높게 설정 (18-19 레벨)
+                // 두 지점 간 거리를 계산하여 적절한 줌 레벨 결정
+                const distance = calculateDistance(
+                    currentPosition.lat,
+                    currentPosition.lng,
+                    destinationCoords.lat,
+                    destinationCoords.lng
+                );
+                
+                let targetZoom = 18; // 기본 줌 레벨
+                
+                // 거리에 따라 적절한 줌 레벨 설정
+                if (distance < 100) {
+                    targetZoom = 19; // 100m 이내: 매우 확대
+                } else if (distance < 500) {
+                    targetZoom = 18; // 500m 이내: 확대
+                } else if (distance < 1000) {
+                    targetZoom = 17; // 1km 이내: 약간 확대
+                } else {
+                    // 1km 이상이면 두 지점을 포함하도록 fitBounds 사용
+                    const bounds = new Tmapv2.LatLngBounds();
+                    bounds.extend(new Tmapv2.LatLng(currentPosition.lat, currentPosition.lng));
+                    bounds.extend(new Tmapv2.LatLng(destinationCoords.lat, destinationCoords.lng));
+                    map.fitBounds(bounds);
+                    
+                    // fitBounds 후 최소 줌 레벨 보장
+                    const currentZoom = map.getZoom();
+                    if (currentZoom < 17) {
+                        map.setZoom(17);
+                    }
+                    targetZoom = map.getZoom();
+                }
+                
+                // 타겟 줌 레벨로 설정
+                if (distance >= 1000) {
+                    // 이미 fitBounds로 설정됨
+                } else {
+                    map.setZoom(targetZoom);
                 }
 
-                console.log('지도 범위가 두 지점을 포함하도록 조정되었습니다.');
+                console.log(`지도 범위 조정 완료 (거리: ${Math.round(distance)}m, 줌 레벨: ${map.getZoom()})`);
             } catch (error) {
                 console.error('지도 범위 조정 오류:', error);
             }
@@ -753,114 +806,99 @@
         }
 
 
-        // 위치 추적 시작 - 정확도 개선
+        // 10초마다 위치를 갱신하고 경로를 업데이트하는 함수
+        function updateLocationAndRoute() {
+            if (!navigator.geolocation || !destinationCoords) return;
+            
+            console.log('📍 10초 주기 위치 갱신 시작');
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const accuracy = position.coords.accuracy;
+                    
+                    // 정확도가 너무 나쁘면 무시 (100m 이상)
+                    if (accuracy > 100) {
+                        console.log(`위치 정확도가 너무 낮음: ${Math.round(accuracy)}m - 무시`);
+                        return;
+                    }
+                    
+                    const newPosition = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        altitude: position.coords.altitude,
+                        heading: position.coords.heading,
+                        speed: position.coords.speed
+                    };
+                    
+                    console.log(`📍 위치 갱신`);
+                    console.log(`  - 새 위치: ${newPosition.lat.toFixed(6)}, ${newPosition.lng.toFixed(6)}`);
+                    console.log(`  - 정확도: ${Math.round(accuracy)}m`);
+                    
+                    if (currentPosition) {
+                        const distance = calculateDistance(
+                            currentPosition.lat, currentPosition.lng,
+                            newPosition.lat, newPosition.lng
+                        );
+                        console.log(`  - 이전 위치에서 이동: ${Math.round(distance)}m`);
+                    }
+                    
+                    // 위치 업데이트
+                    currentPosition = newPosition;
+                    
+                    // 남은 거리 갱신
+                    updateRemainingDistance();
+                    
+                    // 경로 갱신 위치 업데이트
+                    lastRouteUpdatePosition = {
+                        lat: newPosition.lat,
+                        lng: newPosition.lng
+                    };
+                    
+                    // 항상 경로 갱신 (현위치 기반 남은 도보 경로 안내)
+                    console.log('✅ 현위치 기반 도보 경로 갱신');
+                    updateMap(true); // 항상 경로를 갱신
+                },
+                (error) => {
+                    console.error('위치 갱신 오류:', error);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 5000 // 5초 이내의 위치만 사용
+                }
+            );
+        }
+
+        // 위치 추적 시작 - 10초마다 자동 갱신
         function startLocationTracking() {
             if (navigator.geolocation) {
-                let lastUpdateTime = 0;
-                const minUpdateInterval = 5000; // 최소 5초 간격으로 업데이트
+                console.log('📍 GPS 위치 추적 시작됨 (10초마다 자동 갱신)');
                 
+                // 즉시 한 번 실행
+                updateLocationAndRoute();
+                
+                // 10초마다 자동으로 위치 갱신 및 경로 업데이트
+                locationUpdateInterval = setInterval(() => {
+                    updateLocationAndRoute();
+                }, LOCATION_UPDATE_INTERVAL);
+                
+                // watchPosition도 함께 사용하여 위치 변화를 모니터링 (참고용)
                 watchId = navigator.geolocation.watchPosition(
                     (position) => {
-                        const now = Date.now();
+                        // 참고용으로만 사용, 실제 업데이트는 interval에서 처리
                         const accuracy = position.coords.accuracy;
-                        
-                        // 정확도가 너무 나쁘면 무시 (100m 이상)
-                        if (accuracy > 100) {
-                            console.log(`위치 정확도가 너무 낮음: ${Math.round(accuracy)}m - 무시`);
-                            return;
-                        }
-                        
-                        // 너무 자주 업데이트하지 않도록 제한
-                        if (now - lastUpdateTime < minUpdateInterval) {
-                            console.log('업데이트 간격이 너무 짧음 - 무시');
-                            return;
-                        }
-                        
-                        const newPosition = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude,
-                            accuracy: position.coords.accuracy,
-                            altitude: position.coords.altitude,
-                            heading: position.coords.heading,
-                            speed: position.coords.speed
-                        };
-                        
-                        console.log(`위치 업데이트 - 정확도: ${Math.round(accuracy)}m`);
-                        
-                        // 위치가 크게 변경된 경우에만 업데이트
-                        if (currentPosition) {
-                            const distance = calculateDistance(
-                                currentPosition.lat, currentPosition.lng,
-                                newPosition.lat, newPosition.lng
-                            );
-                            
-                            // 정확도가 개선되었거나 충분히 이동한 경우 업데이트
-                            const accuracyImproved = accuracy < currentPosition.accuracy * 0.8; // 20% 이상 개선
-                            const significantMovement = distance > 15; // 15m 이상 이동
-                            
-                            if (accuracyImproved || significantMovement) {
-                                console.log(`위치 업데이트 조건 충족 - 거리: ${Math.round(distance)}m, 정확도 개선: ${accuracyImproved}`);
-                                currentPosition = newPosition;
-                                lastUpdateTime = now;
-                                
-                                // 100m 이동했는지 확인하여 남은 거리 갱신
-                                if (lastDistanceUpdatePosition) {
-                                    const distanceMoved = calculateDistance(
-                                        lastDistanceUpdatePosition.lat,
-                                        lastDistanceUpdatePosition.lng,
-                                        newPosition.lat,
-                                        newPosition.lng
-                                    );
-                                    
-                                    if (distanceMoved >= 100) {
-                                        console.log(`100m 이상 이동 감지: ${Math.round(distanceMoved)}m - 남은 거리 갱신`);
-                                        lastDistanceUpdatePosition = {
-                                            lat: newPosition.lat,
-                                            lng: newPosition.lng
-                                        };
-                                        updateRemainingDistance();
-                                    }
-                                } else {
-                                    // 첫 번째 거리 갱신 위치 설정 및 초기 거리 표시
-                                    lastDistanceUpdatePosition = {
-                                        lat: newPosition.lat,
-                                        lng: newPosition.lng
-                                    };
-                                    updateRemainingDistance();
-                                }
-                                
-                                updateMap();
-                            } else {
-                                console.log(`위치 업데이트 조건 미충족 - 거리: ${Math.round(distance)}m`);
-                            }
-                        } else {
-                            // 첫 번째 위치 설정
-                            currentPosition = newPosition;
-                            lastUpdateTime = now;
-                            
-                            // 첫 거리 갱신 위치 설정 및 초기 거리 표시
-                            lastDistanceUpdatePosition = {
-                                lat: newPosition.lat,
-                                lng: newPosition.lng
-                            };
-                            updateRemainingDistance();
-                            updateMap();
+                        if (accuracy <= 100) {
+                            console.log(`GPS 모니터링 - 정확도: ${Math.round(accuracy)}m`);
                         }
                     },
                     (error) => {
-                        console.error('위치 추적 오류:', error);
-                        // 오류 발생 시 재시도
-                        setTimeout(() => {
-                            if (watchId) {
-                                stopLocationTracking();
-                                startLocationTracking();
-                            }
-                        }, 10000);
+                        console.error('위치 모니터링 오류:', error);
                     },
                     {
                         enableHighAccuracy: true,
                         timeout: 15000,
-                        maximumAge: 10000 // 10초 이내의 위치만 사용
+                        maximumAge: 5000
                     }
                 );
             }
@@ -871,6 +909,10 @@
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
+            }
+            if (locationUpdateInterval) {
+                clearInterval(locationUpdateInterval);
+                locationUpdateInterval = null;
             }
         }
 
@@ -944,42 +986,84 @@
             console.log(`남은 거리 갱신: ${remainingDistance >= 1000 ? (remainingDistance / 1000).toFixed(1) + 'km' : Math.round(remainingDistance) + 'm'}`);
         }
 
+        // 마커만 업데이트하는 함수 (경로는 유지)
+        function updateMarkersOnly() {
+            // 기존 마커만 제거 (경로는 유지)
+            currentMarkers.forEach(marker => {
+                marker.setMap(null);
+            });
+            currentMarkers = [];
+
+            // 지도 중심을 현재 위치로 이동
+            if (map && currentPosition) {
+                map.setCenter(new Tmapv2.LatLng(currentPosition.lat, currentPosition.lng));
+            }
+
+            // 현재 위치 마커 추가
+            const currentMarker = new Tmapv2.Marker({
+                position: new Tmapv2.LatLng(currentPosition.lat, currentPosition.lng),
+                icon: "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/red_b.png",
+                iconSize: new Tmapv2.Size(24, 35),
+                map: map
+            });
+            currentMarkers.push(currentMarker);
+
+            // 목적지 마커 추가
+            const destinationMarker = new Tmapv2.Marker({
+                position: new Tmapv2.LatLng(destinationCoords.lat, destinationCoords.lng),
+                icon: "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/blue_drag.png",
+                iconSize: new Tmapv2.Size(24, 35),
+                map: map
+            });
+            currentMarkers.push(destinationMarker);
+        }
+
         // 지도 업데이트
-        function updateMap() {
+        function updateMap(updateRoute = false) {
             if (map && currentPosition) {
                 try {
-                    // 기존 마커와 경로 제거
-                    clearMap();
-
                     // 거리 체크
                     const isWithinRange = checkDistanceAndShowPopup();
 
-                    // 현재 위치 마커 업데이트
-                    const currentMarker = new Tmapv2.Marker({
-                        position: new Tmapv2.LatLng(currentPosition.lat, currentPosition.lng),
-                        icon: "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/red_b.png",
-                        iconSize: new Tmapv2.Size(24, 35),
-                        map: map
-                    });
-                    currentMarkers.push(currentMarker);
-
-                    // 목적지 마커 다시 추가
-                    const destinationMarker = new Tmapv2.Marker({
-                        position: new Tmapv2.LatLng(destinationCoords.lat, destinationCoords.lng),
-                        icon: "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/blue_drag.png",
-                        iconSize: new Tmapv2.Size(24, 35),
-                        map: map
-                    });
-                    currentMarkers.push(destinationMarker);
-
-                    // 지도 범위 조정 (현재 위치 중심으로)
+                    // 지도 중심을 현재 위치로 이동 (항상)
+                    map.setCenter(new Tmapv2.LatLng(currentPosition.lat, currentPosition.lng));
+                    
+                    // 보행 경로가 잘 보이도록 줌 레벨 조정
                     adjustMapBounds();
 
-                    // 경로 다시 계산 (30km 이내면 상세 경로, 초과하면 직선 경로)
-                    if (isWithinRange) {
-                        showRoute();
+                    if (updateRoute) {
+                        // 경로를 갱신할 때는 전체를 다시 그림
+                        // 기존 마커와 경로 제거
+                        clearMap();
+
+                        // 현재 위치 마커 업데이트
+                        const currentMarker = new Tmapv2.Marker({
+                            position: new Tmapv2.LatLng(currentPosition.lat, currentPosition.lng),
+                            icon: "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/red_b.png",
+                            iconSize: new Tmapv2.Size(24, 35),
+                            map: map
+                        });
+                        currentMarkers.push(currentMarker);
+
+                        // 목적지 마커 다시 추가
+                        const destinationMarker = new Tmapv2.Marker({
+                            position: new Tmapv2.LatLng(destinationCoords.lat, destinationCoords.lng),
+                            icon: "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/blue_drag.png",
+                            iconSize: new Tmapv2.Size(24, 35),
+                            map: map
+                        });
+                        currentMarkers.push(destinationMarker);
+
+                        // 경로 다시 계산 (30km 이내면 상세 경로, 초과하면 직선 경로)
+                        if (isWithinRange) {
+                            console.log('GPS 기반 경로 갱신 시작 - 현재 위치부터 목적지까지');
+                            showRoute();
+                        } else {
+                            showStraightRoute();
+                        }
                     } else {
-                        showStraightRoute();
+                        // 경로를 갱신하지 않을 때는 마커만 업데이트
+                        updateMarkersOnly();
                     }
                 } catch (error) {
                     console.error('지도 업데이트 오류:', error);
@@ -997,6 +1081,7 @@
                 updateRemainingDistance();
             }
         }
+
 
         // 페이지 로드 시 실행
         window.addEventListener('load', async function() {
