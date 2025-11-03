@@ -1,7 +1,7 @@
 // Gemini API 설정
 //const GEMINI_API_KEY = "AIzaSyBZ7INgGfYNVrJ54CQdk7veNtHQ9f12xJs";
 const GEMINI_API_KEY = "AIzaSyBTPdAB550YvY6hSJPZqvSNTdXx8zzm9BM"
-const GEMINI_MODEL = "gemini-2.5-pro";
+const GEMINI_MODEL = "gemini-1.5-flash-latest";
 
 // 음성 속도 및 반복 설정
 let speechRate = 1.5; // 기본 속도 (보통)
