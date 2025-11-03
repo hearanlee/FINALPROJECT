@@ -19,6 +19,9 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        # .mjs 파일에 대한 올바른 MIME 타입 설정
+        if self.path.endswith('.mjs'):
+            self.send_header('Content-Type', 'application/javascript')
         super().end_headers()
 
 if __name__ == "__main__":

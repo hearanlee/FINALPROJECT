@@ -1,4 +1,4 @@
-import { GoogleGenAI, Modality } from '@google/genai';
+import { GoogleGenAI, Modality } from 'https://esm.run/@google/genai';
 
 const API_KEY = 'AIzaSyBZ7INgGfYNVrJ54CQdk7veNtHQ9f12xJs'; // 실제 API 키로 교체 필요
 
