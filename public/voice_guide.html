@@ -24,7 +24,7 @@
                     <span class="volume-btn">-</span>
                 </div>
             </div>
-            <p class="instruction-text">음성안내를 시작하고 싶으시다면<br>위에 있는 그림을 눌러주세요!</p>
+            <p class="instruction-text">마이크 버튼을 누르시면<br>키오스크 음성안내가 시작됩니다.</p>
         </main>
         <div class="voice-action-buttons">
             <div class="button-row">
@@ -99,5 +99,65 @@
         </div>
     </div>
     <script type="module" src="voice_guide.js"></script>
+    
+    <!-- 페이지 로드 시 자동 음성 안내 -->
+    <script>
+        // 음성 안내 재생 함수
+        function playWelcomeMessage() {
+            // 2. 브라우저가 음성 합성을 지원하는지 확인
+            if ('speechSynthesis' in window) {
+                
+                // 3. 안내할 텍스트 정의
+                const ttsText = "마이크 버튼을 누르시면, 음성으로 주문을 도와드릴게요";
+                
+                // 4. 음성 메시지 객체 생성
+                const utterance = new SpeechSynthesisUtterance(ttsText);
+                
+                // 5. 한국어로 설정 (정확한 발음을 위해 중요)
+                utterance.lang = 'ko-KR';
+                utterance.rate = 1.0; // 재생 속도 (1이 기본값)
+                
+                // 6. 음성 재생 실행
+                try {
+                    // 기존에 재생 중인 음성이 있으면 중지
+                    window.speechSynthesis.cancel();
+                    
+                    window.speechSynthesis.speak(utterance);
+                    console.log('TTS 음성 안내 시작');
+                } catch (e) {
+                    console.error('TTS 재생 오류:', e);
+                }
+            } else {
+                // 음성 합성을 지원하지 않는 브라우저의 경우
+                console.error("이 브라우저는 음성 합성을 지원하지 않습니다.");
+            }
+        }
+        
+        // 1. 페이지 로드가 완료되면 함수 실행
+        window.addEventListener('load', function() {
+            // 자동 재생 정책을 고려하여 사용자 상호작용 후 재생 시도
+            // 약간의 지연을 두고 재생 시도
+            setTimeout(() => {
+                playWelcomeMessage();
+            }, 300);
+        });
+        
+        // 사용자의 첫 상호작용(클릭/터치) 시 음성 재생
+        // 자동 재생 정책을 우회하기 위한 방법
+        let hasPlayed = false;
+        function handleFirstInteraction() {
+            if (!hasPlayed && 'speechSynthesis' in window) {
+                hasPlayed = true;
+                playWelcomeMessage();
+                // 이벤트 리스너 제거 (한 번만 실행)
+                document.removeEventListener('click', handleFirstInteraction);
+                document.removeEventListener('touchstart', handleFirstInteraction);
+            }
+        }
+        
+        // 클릭 및 터치 이벤트 리스너 추가
+        document.addEventListener('click', handleFirstInteraction, { once: true });
+        document.addEventListener('touchstart', handleFirstInteraction, { once: true });
+    </script>
 </body>
 </html>
