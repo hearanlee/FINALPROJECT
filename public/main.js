@@ -119,7 +119,7 @@ function handleNavigation(text) {
     // "음식점 검색" 키워드 추가
     else if (text.includes("지도") || text.includes("음식점 검색")) {
         console.log('🚀 [App] "지도/음식점 검색" 감지! 이동합니다...');
-        speak("지도 페이지로 이동합니다.", () => {
+        speak("음식점 검색 페이지로 이동합니다.", () => {
             window.location.href = 'map_main.html';
         });
     } 
