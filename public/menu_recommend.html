@@ -25,25 +25,25 @@
 
         <main class="content">
             <div class="question-card" style="margin-top: 20px;">
-                <p>오늘 어떤 음식이 드시고 싶으신가요?</p>
-                <p>메뉴 추천해드릴게요 !</p>
+                <p id="main-question-text">오늘 어떤 음식이 드시고 싶으신가요?<br>메뉴 추천해드릴게요 !</p>
             </div>
             <div class="voice-icon-container">
-                <img src="./images/icon_menu_book.png" alt="메뉴 추천받기" class="voice-mic-icon">
+                <img src="./images/icon_menu_recommend.png" alt="메뉴 추천받기" class="voice-mic-icon">
                 <div class="volume-controls">
-                    <span class="volume-btn">+</span>
-                    <span class="volume-btn">-</span>
-                </div>
+                                        <span id="font-increase-btn" class="volume-btn">+</span>
+                    <span id="font-decrease-btn" class="volume-btn">-</span>
+                                    </div>
             </div>
-            <p class="instruction-text">마이크 버튼을 누르시면<br>메뉴추천 음성대화가 시작됩니다.</p>
+            <p id="main-instruction-text">마이크 버튼을 누르시면<br>메뉴추천 음성대화가 시작됩니다.</p>
         </main>
+        
         
         <div class="voice-action-buttons">
             <div class="button-row">
                 <button id="speedBtn" class="btn btn-secondary"><img src="./images/icon_slow.png" class="btn-icon" alt=""> 느린 음성</button>
                 <button id="repeatBtn" class="btn btn-secondary"><img src="./images/icon_repeat.png" class="btn-icon" alt=""> 반복 재생</button>
             </div>
-            <a href="restaurant_list.html" class="btn btn-secondary full-width" style="text-decoration: none; display: flex; justify-content: center; align-items: center;">추천 메뉴 음식점 찾기</a>
+            
     <a href="main.html" class="btn btn-primary full-width" style="text-decoration: none; display: flex; justify-content: center; align-items: center;">메뉴 추천 종료</a>
         </div>
 
