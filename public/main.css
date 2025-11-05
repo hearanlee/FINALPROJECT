@@ -107,7 +107,7 @@ body {
     background-color: white;
     border: 2px solid #0D2A5C;
     border-radius: 15px;
-    padding: 20px;
+    padding: 10px;
     /* ▼▼▼▼▼ [수정] margin-top 제거 ▼▼▼▼▼ */
     /* margin-top: 25px; */ /* 이 줄을 삭제합니다. .content의 gap이 간격을 제공합니다. */
     /* ▲▲▲▲▲ 여기까지 수정 ▲▲▲▲▲ */
@@ -136,8 +136,8 @@ body {
 /* 8. 우측 플로팅 버튼 */
 .fab-container {
     position: absolute;
-    right: 30px;
-    bottom: 100px;
+    right: -15px;
+    bottom: 70px;
     display: flex;
     flex-direction: column;
 }
@@ -151,7 +151,7 @@ body {
     font-size: 24px;
     border: none;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    margin-top: 10px;
+    margin-top: -10px;
     cursor: pointer;
 }
 

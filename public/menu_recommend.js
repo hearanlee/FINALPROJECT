@@ -69,6 +69,15 @@ let fullResponseText = '';
 let speechRate = 1.1; // 기본 속도 (보통)
 let repeatCount = 1;  // 기본 반복 횟수
 
+let currentFontSizeStep = 0;
+const baseSizes = {
+    card: 18,       // .question-card p (기본 18px로 가정)
+    instruction: 16 // .instruction-text (CSS에서 16px)
+};
+const stepAmount = 2; // 한 번에 2px씩 조절
+const maxStep = 2;    // 최대 2단계 (총 +4px)
+const minStep = -1;   // 최소 -1단계 (총 -2px)
+
 // --- 1. Web Speech API (STT) 설정 ---
 try {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -203,6 +212,33 @@ function speak(text) {
   };
   
   speakOnce(); // 첫 번째 재생 시작
+}
+
+function applyFontSizes() {
+    // 1. 대상 요소들 선택 (ID로 정확하게 찾기)
+    const cardText = document.getElementById('main-question-text');
+    const instructionText = document.getElementById('main-instruction-text');
+
+    // 2. 새 폰트 크기 계산
+    const newCardSize = (baseSizes.card || 18) + (currentFontSizeStep * stepAmount); 
+    const newInstructionSize = (baseSizes.instruction || 16) + (currentFontSizeStep * stepAmount);
+
+    // 3. 폰트 크기 적용 (querySelectorAll -> getElementById로 변경되어 로직 수정)
+    if (cardText) {
+        cardText.style.fontSize = `${newCardSize}px`;
+    } else {
+        // ID를 못 찾으면 콘솔에 경고
+        console.warn('❌ [Font Size] ID가 "main-question-text"인 요소를 찾을 수 없습니다.');
+    }
+    
+    if (instructionText) {
+        instructionText.style.fontSize = `${newInstructionSize}px`;
+    } else {
+        // ID를 못 찾으면 콘솔에 경고
+        console.warn('❌ [Font Size] ID가 "main-instruction-text"인 요소를 찾을 수 없습니다.');
+    }
+
+    console.log(`[Font Size] 현재 단계: ${currentFontSizeStep}, (Card: ${newCardSize}px)`);
 }
 
 // --- 3. Gemini Live 연결 (수정됨) ---
@@ -421,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- 3. 모달 관련 코드 (여기부터 추가됨) ---
   console.log('✅ [Menu Recommend] 모달 이벤트 리스너 등록 시작');
-
+   
   const speedBtn = document.getElementById('speedBtn');
   const speedModal = document.getElementById('speedModal');
   const repeatBtn = document.getElementById('repeatBtn');
@@ -495,4 +531,39 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   console.log('✅ [Menu Recommend] 모달 이벤트 리스너 등록 완료');
+   // --- 4. 폰트 크기 조절 버튼 ---
+  // (마이크, 모달과 동일한 레벨에서 페이지 로드 시 1회만 등록)
+  console.log('✅ [Menu Recommend] 폰트 크기 조절 이벤트 리스너 등록 시작');
+    
+  // (참고) HTML에서 버튼 ID를 'font-plus-btn' 와 'font-minus-btn'로 가정합니다.
+  const fontPlusBtn = document.getElementById('font-increase-btn'); 
+  const fontMinusBtn = document.getElementById('font-decrease-btn');
+
+  if (fontPlusBtn) {
+      fontPlusBtn.addEventListener('click', () => {
+          if (currentFontSizeStep < maxStep) {
+              currentFontSizeStep++; // 1. 현재 단계를 올리고
+              applyFontSizes();      // 2. 폰트 크기 적용 함수 실행
+              console.log('🖱️ [Font Size] 글자 크기 + (단계: ' + currentFontSizeStep + ')');
+          } else {
+              console.log('⚠️ [Font Size] 최대 크기 도달');
+          }
+      });
+  } else {
+      console.error('❌ [Menu Recommend] 폰트 + 버튼(#font-increase-btn)을 찾을 수 없음');
+  }
+
+  if (fontMinusBtn) {
+      fontMinusBtn.addEventListener('click', () => {
+          if (currentFontSizeStep > minStep) {
+              currentFontSizeStep--; // 1. 현재 단계를 내리고
+              applyFontSizes();      // 2. 폰트 크기 적용 함수 실행
+              console.log('🖱️ [Font Size] 글자 크기 - (단계: ' + currentFontSizeStep + ')');
+          } else {
+               console.log('⚠️ [Font Size] 최소 크기 도달');
+          }
+      });
+  } else {
+      console.error('❌ [Menu Recommend] 폰트 - 버튼(#font-minus-btn)을 찾을 수 없음');
+  }
 }); // <-- DOMContentLoaded 닫는 괄호
