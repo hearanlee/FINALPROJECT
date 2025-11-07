@@ -1,0 +1,1027 @@
+// menuData.js
+// kiosk_voice_guide_menu.sql 파일의 데이터를 기반으로 생성된 메뉴 데이터
+
+export const menuData = [
+  {
+    "id": 1,
+    "name": "돈부리",
+    "ui_tab_name": "돈부리",
+    "menus": [
+      {
+        "id": 1,
+        "name": "가쯔동",
+        "price": 9000,
+        "description": null,
+        "grid_location": "(1행, 1열)",
+        "aliases": ["가쯔동", "가츠동", "돈까스 덮밥"],
+        "option_groups": [
+          {
+            "id": 2,
+            "name": "돈부리 추가",
+            "select_min": 0,
+            "select_max": 9,
+            "options": [
+              {
+                "id": 1,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 2,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 3,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "규동",
+        "price": 9500,
+        "description": null,
+        "grid_location": "(1행, 2열)",
+        "aliases": ["규동", "소고기 규동"],
+        "option_groups": [
+          {
+            "id": 2,
+            "name": "돈부리 추가",
+            "select_min": 0,
+            "select_max": 9,
+            "options": [
+              {
+                "id": 1,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 2,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 3,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "오야코동",
+        "price": 9000,
+        "description": null,
+        "grid_location": "(1행, 3열)",
+        "aliases": ["오야코동", "오야꼬동", "닭계란 덮밥"],
+        "option_groups": [
+          {
+            "id": 2,
+            "name": "돈부리 추가",
+            "select_min": 0,
+            "select_max": 9,
+            "options": [
+              {
+                "id": 1,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 2,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 3,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "에비가쯔동",
+        "price": 10000,
+        "description": null,
+        "grid_location": "(1행, 4열)",
+        "aliases": ["에비가쯔동", "새우 가츠 동"],
+        "option_groups": [
+          {
+            "id": 2,
+            "name": "돈부리 추가",
+            "select_min": 0,
+            "select_max": 9,
+            "options": [
+              {
+                "id": 1,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 2,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 3,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "연어동",
+        "price": 11000,
+        "description": null,
+        "grid_location": "(2행, 1열)",
+        "aliases": ["연어동", "연어 덮밥"],
+        "option_groups": [
+          {
+            "id": 2,
+            "name": "돈부리 추가",
+            "select_min": 0,
+            "select_max": 9,
+            "options": [
+              {
+                "id": 1,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 2,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 3,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "사케동",
+        "price": 12000,
+        "description": null,
+        "grid_location": "(2행, 2열)",
+        "aliases": ["사케동", "사케 덮밥"],
+        "option_groups": [
+          {
+            "id": 2,
+            "name": "돈부리 추가",
+            "select_min": 0,
+            "select_max": 9,
+            "options": [
+              {
+                "id": 1,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 2,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 3,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "name": "대왕새우동",
+        "price": 18000,
+        "description": null,
+        "grid_location": "(2행, 3열)",
+        "aliases": ["대왕새우동"],
+        "option_groups": [
+          {
+            "id": 2,
+            "name": "돈부리 추가",
+            "select_min": 0,
+            "select_max": 9,
+            "options": [
+              {
+                "id": 1,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 2,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 3,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "name": "유부동",
+        "price": 11000,
+        "description": null,
+        "grid_location": "(2행, 4열)",
+        "aliases": ["유부동"],
+        "option_groups": [
+          {
+            "id": 2,
+            "name": "돈부리 추가",
+            "select_min": 0,
+            "select_max": 9,
+            "options": [
+              {
+                "id": 1,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 2,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 3,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "name": "대회연어동",
+        "price": 17000,
+        "description": null,
+        "grid_location": "(3행, 1열)",
+        "aliases": ["대회연어동"],
+        "option_groups": [
+          {
+            "id": 2,
+            "name": "돈부리 추가",
+            "select_min": 0,
+            "select_max": 9,
+            "options": [
+              {
+                "id": 1,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 2,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 3,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "name": "닭가쯔동",
+        "price": 14000,
+        "description": null,
+        "grid_location": "(3행, 2열)",
+        "aliases": ["닭가쯔동", "닭 가츠 동"],
+        "option_groups": [
+          {
+            "id": 2,
+            "name": "돈부리 추가",
+            "select_min": 0,
+            "select_max": 9,
+            "options": [
+              {
+                "id": 1,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 2,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 3,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "name": "가라아게동",
+        "price": 10000,
+        "description": null,
+        "grid_location": "(3행, 3열)",
+        "aliases": ["가라아게동", "가라아게 덮밥"],
+        "option_groups": [
+          {
+            "id": 2,
+            "name": "돈부리 추가",
+            "select_min": 0,
+            "select_max": 9,
+            "options": [
+              {
+                "id": 1,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 2,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 3,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "name": "가라아게가쯔동",
+        "price": 11000,
+        "description": null,
+        "grid_location": "(3행, 4열)",
+        "aliases": ["가라아게가쯔동", "가라아게 가츠 동"],
+        "option_groups": [
+          {
+            "id": 2,
+            "name": "돈부리 추가",
+            "select_min": 0,
+            "select_max": 9,
+            "options": [
+              {
+                "id": 1,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 2,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 3,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "name": "가라아게카레동",
+        "price": 11000,
+        "description": null,
+        "grid_location": "(4행, 4열)",
+        "aliases": ["가라아게카레동"],
+        "option_groups": [
+          {
+            "id": 2,
+            "name": "돈부리 추가",
+            "select_min": 0,
+            "select_max": 9,
+            "options": [
+              {
+                "id": 1,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 2,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 3,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "카레",
+    "ui_tab_name": "카레",
+    "menus": [
+      {
+        "id": 14,
+        "name": "카쯔카레",
+        "price": 10000,
+        "description": null,
+        "grid_location": "(1행, 1열)",
+        "aliases": ["카쯔카레", "카츠카레", "가츠카레", "돈까스 카레"],
+        "option_groups": [
+          {
+            "id": 1,
+            "name": "카레 추가",
+            "select_min": 0,
+            "select_max": 7,
+            "options": [
+              {
+                "id": 4,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 5,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 6,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 15,
+        "name": "규카레",
+        "price": 10500,
+        "description": null,
+        "grid_location": "(1행, 2열)",
+        "aliases": ["규카레", "규 카레"],
+        "option_groups": [
+          {
+            "id": 1,
+            "name": "카레 추가",
+            "select_min": 0,
+            "select_max": 7,
+            "options": [
+              {
+                "id": 4,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 5,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 6,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 16,
+        "name": "에비가쯔카레",
+        "price": 11000,
+        "description": null,
+        "grid_location": "(1행, 3열)",
+        "aliases": ["에비가쯔카레", "에비 가츠 카레", "새우 돈까스 카레"],
+        "option_groups": [
+          {
+            "id": 1,
+            "name": "카레 추가",
+            "select_min": 0,
+            "select_max": 7,
+            "options": [
+              {
+                "id": 4,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 5,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 6,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 17,
+        "name": "에비카레",
+        "price": 12000,
+        "description": null,
+        "grid_location": "(1행, 4열)",
+        "aliases": ["에비카레", "새우 카레"],
+        "option_groups": [
+          {
+            "id": 1,
+            "name": "카레 추가",
+            "select_min": 0,
+            "select_max": 7,
+            "options": [
+              {
+                "id": 4,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 5,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 6,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 18,
+        "name": "더블가쯔카레",
+        "price": 14000,
+        "description": null,
+        "grid_location": "(2행, 1열)",
+        "aliases": ["더블가쯔카레", "더블 가츠 카레"],
+        "option_groups": [
+          {
+            "id": 1,
+            "name": "카레 추가",
+            "select_min": 0,
+            "select_max": 7,
+            "options": [
+              {
+                "id": 4,
+                "name": "밥 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 5,
+                "name": "계란 추가",
+                "add_price": 1000
+              },
+              {
+                "id": 6,
+                "name": "카레 추가",
+                "add_price": 3000
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {
+                "id": 7,
+                "name": "코카콜라",
+                "add_price": 2000
+              },
+              {
+                "id": 8,
+                "name": "스프라이트",
+                "add_price": 2000
+              },
+              {
+                "id": 9,
+                "name": "코카콜라 제로",
+                "add_price": 2000
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+];
