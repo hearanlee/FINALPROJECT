@@ -238,7 +238,7 @@ SELECT id, '포테이토 에그마요',   4700, 1, 3, 3, 0, NULL FROM categories
 
 INSERT INTO menus (category_id, name_ko, base_price_krw, page_no, grid_row, grid_col, is_sold_out, note)
 
-SELECT id, '프렌치 햄 치즈',   3800, 1, 3, 4, 0, NULL FROM categories WHERE name_ko='토스트';
+SELECT id, '프렌치 햄치즈',   3800, 1, 3, 4, 0, NULL FROM categories WHERE name_ko='토스트';
 
 
 
@@ -258,7 +258,7 @@ SELECT id, '감자 스페셜',         4800, 1, 4, 3, 0, NULL FROM categories WH
 
 INSERT INTO menus (category_id, name_ko, base_price_krw, page_no, grid_row, grid_col, is_sold_out, note)
 
-SELECT id, '햄치즈 포테이토',     4400, 1, 4, 4, 0, 'TODO: 실제 표기 ''햄치즈 포테이토'' 맞는지 확인' FROM categories WHERE name_ko='토스트';
+SELECT id, '햄치즈 포테이토',     4400, 1, 4, 4, 0, NULL FROM categories WHERE name_ko='토스트';
 
 
 
@@ -657,29 +657,43 @@ SELECT id,'감자 스페셜 세트' FROM menus WHERE name_ko='감자 스페셜 �
 
 UPDATE menus s
 
-JOIN categories cset   ON cset.id = s.category_id AND cset.name_ko = '토스트 세트'
+JOIN categories c_set ON s.category_id = c_set.id AND c_set.name_ko = '토스트 세트'
 
-JOIN categories ctoast ON ctoast.name_ko = '토스트'
+JOIN categories c_toast ON c_toast.name_ko = '토스트'
 
-JOIN menus t           ON t.category_id = ctoast.id
+SET s.name_ko = CONCAT(
 
--- 세트 이름이 이미 "<토스트 이름> 세트" 이거나, "<세트에서 세트 제거>" 가 토스트 이름인 경우 매칭
+    (SELECT t.name_ko
 
-   AND ( s.name_ko = CONCAT(t.name_ko, ' 세트')
+     FROM menus t
 
-      OR REPLACE(s.name_ko, ' 세트', '') = t.name_ko )
+     WHERE t.category_id = c_toast.id
 
-SET s.name_ko = CONCAT(t.name_ko, ' 세트'),
+     AND t.page_no = s.page_no
 
-    s.page_no = t.page_no,
+     AND t.grid_row = s.grid_row
 
-    s.grid_row = t.grid_row,
+     AND t.grid_col = s.grid_col),
 
-    s.grid_col = t.grid_col
+    ' 세트'
 
--- 가격(s.base_price_krw)은 유지
+)
 
-;
+WHERE EXISTS (
+
+    SELECT 1
+
+    FROM menus t2
+
+    WHERE t2.category_id = c_toast.id
+
+    AND t2.page_no = s.page_no
+
+    AND t2.grid_row = s.grid_row
+
+    AND t2.grid_col = s.grid_col
+
+);
 
 
 
