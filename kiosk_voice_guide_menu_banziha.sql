@@ -196,7 +196,7 @@ SELECT id, '규동',      9500,  1, 2 FROM categories WHERE name_ko='돈부리';
 
 INSERT INTO menus (category_id, name_ko, base_price_krw, grid_row, grid_col)
 
-SELECT id, '오야꼬꼬동',  9000,  1, 3 FROM categories WHERE name_ko='돈부리';
+SELECT id, '오야꼬동',  9000,  1, 3 FROM categories WHERE name_ko='돈부리';
 
 INSERT INTO menus (category_id, name_ko, base_price_krw, grid_row, grid_col)
 
@@ -204,15 +204,15 @@ SELECT id, '에비가쯔동', 10000, 1, 4 FROM categories WHERE name_ko='돈부�
 
 INSERT INTO menus (category_id, name_ko, base_price_krw, grid_row, grid_col)
 
-SELECT id, '에비동동',    11000, 2, 1 FROM categories WHERE name_ko='돈부리';
+SELECT id, '에비동',    11000, 2, 1 FROM categories WHERE name_ko='돈부리';
 
 INSERT INTO menus (category_id, name_ko, base_price_krw, grid_row, grid_col)
 
-SELECT id, '사케동동',    12000, 2, 2 FROM categories WHERE name_ko='돈부리';
+SELECT id, '사케동',    12000, 2, 2 FROM categories WHERE name_ko='돈부리';
 
 INSERT INTO menus (category_id, name_ko, base_price_krw, grid_row, grid_col)
 
-SELECT id, '더블사케동동', 18000, 2, 3 FROM categories WHERE name_ko='돈부리';   
+SELECT id, '더블사케동', 18000, 2, 3 FROM categories WHERE name_ko='돈부리';   
 
 INSERT INTO menus (category_id, name_ko, base_price_krw, grid_row, grid_col)
 
@@ -220,7 +220,7 @@ SELECT id, '유케동',    11000, 2, 4 FROM categories WHERE name_ko='돈부리'
 
 INSERT INTO menus (category_id, name_ko, base_price_krw, grid_row, grid_col)
 
-SELECT id, '더블유케동동', 17000, 3, 1 FROM categories WHERE name_ko='돈부리';   -
+SELECT id, '더블유케동', 17000, 3, 1 FROM categories WHERE name_ko='돈부리';   -
 
 INSERT INTO menus (category_id, name_ko, base_price_krw, grid_row, grid_col)
 
@@ -228,11 +228,11 @@ SELECT id, '유케사케동',  14000, 3, 2 FROM categories WHERE name_ko='돈부
 
 INSERT INTO menus (category_id, name_ko, base_price_krw, grid_row, grid_col)
 
-SELECT id, '카라이가쯔동동', 10000, 3, 3 FROM categories WHERE name_ko='돈부리';
+SELECT id, '카라이가쯔동', 10000, 3, 3 FROM categories WHERE name_ko='돈부리';
 
 INSERT INTO menus (category_id, name_ko, base_price_krw, grid_row, grid_col)
 
-SELECT id, '카라이에비가쯔쯔동', 11000, 3, 4 FROM categories WHERE name_ko='돈부리';
+SELECT id, '카라이에비가쯔동', 11000, 3, 4 FROM categories WHERE name_ko='돈부리';
 
 INSERT INTO menus (category_id, name_ko, base_price_krw, grid_row, grid_col)
 
@@ -244,7 +244,7 @@ SELECT id, '더블가쯔동동', 13000, 4, 2 FROM categories WHERE name_ko='돈�
 
 INSERT INTO menus (category_id, name_ko, base_price_krw, grid_row, grid_col)
 
-SELECT id, '카라이더블가쯔동동', 14000, 4, 3 FROM categories WHERE name_ko='돈부리';
+SELECT id, '카라이더블가쯔동', 14000, 4, 3 FROM categories WHERE name_ko='돈부리';
 -- ===== 옵션 그룹 정의 =====
 
 -- 카레 모달에서: "카레 추가 [선택가능: 7개]" / "음료 선택 [선택가능: 1개]"

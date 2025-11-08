@@ -1,3 +1,6 @@
+// menuData_banziha.js
+// kiosk_voice_guide_menu_banziha.sql 파일의 데이터를 기반으로 생성된 메뉴 데이터
+
 export const menuData = [
   {
     "id": 1,
@@ -74,13 +77,13 @@ export const menuData = [
       },
       {
         "id": 3,
-        "name": "오야코동",
+        "name": "오야꼬동",
         "price": 9000,
         "description": "",
         "grid_row": 1,
         "grid_col": 3,
         "grid_location": "(1행, 3열)",
-        "aliases": ["오야코동", "오야꼬동", "닭계란 덮밥"],
+        "aliases": ["오야꼬동", "오야코동", "닭계란 덮밥"],
         "option_groups": [
           {
             "id": 2,
@@ -142,13 +145,13 @@ export const menuData = [
       },
       {
         "id": 5,
-        "name": "연어동",
+        "name": "에비동",
         "price": 11000,
         "description": "",
         "grid_row": 2,
         "grid_col": 1,
         "grid_location": "(2행, 1열)",
-        "aliases": ["연어동", "연어 덮밥"],
+        "aliases": [],
         "option_groups": [
           {
             "id": 2,
@@ -210,13 +213,13 @@ export const menuData = [
       },
       {
         "id": 7,
-        "name": "대왕새우동",
+        "name": "더블사케동",
         "price": 18000,
         "description": "",
         "grid_row": 2,
         "grid_col": 3,
         "grid_location": "(2행, 3열)",
-        "aliases": ["대왕새우동"],
+        "aliases": [],
         "option_groups": [
           {
             "id": 2,
@@ -244,13 +247,13 @@ export const menuData = [
       },
       {
         "id": 8,
-        "name": "유부동",
+        "name": "유케동",
         "price": 11000,
         "description": "",
         "grid_row": 2,
         "grid_col": 4,
         "grid_location": "(2행, 4열)",
-        "aliases": ["유부동"],
+        "aliases": [],
         "option_groups": [
           {
             "id": 2,
@@ -278,13 +281,13 @@ export const menuData = [
       },
       {
         "id": 9,
-        "name": "대회연어동",
+        "name": "더블유케동",
         "price": 17000,
         "description": "",
         "grid_row": 3,
         "grid_col": 1,
         "grid_location": "(3행, 1열)",
-        "aliases": ["대회연어동"],
+        "aliases": [],
         "option_groups": [
           {
             "id": 2,
@@ -312,13 +315,13 @@ export const menuData = [
       },
       {
         "id": 10,
-        "name": "닭가쯔동",
+        "name": "유케사케동",
         "price": 14000,
         "description": "",
         "grid_row": 3,
         "grid_col": 2,
         "grid_location": "(3행, 2열)",
-        "aliases": ["닭가쯔동", "닭 가츠 동"],
+        "aliases": [],
         "option_groups": [
           {
             "id": 2,
@@ -346,13 +349,13 @@ export const menuData = [
       },
       {
         "id": 11,
-        "name": "가라아게동",
+        "name": "카라이가쯔동",
         "price": 10000,
         "description": "",
         "grid_row": 3,
         "grid_col": 3,
         "grid_location": "(3행, 3열)",
-        "aliases": ["가라아게동", "가라아게 덮밥"],
+        "aliases": [],
         "option_groups": [
           {
             "id": 2,
@@ -380,13 +383,13 @@ export const menuData = [
       },
       {
         "id": 12,
-        "name": "가라아게가쯔동",
+        "name": "카라이에비가쯔동",
         "price": 11000,
         "description": "",
         "grid_row": 3,
         "grid_col": 4,
         "grid_location": "(3행, 4열)",
-        "aliases": ["가라아게가쯔동", "가라아게 가츠 동"],
+        "aliases": [],
         "option_groups": [
           {
             "id": 2,
@@ -414,13 +417,81 @@ export const menuData = [
       },
       {
         "id": 13,
-        "name": "가라아게카레동",
-        "price": 11000,
+        "name": "가라이규동",
+        "price": 10500,
         "description": "",
         "grid_row": 4,
-        "grid_col": 4,
-        "grid_location": "(4행, 4열)",
-        "aliases": ["가라아게카레동"],
+        "grid_col": 1,
+        "grid_location": "(4행, 1열)",
+        "aliases": [],
+        "option_groups": [
+          {
+            "id": 2,
+            "name": "돈부리 추가",
+            "select_min": 0,
+            "select_max": 9,
+            "options": [
+              {"id": 1, "name": "밥 추가", "add_price": 1000},
+              {"id": 2, "name": "계란 추가", "add_price": 1000},
+              {"id": 3, "name": "카레 추가", "add_price": 3000}
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {"id": 4, "name": "코카콜라", "add_price": 2000},
+              {"id": 5, "name": "스프라이트", "add_price": 2000},
+              {"id": 6, "name": "코카콜라 제로", "add_price": 2000}
+            ]
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "name": "더블가쯔동동",
+        "price": 13000,
+        "description": "",
+        "grid_row": 4,
+        "grid_col": 2,
+        "grid_location": "(4행, 2열)",
+        "aliases": [],
+        "option_groups": [
+          {
+            "id": 2,
+            "name": "돈부리 추가",
+            "select_min": 0,
+            "select_max": 9,
+            "options": [
+              {"id": 1, "name": "밥 추가", "add_price": 1000},
+              {"id": 2, "name": "계란 추가", "add_price": 1000},
+              {"id": 3, "name": "카레 추가", "add_price": 3000}
+            ]
+          },
+          {
+            "id": 3,
+            "name": "음료 선택",
+            "select_min": 0,
+            "select_max": 1,
+            "options": [
+              {"id": 4, "name": "코카콜라", "add_price": 2000},
+              {"id": 5, "name": "스프라이트", "add_price": 2000},
+              {"id": 6, "name": "코카콜라 제로", "add_price": 2000}
+            ]
+          }
+        ]
+      },
+      {
+        "id": 15,
+        "name": "카라이더블가쯔동",
+        "price": 14000,
+        "description": "",
+        "grid_row": 4,
+        "grid_col": 3,
+        "grid_location": "(4행, 3열)",
+        "aliases": [],
         "option_groups": [
           {
             "id": 2,
@@ -454,7 +525,7 @@ export const menuData = [
     "ui_tab_name": "카레",
     "menus": [
       {
-        "id": 14,
+        "id": 16,
         "name": "카쯔카레",
         "price": 10000,
         "description": "",
@@ -488,7 +559,7 @@ export const menuData = [
         ]
       },
       {
-        "id": 15,
+        "id": 17,
         "name": "규카레",
         "price": 10500,
         "description": "",
@@ -522,7 +593,7 @@ export const menuData = [
         ]
       },
       {
-        "id": 16,
+        "id": 18,
         "name": "에비가쯔카레",
         "price": 11000,
         "description": "",
@@ -556,7 +627,7 @@ export const menuData = [
         ]
       },
       {
-        "id": 17,
+        "id": 19,
         "name": "에비카레",
         "price": 12000,
         "description": "",
@@ -590,7 +661,7 @@ export const menuData = [
         ]
       },
       {
-        "id": 18,
+        "id": 20,
         "name": "더블가쯔카레",
         "price": 14000,
         "description": "",
@@ -626,4 +697,3 @@ export const menuData = [
     ]
   }
 ];
-

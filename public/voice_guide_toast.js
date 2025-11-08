@@ -49,7 +49,7 @@ ${JSON.stringify(menuData)}
 
 1.  **식사 유형 선택 (GREETING)**: 대화가 시작되면(첫 화면) *정확히* 다음 멘트로 시작합니다.
 
-    * "안녕하세요! 주문을 도와드릴게요. 화면에 '매장식사'와 '포장' 버튼이 있습니다. **원하시는 항목을 눌러주세요.**"
+    * "안녕하세요! 주문을 도와드릴게요. 화면에 '매장식사'와 '포장' 버튼이 있습니다. **원하시는 항목을 누르시고 말씀해주세요.**"
 
 2.  **메뉴 유도 (PROMPT_FOR_MENU)**: 사용자가 [작업 흐름 1]을 완료하면(예: "눌렀어요"), AI는 다음 멘트를 합니다.
 
@@ -245,7 +245,7 @@ ${JSON.stringify(menuData)}
 
 [JSON 응답 예시]
 
-* (첫 화면) JSON_RESPONSE:{"speech": "안녕하세요! 주문을 도와드릴게요. 화면에 '매장식사'와 '포장' 버튼이 있습니다. 원하시는 항목을 눌러주세요.", "action": "GREETING"}
+* (첫 화면) JSON_RESPONSE:{"speech": "안녕하세요! 주문을 도와드릴게요. 화면에 '매장식사'와 '포장' 버튼이 있습니다. 원하시는 항목을 누르시고 말씀해주세요.", "action": "GREETING"}
 
 * (안내 3 - 토스트) JSON_RESPONSE:{"speech": "좋습니다. 이제 햄치즈 토스트 버튼을 눌러주세요. 화면 상단 좌측에 있습니다. 만약 메뉴가 바로 보이지 않으면, 화면 옆의 화살표를 눌러 페이지를 넘겨 찾아주세요. 다 찾아서 누르셨으면 말씀해주세요.", "action": "GUIDING_STEP_BY_STEP"}
 
@@ -265,12 +265,34 @@ let currentSession = null;
 let recognition; // 음성 인식 객체
 const synthesis = window.speechSynthesis; // 음성 합성 객체
 let isVoiceActive = false; // 음성 안내 활성 상태
+let isRecognitionActive = false; // 음성 인식 활성 상태 추적
 
 // AI 응답을 누적할 버퍼 변수 추가
 let fullResponseText = ''; 
 
 let speechRate = 1.2; // 기본 속도 (보통)
 let repeatCount = 1;  // 기본 반복 횟수
+
+// 음성 인식 안전하게 시작하는 헬퍼 함수
+function startRecognitionSafely() {
+  if (!recognition || !currentSession || isRecognitionActive) {
+    return;
+  }
+  
+  try {
+    recognition.start();
+    isRecognitionActive = true;
+    console.log('🎙️ [Speech] 음성 인식 시작 시도');
+  } catch (e) {
+    // 이미 시작된 경우는 정상적인 상황이므로 경고만 출력
+    if (e.message && e.message.includes('already started')) {
+      isRecognitionActive = true; // 상태 동기화
+      console.log('ℹ️ [Speech] 음성 인식이 이미 실행 중입니다.');
+    } else {
+      console.warn('⚠️ [Speech] 음성 인식 재시작 실패:', e.message);
+    }
+  }
+}
 
 // --- 1. Web Speech API (STT) 설정 ---
 try {
@@ -283,18 +305,21 @@ try {
 
   recognition.onstart = () => {
     console.log('🎙️ [Speech] 음성 인식이 시작되었습니다. 말씀하세요...');
+    isRecognitionActive = true;
     const icon = document.querySelector('.voice-mic-icon');
     if (icon) icon.style.opacity = '0.7';
   };
 
   recognition.onend = () => {
     console.log('🛑 [Speech] 음성 인식이 종료되었습니다.');
+    isRecognitionActive = false;
     const icon = document.querySelector('.voice-mic-icon');
     if (icon) icon.style.opacity = '1.0';
     
-    if (currentSession && !synthesis.speaking) {
+    // 세션이 활성화되어 있고 TTS가 재생 중이 아닐 때만 재시작
+    if (currentSession && !synthesis.speaking && isVoiceActive) {
       setTimeout(() => {
-        try { recognition.start(); } catch (e) { console.warn('⚠️ [Speech] 음성 인식 재시작 실패:', e.message); }
+        startRecognitionSafely();
       }, 500);
     }
   };
@@ -352,14 +377,8 @@ function speak(text) {
 
   const speakOnce = () => {
     if (currentRepeat >= repeatCount) {
-      // 1. 모든 반복이 끝나면 마이크 재시작
-      console.log('💬 [TTS] Gemini 응답 재생 완료.');
-      if (currentSession && recognition) {
-        setTimeout(() => {
-          try { recognition.start(); } catch (e) { console.warn('⚠️ [Speech] 음성 인식 재시작 실패:', e.message); }
-        }, 300);
-      }
-                    return;
+      // 모든 반복이 끝나면 onend에서 처리하므로 여기서는 처리하지 않음
+      return;
     }
 
     const utterance = new SpeechSynthesisUtterance(text);
@@ -370,8 +389,11 @@ function speak(text) {
     utterance.onstart = () => {
       if (currentRepeat === 0) { // 첫 번째 재생일 때만 로그 기록
         console.log('💬 [TTS] Gemini 응답 재생 시작:', text);
-        if (recognition) {
-          try { recognition.stop(); } catch (e) {}
+        if (recognition && isRecognitionActive) {
+          try { 
+            recognition.stop(); 
+            isRecognitionActive = false;
+          } catch (e) {}
         }
       }
     };
@@ -382,11 +404,11 @@ function speak(text) {
         console.log(`🔄 [TTS] 반복 재생 (${currentRepeat + 1}/${repeatCount})`);
         setTimeout(speakOnce, 300); // 다음 재생 (약간의 텀을 줌)
       } else {
-        // 2. 모든 반복이 끝나면 마이크 재시작 (onend에서)
+        // 모든 반복이 끝나면 마이크 재시작
         console.log('💬 [TTS] Gemini 응답 재생 완료.');
-        if (currentSession && recognition) {
+        if (currentSession && isVoiceActive) {
           setTimeout(() => {
-            try { recognition.start(); } catch (e) { console.warn('⚠️ [Speech] 음성 인식 재시작 실패:', e.message); }
+            startRecognitionSafely();
           }, 300);
         }
       }
@@ -394,10 +416,10 @@ function speak(text) {
 
     utterance.onerror = (event) => {
       console.error('❌ [TTS] 재생 오류:', event.error);
-      // 3. 오류가 나도 마이크는 재시작
-      if (currentSession && recognition) {
+      // 오류가 나도 마이크는 재시작
+      if (currentSession && isVoiceActive) {
         setTimeout(() => {
-          try { recognition.start(); } catch (e) { console.warn('⚠️ [Speech] 음성 인식 재시작 실패:', e.message); }
+          startRecognitionSafely();
         }, 300);
       }
     };
@@ -590,6 +612,7 @@ function closeSession() {
   if (recognition) {
     try { 
       recognition.stop(); 
+      isRecognitionActive = false;
   } catch (e) {
       console.warn('⚠️ [Speech] 음성 인식 중지 실패:', e.message);
     }
@@ -647,11 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
           synthesis.cancel(); 
           console.log('🔇 [TTS] 사용자가 응답을 중단시킴');
     } else {
-          try { 
-            recognition.start(); 
-          } catch (e) { 
-            console.warn('⚠️ [Speech] 음성 인식이 이미 시작되었거나 다른 문제 발생:', e.message);
-          }
+          startRecognitionSafely();
         }
       }
     }); // <-- voiceMicIcon click 이벤트 종료
