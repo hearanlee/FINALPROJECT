@@ -1,199 +1,212 @@
-/* --- menu_recommend.css 파일의 전체 내용 --- */  
+/* --- menu_recommend.css (공백 제거 완료) --- */
+/* 페이지 중앙 컨텐츠 스타일 */
+.voice-icon-container {
+position: relative;
+display: inline-block;
+margin: 40px 0 20px 0;
+}
 
-  /* 페이지 중앙 컨텐츠 스타일 */  
-  .voice-icon-container {  
-    position: relative;  
-    display: inline-block;  
-    margin: 40px 0 20px 0;  
-  }  
+.voice-mic-icon {
+width: 180px;
+height: auto;
+cursor: pointer;
+}
 
-  .voice-mic-icon {  
-    width: 180px;  
-    height: auto;  
-    cursor: pointer;  
-  }  
+.volume-controls {
+position: absolute;
+top: 30%; /* 세로 위치를 정가운데로 맞춥니다. */
+right: -200px; /* 오른쪽 바깥으로 35px 만큼 밀어냅니다. */
+transform: translateY(-50%); /* 세로 위치를 미세 조정합니다. */
+display: flex;
+flex-direction: column;
+}
 
-  .volume-controls {  
-    position: absolute;  
-    top: 30%; /* 세로 위치를 정가운데로 맞춥니다. */  
-    right: -200px; /* 오른쪽 바깥으로 35px 만큼 밀어냅니다. */  
-    transform: translateY(-50%); /* 세로 위치를 미세 조정합니다. */  
-     display: flex;  
-    flex-direction: column;  
-  }  
+.volume-btn {
+background-color: #0D2A5C;
+color: white;
+width: 50px;
+height: 50px;
+border-radius: 50%;
+display: flex;
+justify-content: center;
+align-items: center;
+font-size: 24px;
+font-weight: bold;
+margin: -5px 0;
+cursor: pointer;
+box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.volume-btn:first-child {
+background-color: #0D2A5C;
+}
 
-  .volume-btn {  
-    background-color: #0D2A5C;  
-    color: white;  
-    width: 50px; /* <--- 메인 화면과 똑같이 50px로 변경 */  
-    height: 50px; /* <--- 메인 화면과 똑같이 50px로 변경 */  
-    border-radius: 50%;  
-    display: flex;  
-    justify-content: center;  
-    align-items: center;  
-    font-size: 24px; /* <--- 메인 화면과 똑같이 24px로 변경 */  
-    font-weight: bold;  
-    margin: -5px 0; /* 크기가 커졌으니 간격도 살짝 늘립니다 */  
-    cursor: pointer;  
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);  
-  }  
-  /* 첫번째 버튼(+) 배경색 (빠졌던 부분) */  
-  .volume-btn:first-child {  
-    background-color: #0D2A5C; /* 연한 회색/하늘색 */  
-  }  
+.volume-btn:last-child {
+background-color: #0D2A5C;
+}
 
-  /* 두번째 버튼(-) 배경색 (빠졌던 부분) */  
-  .volume-btn:last-child {  
-    background-color: #0D2A5C; /* 기존의 짙은 남색 */  
-  }  
+.instruction-text {
+font-size: 16px;
+color: gray;
+line-height: 1.5;
+}
 
-  .instruction-text {  
-    font-size: 16px;  
-    color: gray;  
-    line-height: 1.5;  
-  }  
+/* 하단 버튼 그룹 스타일 */
+.voice-action-buttons {
+padding: 20px;
+margin-top: auto;
+}
 
-  /* 하단 버튼 그룹 스타일 */  
-  .voice-action-buttons {  
-    padding: 20px;  
-    margin-top: auto;  
-  }  
+.button-row {
+display: flex;
+justify-content: space-between;
+margin-bottom: 10px;
+}
 
-  .button-row {  
-    display: flex;  
-    justify-content: space-between;  
-    margin-bottom: 10px;  
-  }  
+.button-row .btn {
+width: 48%;
+display: flex;
+align-items: center;
+justify-content: center;
+}
 
-  .button-row .btn {  
-    width: 48%;  
-    display: flex;  
-    align-items: center;  
-    justify-content: center;  
-  }  
-
-  .btn-icon {  
-    width: 16px;  
-    height: 16px;  
-    margin-right: 8px;  
-  }  
+.btn-icon {
+width: 16px;
+height: 16px;
+margin-right: 8px;
+}
 
 
-  /* 팝업(모달) 스타일 */  
-  .modal-overlay {  
-    position: fixed;  
-    top: 0;  
-    left: 0;  
-    width: 100%;  
-    height: 100%;  
-    background-color: rgba(0,0,0,0.6);  
-    display: none;  
-    z-index: 10;  
-  }  
+/* 팝업(모달) 스타일 */
+.modal-overlay {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background-color: rgba(0,0,0,0.6);
+display: none;
+z-index: 10;
+}
 
-  .modal {  
-    position: fixed;  
-    top: 50%;  
-    left: 50%;  
-    transform: translate(-50%, -50%);  
-    background-color: white;  
-    border-radius: 20px;  
-    padding: 20px;  
-    width: 350px;  
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);  
-    display: none;  
-    z-index: 20;  
-  }  
+.modal {
+position: fixed;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+background-color: white;
+border-radius: 20px;
+padding: 20px;
+width: 350px;
+box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+display: none;
+z-index: 20;
+}
 
-  .modal-overlay.active,  
-  .modal.active {  
-    display: block;  
-  }  
+.modal-overlay.active,
+.modal.active {
+display: block;
+}
 
-  .modal-header {  
-    display: flex;  
-    align-items: center;  
-    margin-bottom: 10px;  
-    color: #0D2A5C;  
-  }  
+.modal-header {
+display: flex;
+justify-content: flex-start; /* 왼쪽 정렬 */
+align-items: center;
+padding: 15px 20px;
+border-bottom: 1px solid #eee;
+position: relative;
+}
 
-  .close-button {  
-    background: none;  
-    border: none;  
-    cursor: pointer;  
-    margin-right: 10px;  
-  }  
-  .close-button img {  
-    width: 24px;  
-    height: 24px;  
-  }  
+.close-button {
+position: absolute;
+top: 15px;
+right: 20px;
+background: none;
+border: none;
+cursor: pointer;
+padding: 0;
+z-index: 10;
+}
+.close-button img {
+width: 24px;
+height: 24px;
+}
 
-  .modal-subtitle {  
-    font-size: 16px;  
-    color: gray;  
-    margin-bottom: 30px;  
-  }  
+.modal-header h2 {
+font-size: 1.2em;
+color: #333;
+margin: 0;
+padding: 0;
+text-align: left; /* 왼쪽 정렬 */
+}
 
-  /* 슬라이더 스타일 */  
-  .slider-container {  
-    padding: 0 10px;  
-  }  
+.modal-subtitle {
+font-size: 16px;
+color: gray;
+margin-bottom: 30px;
+text-align: left; /* 기본적으로 왼쪽 정렬 */
+padding-left:15px; /* 왼쪽에서 10px 안으로 밀어 넣음 (원하는 만큼 조절) */
+}
 
-  .slider-bar-wrapper {  
-    position: relative;  
-    height: 30px;  
-    display: flex;  
-    align-items: center;  
-  }  
+/* 슬라이더 스타일 */
+.slider-container {
+padding: 0 10px;
+}
 
-  .slider-track {  
-    width: 100%;  
-    height: 6px;  
-    background-color: #e0e0e0;  
-    border-radius: 3px;  
-  }  
+.slider-bar-wrapper {
+position: relative;
+height: 30px;
+display: flex;
+align-items: center;
+}
 
-  .slider-points {  
-    position: absolute;  
-    width: 100%;  
-    display: flex;  
-    justify-content: space-between;  
-  }  
+.slider-track {
+width: 100%;
+height: 6px;
+background-color: #e0e0e0;
+border-radius: 3px;
+}
 
-  .slider-point {  
-    width: 24px;  
-    height: 24px;  
-    background-color: white;  
-    border: 2px solid #e0e0e0;  
-    border-radius: 50%;  
-    ursor: pointer;  
-    transition: all 0.2s ease-in-out;  
-  }  
+.slider-points {
+position: absolute;
+width: 100%;
+display: flex;
+justify-content: space-between;
+}
 
-  .slider-point.active {  
-    background-color: #0D2A5C;  
-    border-color: #0D2A5C;  
-  }  
+.slider-point {
+width: 24px;
+height: 24px;
+background-color: white;
+border: 2px solid #e0e0e0;
+border-radius: 50%;
+cursor: pointer;
+transition: all 0.2s ease-in-out;
+}
 
-  .slider-labels {  
-    display: flex;  
-    justify-content: space-between;  
-    margin-top: 8px;  
-    font-size: 16px;  
-    color: #0D2A5C;  
-    text-align: center;  
-  }  
+.slider-point.active {
+background-color: #0D2A5C;
+border-color: #0D2A5C;
+}
 
-  .label-item {  
-    width: 60px;  
-  }  
+.slider-labels {
+display: flex;
+justify-content: space-between;
+margin-top: 8px;
+font-size: 16px;
+color: #0D2A5C;
+text-align: center;
+}
 
-  .slider-labels img {  
-    width: 30px;  
-    height: 30px;  
-    margin-bottom: 5px;  
-  }  
+.label-item {
+width: 60px;
+}
 
-  .slider-labels .active {  
-    font-weight: bold;  
-  }
+.slider-labels img {
+width: 20px;
+height: 20px;
+margin-bottom: 2px;
+}
+
+.slider-labels .active {
+font-weight: bold;
+}
