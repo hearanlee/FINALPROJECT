@@ -5,36 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Voice Guide</title>
     <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="voice_guide.css">
+    <link rel="stylesheet" href="voice_guide.css">
+
 </head>
 <body>
 
     <div class="mobile-container">
         <header class="page-header">
-            <a href="restaurant_detail.html"><img src="./images/icon-back-arrow.png" alt="뒤로 가기"></a>
+            <a href="main.html"><img src="./images/icon-back-arrow.png" alt="뒤로 가기"></a>
             <h1>음성안내</h1>
         </header>
+
         <main class="content">
-             <div class="question-card" style="margin-top: 20px;">
-                <p>주문하실 메뉴명을 말하시거나<br>메뉴 둘러보기를 원하시면<br>'메뉴'라고 말씀해주세요</p>
+            <div class="question-card" style="margin-top: 20px;">
+                <p id="main-question-text">주문하실 메뉴명을 말하시거나<br>메뉴 둘러보기를 원하시면<br>'메뉴'라고 말씀해주세요</p>
             </div>
             <div class="voice-icon-container">
                 <img src="./images/icon_voice_mic.png" alt="음성 안내 시작" class="voice-mic-icon">
                 <div class="volume-controls">
-                    <span class="volume-btn">+</span>
-                    <span class="volume-btn">-</span>
+                    <span id="font-increase-btn" class="volume-btn">+</span>
+                    <span id="font-decrease-btn" class="volume-btn">-</span>
                 </div>
             </div>
-            <p class="instruction-text">마이크 버튼을 누르시면<br>키오스크 음성안내가 시작됩니다.</p>
+            <p id="main-instruction-text" class="instruction-text">마이크 버튼을 누르시면<br>키오스크 음성안내가 시작됩니다.</p>
         </main>
+        
         <div class="voice-action-buttons">
             <div class="button-row">
                 <button id="speedBtn" class="btn btn-secondary"><img src="./images/icon_slow.png" class="btn-icon" alt=""> 느린 음성</button>
                 <button id="repeatBtn" class="btn btn-secondary"><img src="./images/icon_repeat.png" class="btn-icon" alt=""> 반복 재생</button>
             </div>
-            <button class="btn btn-secondary full-width">⛔ 화면과 음성이 맞지 않음</button>
+            <button class="btn btn-secondary full-width" style="margin-bottom: 10px;">⛔ 화면과 음성이 맞지 않음</button>
             
             <button id="exitVoiceGuideBtn" class="btn btn-primary full-width">음성안내 종료</button>
-            </div>
+        </div>
+
         <nav class="bottom-nav">
             <a href="main.html" class="nav-item">
                 <img src="./images/icon-home.png" alt="홈">

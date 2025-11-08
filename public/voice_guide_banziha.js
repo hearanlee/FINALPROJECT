@@ -230,511 +230,509 @@ let currentSession = null;
 let recognition; // 음성 인식 객체
 const synthesis = window.speechSynthesis; // 음성 합성 객체
 let isVoiceActive = false; // 음성 안내 활성 상태
-let isRecognitionActive = false; // 음성 인식 활성 상태 추적
 
-// AI 응답을 누적할 버퍼 변수 추가
+
+// [✅ 수정됨 1] AI 응답을 누적할 버퍼 변수 추가
 let fullResponseText = ''; 
 
-let speechRate = 1.2; // 기본 속도 (보통)
+let speechRate = 1.1; // 기본 속도 (보통)
 let repeatCount = 1;  // 기본 반복 횟수
 
-// 음성 인식 안전하게 시작하는 헬퍼 함수
-function startRecognitionSafely() {
-  if (!recognition || !currentSession || isRecognitionActive) {
-    return;
-  }
-  
-  try {
-    recognition.start();
-    isRecognitionActive = true;
-    console.log('🎙️ [Speech] 음성 인식 시작 시도');
-  } catch (e) {
-    // 이미 시작된 경우는 정상적인 상황이므로 경고만 출력
-    if (e.message && e.message.includes('already started')) {
-      isRecognitionActive = true; // 상태 동기화
-      console.log('ℹ️ [Speech] 음성 인식이 이미 실행 중입니다.');
-    } else {
-      console.warn('⚠️ [Speech] 음성 인식 재시작 실패:', e.message);
-    }
-  }
-}
+let currentFontSizeStep = 0;
+const baseSizes = {
+    card: 18,       // .question-card p (기본 18px로 가정)
+    instruction: 16 // .instruction-text (CSS에서 16px)
+};
+const stepAmount = 2; // 한 번에 2px씩 조절
+const maxStep = 2;    // 최대 2단계 (총 +4px)
+const minStep = -1;   // 최소 -1단계 (총 -2px)
 
 // --- 1. Web Speech API (STT) 설정 ---
 try {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SpeechRecognition();
-  recognition.lang = 'ko-KR';
-  recognition.continuous = true;
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = 'ko-KR';
+  recognition.continuous = true;
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
 
-  recognition.onstart = () => {
-    console.log('🎙️ [Speech] 음성 인식이 시작되었습니다. 말씀하세요...');
-    isRecognitionActive = true;
-    const icon = document.querySelector('.voice-mic-icon');
-    if (icon) icon.style.opacity = '0.7';
-  };
+  recognition.onstart = () => {
+    console.log('🎙️ [Speech] 음성 인식이 시작되었습니다. 말씀하세요...');
+    const icon = document.querySelector('.voice-mic-icon');
+    if (icon) icon.style.opacity = '0.7';
+  };
 
-  recognition.onend = () => {
-    console.log('🛑 [Speech] 음성 인식이 종료되었습니다.');
-    isRecognitionActive = false;
-    const icon = document.querySelector('.voice-mic-icon');
-    if (icon) icon.style.opacity = '1.0';
-    
-    // 세션이 활성화되어 있고 TTS가 재생 중이 아닐 때만 재시작
-    if (currentSession && !synthesis.speaking && isVoiceActive) {
-      setTimeout(() => {
-        startRecognitionSafely();
-      }, 500);
-    }
-  };
+  recognition.onend = () => {
+    console.log('🛑 [Speech] 음성 인식이 종료되었습니다.');
+    const icon = document.querySelector('.voice-mic-icon');
+    if (icon) icon.style.opacity = '1.0';
+    
+    if (currentSession && !synthesis.speaking) {
+      setTimeout(() => {
+        try { recognition.start(); } catch (e) { console.warn('⚠️ [Speech] 음성 인식 재시작 실패:', e.message); }
+      }, 500);
+    }
+  };
 
-  recognition.onresult = (event) => {
-    const resultIndex = event.results.length - 1;
-    const currentResult = event.results[resultIndex];
-    
-    if (!currentResult || !currentResult.isFinal) return;
-    
-    const transcript = currentResult[0].transcript.trim();
-    console.log('🗣️ [User] 인식된 텍스트:', transcript);
+  recognition.onresult = (event) => {
+    const resultIndex = event.results.length - 1;
+    const currentResult = event.results[resultIndex];
+    
+    if (!currentResult || !currentResult.isFinal) return;
+    
+    const transcript = currentResult[0].transcript.trim();
+    console.log('🗣️ [User] 인식된 텍스트:', transcript);
 
-    if (transcript && currentSession) {
-      console.log('➡️ [Gemini Live] Gemini에 텍스트 전송:', transcript);
-      
-      try {
-        currentSession.sendClientContent({
-          turns: [{
-            role: 'user',
-            parts: [{ text: transcript }]
-          }],
-          turnComplete: true
-        });
-          } catch (error) {
-        console.error('❌ [Gemini Live] 텍스트 전송 오류:', error);
-      }
-    }
-  };
+    if (transcript && currentSession) {
+      console.log('➡️ [Gemini Live] Gemini에 텍스트 전송:', transcript);
+      
+      try {
+        currentSession.sendClientContent({
+          turns: [{
+            role: 'user',
+            parts: [{ text: transcript }]
+          }],
+          turnComplete: true
+        });
+          } catch (error) {
+        console.error('❌ [Gemini Live] 텍스트 전송 오류:', error);
+      }
+    }
+  };
 
-  recognition.onerror = (event) => {
-    console.error('❌ [Speech] 음성 인식 에러:', event.error);
-    if (event.error === 'not-allowed') {
-      alert('마이크 접근 권한이 필요합니다. 브라우저 설정을 확인해주세요.');
-    }
-  };
+  recognition.onerror = (event) => {
+    console.error('❌ [Speech] 음성 인식 에러:', event.error);
+    if (event.error === 'not-allowed') {
+      alert('마이크 접근 권한이 필요합니다. 브라우저 설정을 확인해주세요.');
+    }
+  };
 
 } catch (e) {
-  console.error('❌ [Speech] 이 브라우저는 Web Speech API를 지원하지 않습니다.');
-  recognition = null;
+  console.error('❌ [Speech] 이 브라우저는 Web Speech API를 지원하지 않습니다.');
+  recognition = null;
 }
 
 // --- 2. TTS (Text-to-Speech) 함수 ---
 function speak(text) {
-  if (!text || typeof text !== 'string' || text.trim().length === 0 || !synthesis) {
-    console.warn('⚠️ [Speech] TTS 텍스트가 없거나, synthesis가 지원되지 않습니다.');
-                return;
-            }
-            
-  if (synthesis.speaking) {
-    synthesis.cancel();
-  }
+  if (!text || typeof text !== 'string' || text.trim().length === 0 || !synthesis) {
+    console.warn('⚠️ [Speech] TTS 텍스트가 없거나, synthesis가 지원되지 않습니다.');
+    return;
+  }
 
-  let currentRepeat = 0;
+  if (synthesis.speaking) {
+    synthesis.cancel();
+  }
 
-  const speakOnce = () => {
-    if (currentRepeat >= repeatCount) {
-      // 모든 반복이 끝나면 onend에서 처리하므로 여기서는 처리하지 않음
-      return;
-    }
+  let currentRepeat = 0;
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'ko-KR';
-    utterance.pitch = 1;
-    utterance.rate = speechRate; // 1.1 대신 변수 사용
- 
-    utterance.onstart = () => {
-      if (currentRepeat === 0) { // 첫 번째 재생일 때만 로그 기록
-        console.log('💬 [TTS] Gemini 응답 재생 시작:', text);
-        if (recognition && isRecognitionActive) {
-          try { 
-            recognition.stop(); 
-            isRecognitionActive = false;
-          } catch (e) {}
-        }
-      }
-    };
- 
-    utterance.onend = () => {
-      currentRepeat++; // 반복 횟수 증가
-      if (currentRepeat < repeatCount) {
-        console.log(`🔄 [TTS] 반복 재생 (${currentRepeat + 1}/${repeatCount})`);
-        setTimeout(speakOnce, 300); // 다음 재생 (약간의 텀을 줌)
-      } else {
-        // 모든 반복이 끝나면 마이크 재시작
-        console.log('💬 [TTS] Gemini 응답 재생 완료.');
-        if (currentSession && isVoiceActive) {
-          setTimeout(() => {
-            startRecognitionSafely();
-          }, 300);
-        }
-      }
-    };
+  const speakOnce = () => {
+    if (currentRepeat >= repeatCount) {
+      // 1. 모든 반복이 끝나면 마이크 재시작
+      console.log('💬 [TTS] Gemini 응답 재생 완료.');
+      if (currentSession && recognition) {
+        setTimeout(() => {
+          try { recognition.start(); } catch (e) { console.warn('⚠️ [Speech] 음성 인식 재시작 실패:', e.message); }
+        }, 300);
+      }
+      return;
+    }
 
-    utterance.onerror = (event) => {
-      console.error('❌ [TTS] 재생 오류:', event.error);
-      // 오류가 나도 마이크는 재시작
-      if (currentSession && isVoiceActive) {
-        setTimeout(() => {
-          startRecognitionSafely();
-        }, 300);
-      }
-    };
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ko-KR';
+    utterance.pitch = 1;
+    utterance.rate = speechRate; // 1.1 대신 변수 사용
+  
+    utterance.onstart = () => {
+      if (currentRepeat === 0) { // 첫 번째 재생일 때만 로그 기록
+        console.log('💬 [TTS] Gemini 응답 재생 시작:', text);
+        if (recognition) {
+          try { recognition.stop(); } catch (e) {}
+        }
+      }
+    };
+  
+    utterance.onend = () => {
+      currentRepeat++; // 반복 횟수 증가
+      if (currentRepeat < repeatCount) {
+        console.log(`🔄 [TTS] 반복 재생 (${currentRepeat + 1}/${repeatCount})`);
+        setTimeout(speakOnce, 300); // 다음 재생 (약간의 텀을 줌)
+      } else {
+        // 2. 모든 반복이 끝나면 마이크 재시작 (onend에서)
+        console.log('💬 [TTS] Gemini 응답 재생 완료.');
+        if (currentSession && recognition) {
+          setTimeout(() => {
+            try { recognition.start(); } catch (e) { console.warn('⚠️ [Speech] 음성 인식 재시작 실패:', e.message); }
+          }, 300);
+        }
+      }
+    };
 
-    synthesis.speak(utterance);
-  };
- 
-  speakOnce(); // 첫 번째 재생 시작
+    utterance.onerror = (event) => {
+      console.error('❌ [TTS] 재생 오류:', event.error);
+      // 3. 오류가 나도 마이크는 재시작
+      if (currentSession && recognition) {
+        setTimeout(() => {
+          try { recognition.start(); } catch (e) { console.warn('⚠️ [Speech] 음성 인식 재시작 실패:', e.message); }
+        }, 300);
+      }
+    };
+
+    synthesis.speak(utterance);
+  };
+  
+  speakOnce(); // 첫 번째 재생 시작
 }
 
-// --- 3. Gemini Live 연결 ---
+function applyFontSizes() {
+    // 1. 대상 요소들 선택 (ID로 정확하게 찾기)
+    const cardText = document.getElementById('main-question-text');
+    const instructionText = document.getElementById('main-instruction-text');
+
+    // 2. 새 폰트 크기 계산
+    const newCardSize = (baseSizes.card || 18) + (currentFontSizeStep * stepAmount); 
+    const newInstructionSize = (baseSizes.instruction || 16) + (currentFontSizeStep * stepAmount);
+
+    // 3. 폰트 크기 적용 (querySelectorAll -> getElementById로 변경되어 로직 수정)
+    if (cardText) {
+        cardText.style.fontSize = `${newCardSize}px`;
+    } else {
+        // ID를 못 찾으면 콘솔에 경고
+        console.warn('❌ [Font Size] ID가 "main-question-text"인 요소를 찾을 수 없습니다.');
+    }
+    
+    if (instructionText) {
+        instructionText.style.fontSize = `${newInstructionSize}px`;
+    } else {
+        // ID를 못 찾으면 콘솔에 경고
+        console.warn('❌ [Font Size] ID가 "main-instruction-text"인 요소를 찾을 수 없습니다.');
+    }
+
+    console.log(`[Font Size] 현재 단계: ${currentFontSizeStep}, (Card: ${newCardSize}px)`);
+}
+
+// --- 3. Gemini Live 연결 (수정됨) ---
 async function main() {
-  console.log('🚀 [Gemini Live] API 호출 시작...');
-  console.log('📋 [Gemini Live] 모델:', model);
-  
-  try {
-    currentSession = await ai.live.connect({
-      model: model,
-      callbacks: {
-        onopen: function () {
-          console.log('✅ [Gemini Live] 연결 성공 (Opened)');
-          // setupComplete 메시지를 받은 후 첫인사를 트리거하도록 변경
-        },
+  console.log('🚀 [Gemini Live] API 호출 시작...');
+  console.log('📋 [Gemini Live] 모델:', model);
+  
+  try {
+    currentSession = await ai.live.connect({
+      model: model,
+      callbacks: {
+        onopen: function () {
+          console.log('✅ [Gemini Live] 연결 성공 (Opened)');
+          console.log('👋 [Gemini Live] AI의 첫인사를 트리거합니다.');
+  
+          // AI의 첫 턴(인사)을 강제로 트리거하기 위해
+          // " " (공백)을 사용자의 첫 마디로 전송합니다.
+          try {
+            if (currentSession) {
+              currentSession.sendClientContent({
+                turns: [{
+                  role: 'user',
+                  parts: [{ text: " " }] // 빈 턴 대신 공백 한 칸을 보냅니다.
+                }],
+                turnComplete: true
+              });
+            }
+          } catch (error) {
+            console.error('❌ [Gemini Live] 초기 인사말 트리거 실패:', error);
+          }
+        },
 
-        // onmessage: JSON을 파싱하여 'speech' 부분만 말하기
-        onmessage: function (message) {
-          console.log('📨 [Gemini Live] 메시지 수신:', message);
-          
-          const serverContent = message?.serverContent;
+        // [✅ 수정됨 2] onmessage: 텍스트를 누적했다가 'turnComplete'일 때 한 번에 말하기
+        onmessage: function (message) {
+          console.log('📨 [Gemini Live] 메시지 수신:', message);
+          
+          const serverContent = message?.serverContent;
 
-          // 1. 텍스트가 있으면 버퍼에 '누적'
-          if (serverContent?.modelTurn && serverContent.modelTurn.parts) {
-            for (const part of serverContent.modelTurn.parts) {
-              if (part.text) { 
-                fullResponseText += part.text;
-                console.log('🔄 [Gemini Live] 텍스트 누적:', part.text);
-              }
-            }
-          }
+          // 1. 텍스트가 있으면 버퍼에 '누적'
+          if (serverContent?.modelTurn && serverContent.modelTurn.parts) {
+            for (const part of serverContent.modelTurn.parts) {
+              if (part.text) { 
+                fullResponseText += part.text; // 버퍼에 추가
+                console.log('🔄 [Gemini Live] 텍스트 누적:', part.text);
+              }
+            }
+          }
 
-          // 2. 턴이 완료되었다는 신호를 확인
-          if (serverContent?.turnComplete) {
-            console.log('✅ [Gemini Live] 턴 완료');
-            
-            const finalResponse = fullResponseText.trim();
-            fullResponseText = ''; // 버퍼 즉시 초기화
+          // 2. 턴이 완료되었다는 신호를 확인
+          if (serverContent?.turnComplete) {
+            console.log('✅ [Gemini Live] 턴 완료');
+            
+            // ▼▼▼▼▼ 여기가 수정되었습니다 (startsWith, split, if/else if) ▼▼▼▼▼
+            const finalResponse = fullResponseText.trim();
 
-            if (finalResponse.startsWith('JSON_RESPONSE:')) {
-              try {
-                const jsonString = finalResponse.substring('JSON_RESPONSE:'.length);
-                const responseData = JSON.parse(jsonString);
+            // 3. 페이지 이동 특수 코드 "PAGE_NAVIGATE:" 감지
+            if (finalResponse.startsWith('PAGE_NAVIGATE:')) { 
+              
+              // "PAGE_NAVIGATE:덮밥" -> "덮밥" 추출
+              const menuToNavigate = finalResponse.split(':')[1].trim(); 
+              
+              let targetUrl = ''; // 이동할 URL
 
-                console.log('🤖 [AI Action]:', responseData.action, responseData);
+              if (menuToNavigate === '카레') {
+                targetUrl = 'restaurant_list_c.html';
+              } else if (menuToNavigate === '덮밥') {
+                targetUrl = 'restaurant_list_b.html';
+              } else if (menuToNavigate === '토스트') {
+                targetUrl = 'restaurant_list_t.html';
+              } else {
+                // 혹시 모를 예외 처리
+                console.error('❌ [App] 알 수 없는 메뉴 이름 수신:', menuToNavigate);
+                speak("앗, 죄송합니다. 이동할 페이지를 찾지 못했어요.");
+                fullResponseText = '';
+                return; // 함수 종료
+              }
+              
+              console.log(`🚀 [App] ${menuToNavigate} 페이지 이동 명령 감지! ${targetUrl}로 이동합니다.`);
+              // 안내멘트도 동적으로 수정
+              speak(`알겠습니다. ${menuToNavigate} 추천 음식점으로 이동합니다.`); 
+              
+              setTimeout(() => {
+                window.location.href = targetUrl; // ★★★ 동적 URL로 이동
+              }, 1500); 
 
-                // 1. AI 응답 말하기 (공통)
-                if (responseData.speech) {
-                  speak(responseData.speech);
-                }
+            } else if (finalResponse.length > 0) {
+              // 4. (페이지 이동이 아닐 경우) 누적된 텍스트가 있을 때만 말하기
+              console.log('💬 [Gemini Live] 최종 응답 재생 시도:', finalResponse);
+              speak(finalResponse);
+            }
+            
+            // 5. 버퍼 초기화 (if/else 상관없이 항상 실행)
+            fullResponseText = '';
+            // ▲▲▲▲▲ 여기까지 수정되었습니다 ▲▲▲▲▲
+          }
+          
+          // 텍스트가 아닌 메시지 (예: setupComplete 등)
+          if (message.setupComplete) {
+              console.log('ℹ️ [Gemini Live] Setup 완료 메시지 수신', message);
+          }
+        },
+        onerror: function (e) {
+          console.error('❌ [Gemini Live] 에러 발생:', e.message || e);
+          speak('재미나이 연결에 오류가 발생했습니다.');
+        },
+        onclose: function (e) {
+          console.log('🔌 [Gemini Live] 연결 종료:', e.reason || 'No reason');
+          currentSession = null;
+          fullResponseText = ''; // 세션 종료 시 버퍼 초기화
+        },
+      },
+      config: config,
+    });
 
-                // 2. Action별 처리
-                if (responseData.action === 'GREETING') {
-                  // 첫 화면: 매장/포장 선택 대기
-                  console.log('👂 [App] 매장/포장 선택 대기 중...');
-                }
-
-                if (responseData.action === 'PROMPT_FOR_MENU') {
-                  // 메뉴 화면 진입: 메뉴명 또는 "메뉴" 입력 대기
-                  console.log('👂 [App] 메뉴명 입력 대기 중...');
-                }
-
-                if (responseData.action === 'EXPLORING_MENU') {
-                  // 메뉴 탐색 완료: 메뉴명 입력 대기
-                  console.log('👂 [App] 메뉴명 입력 대기 중...');
-                }
-
-                if (responseData.action === 'PROMPT_FOR_SPECIFIC_MENU') {
-                  // 카테고리 선택 후 특정 메뉴명 입력 대기
-                  console.log('👂 [App] 특정 메뉴명 입력 대기 중...');
-                }
-                
-                if (responseData.action === 'GUIDING_STEP_BY_STEP' || responseData.action === 'AWAITING_CONFIRMATION') {
-                  // 사용자의 "네", "눌렀어요" 등의 확인 입력을 기다림
-                  console.log('👂 [App] 사용자 확인 대기 중...');
-                }
-
-                if (responseData.action === 'GUIDANCE_COMPLETE') {
-                  // 안내 완료, 다음 메뉴 안내 또는 결제 대기
-                  console.log('✅ [App] 안내 완료. 다음 단계 대기 중...');
-                }
-
-                if (responseData.action === 'GUIDANCE_CANCELLED') {
-                  // 현재 안내 취소, 초기 상태로 복귀
-                  console.log('🛑 [App] 안내 취소됨. 초기 상태로 복귀.');
-                  // AI가 스스로 초기 상태로 돌아가므로 특별한 처리는 필요 없음
-                }
-
-
-                if (responseData.action === 'CHECKOUT') {
-                  // 결제 진행
-                  console.log('💳 [App] 결제 진행. 결제 안내 완료 후 세션 유지.');
-                  // 결제 안내 후에도 음성 인식은 계속 유지 (추가 주문 가능)
-                  // 필요시 결제 페이지로 이동하는 로직 추가 가능
-                  // setTimeout(() => { window.location.href = '/payment'; }, 3000);
-                }
-
-                if (responseData.action === 'REPEATING_LAST_STEP') {
-                  // 현재 안내 단계 재설명
-                  console.log('🔄 [App] 사용자 재요청. 현재 안내 단계 반복.');
-                  // AI가 스스로 직전 안내를 반복하므로 특별한 처리는 필요 없음
-                }
-
-                if (responseData.action === 'PROVIDING_DESCRIPTION') {
-                  // 메뉴 설명 제공
-                  console.log('📖 [App] 메뉴 설명 제공 중.');
-                  // AI가 스스로 설명을 제공하므로 특별한 처리는 필요 없음
-                }
-
-              } catch (e) {
-                console.error('❌ [App] AI 응답 JSON 파싱 실패:', e, finalResponse);
-                speak('안내 중 오류가 발생했습니다. 다시 말씀해주세요.');
-              }
-            } else if (finalResponse.length > 0) {
-              // (JSON 형식이 아닌 예외/디버그 응답 처리)
-              console.warn('⚠️ [App] AI가 JSON 형식이 아닌 응답을 보냈습니다:', finalResponse);
-              speak(finalResponse); // 일단 그대로 말하기
-            }
-          }
-          
-          // 텍스트가 아닌 메시지 (예: setupComplete 등)
-          if (message.setupComplete) {
-              console.log('ℹ️ [Gemini Live] Setup 완료 메시지 수신', message);
-              
-              // Setup 완료 후 첫인사를 트리거
-              setTimeout(() => {
-                try {
-                  if (currentSession) {
-                    console.log('👋 [Gemini Live] AI의 첫인사를 트리거합니다.');
-                    currentSession.sendClientContent({
-                      turns: [{
-                        role: 'user',
-                        parts: [{ text: " " }] // 공백으로 첫인사를 트리거
-                      }],
-                      turnComplete: true
-                    });
-                  }
-                } catch (error) {
-                  console.error('❌ [Gemini Live] 초기 인사말 트리거 실패:', error);
-                }
-              }, 500); // 약간의 지연을 두어 안정성 확보
-          }
-        },
-        onerror: function (e) {
-          console.error('❌ [Gemini Live] 에러 발생:', e.message || e);
-          speak('재미나이 연결에 오류가 발생했습니다.');
-        },
-        onclose: function (e) {
-          console.log('🔌 [Gemini Live] 연결 종료:', e.reason || 'No reason');
-          currentSession = null;
-          fullResponseText = ''; // 세션 종료 시 버퍼 초기화
-        },
-      },
-      config: config,
-    });
-
-    console.log('✅ [Gemini Live] 세션 생성 완료');
-    } catch (error) {
-    console.error('❌ [Gemini Live] 연결 실패:', error);
-    speak('재미나이 연결에 실패했습니다.');
-    currentSession = null;
-  }
+    console.log('✅ [Gemini Live] 세션 생성 완료');
+  } catch (error) {
+    console.error('❌ [Gemini Live] 연결 실패:', error);
+    speak('재미나이 연결에 실패했습니다.');
+    currentSession = null;
+  }
 }
 
 // --- 4. 세션 종료 함수 ---
 function closeSession() {
-  isVoiceActive = false;
-  fullResponseText = ''; // 세션 종료 시 버퍼 초기화
-  
-  if (currentSession) {
-    console.log('🔌 [Gemini Live] 세션 종료 중...');
-    currentSession.close();
-    currentSession = null;
-    console.log('✅ [Gemini Live] 세션 종료 완료');
-  }
-  
-  if (recognition) {
-    try { 
-      recognition.stop(); 
-      isRecognitionActive = false;
-  } catch (e) {
-      console.warn('⚠️ [Speech] 음성 인식 중지 실패:', e.message);
-    }
-  }
-  
-  if (synthesis.speaking) {
-    synthesis.cancel();
-  }
+  isVoiceActive = false;
+  fullResponseText = ''; // 세션 종료 시 버퍼 초기화
+  
+  if (currentSession) {
+    console.log('🔌 [Gemini Live] 세션 종료 중...');
+    currentSession.close();
+    currentSession = null;
+    console.log('✅ [Gemini Live] 세션 종료 완료');
+  }
+  
+  if (recognition) {
+    try { 
+      recognition.stop(); 
+  } catch (e) {
+      console.warn('⚠️ [Speech] 음성 인식 중지 실패:', e.message);
+    }
+  }
+  
+  if (synthesis.speaking) {
+    synthesis.cancel();
+  }
 }
 
 // --- 5. DOM 이벤트 리스너 ---
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('📄 [Voice Guide] 페이지 로드 완료');
+  console.log('📄 [Menu Recommend] 페이지 로드 완료');
 
-  // --- 1. 가운데 음성 아이콘 설정 ---
-  const voiceMicIcon = document.querySelector('.voice-mic-icon');
-  if (voiceMicIcon) {
-    console.log('✅ [Voice Guide] 음성 아이콘 요소 찾음');
+  // --- 1. 음성 아이콘 설정 (기존 코드) ---
+  const voiceMicIcon = document.querySelector('.voice-mic-icon');
+  if (voiceMicIcon) {
+    console.log('✅ [Menu Recommend] 음성 아이콘 요소 찾음');
 
-    if (!recognition) {
-      voiceMicIcon.style.opacity = '0.5';
-      voiceMicIcon.style.cursor = 'not-allowed';
-      console.error('❌ [Voice Guide] 음성 인식이 지원되지 않아 아이콘을 비활성화합니다.');
-      return;
-    }
+    if (!recognition) {
+      voiceMicIcon.style.opacity = '0.5';
+      voiceMicIcon.style.cursor = 'not-allowed';
+      console.error('❌ [Menu Recommend] 음성 인식이 지원되지 않아 아이콘을 비활성화합니다.');
+      return;
+    }
 
-    voiceMicIcon.addEventListener('click', async () => {
-      console.log('🖱️ [Voice Guide] 음성 아이콘 클릭됨');
+    voiceMicIcon.addEventListener('click', async () => {
+      console.log('🖱️ [Menu Recommend] 음성 아이콘 클릭됨');
 
-      // --- 1. 이미 활성화된 상태면 세션 종료 ---
-      if (isVoiceActive && currentSession) {
-        console.log('🛑 [Voice Guide] 음성 안내 종료');
-        isVoiceActive = false;
-        closeSession();
-        voiceMicIcon.style.opacity = '1.0';
-        return;
-      }
+      // --- 1. 이미 활성화된 상태면 세션 종료 ---
+      if (isVoiceActive && currentSession) {
+        console.log('🛑 [Menu Recommend] 음성 안내 종료');
+        isVoiceActive = false;
+        closeSession();
+        voiceMicIcon.style.opacity = '1.0';
+        return;
+      }
 
-      // --- 2. 새 세션 시작 ---
-      if (!currentSession) {
-        console.log('🔄 [Voice Guide] 새 세션 시작');
-        isVoiceActive = true;
-        await main(); 
-        if (!currentSession) {
-          console.error('❌ [Voice Guide] 세션 생성에 실패');
-          isVoiceActive = false;
-          return;
-        }
-        // AI가 프롬프트에 따라 스스로 첫인사를 합니다.
-        // speak() 호출을 제거하여 AI의 첫인사와 겹치지 않도록 합니다.
-      } else {
-        // --- 3. 이미 세션은 있지만 마이크만 켤 때 ---
-        isVoiceActive = true;
-        if (synthesis.speaking) {
-          synthesis.cancel(); 
-          console.log('🔇 [TTS] 사용자가 응답을 중단시킴');
-    } else {
-          startRecognitionSafely();
-        }
-      }
-    }); // <-- voiceMicIcon click 이벤트 종료
+      // --- 2. 새 세션 시작 ---
+      if (!currentSession) {
+        console.log('🔄 [Menu Recommend] 새 세션 시작');
+        isVoiceActive = true;
+        await main(); 
+        if (!currentSession) {
+          console.error('❌ [Menu Recommend] 세션 생성에 실패');
+          isVoiceActive = false;
+          return;
+        }
+        console.log('👋 [App] 앱이 직접 첫인사를 재생합니다.');
+        speak('오늘 어떤 음식이 드시고 싶으신가요? 메뉴를 추천해드릴게요.');
+      } else {
+        // --- 3. 이미 세션은 있지만 마이크만 켤 때 ---
+        isVoiceActive = true;
+        if (synthesis.speaking) {
+          synthesis.cancel(); 
+          console.log('🔇 [TTS] 사용자가 응답을 중단시킴');
+        } else {
+          try { 
+            recognition.start(); 
+          } catch (e) { 
+            console.warn('⚠️ [Speech] 음성 인식이 이미 시작되었거나 다른 문제 발생:', e.message);
+          }
+        }
+      }
+    }); // <-- voiceMicIcon click 이벤트 종료
 
-    voiceMicIcon.style.cursor = 'pointer';
-    voiceMicIcon.style.transition = 'opacity 0.3s, transform 0.3s';
-    console.log('✅ [Voice Guide] 클릭 이벤트 리스너 등록 완료');
- 
-  } else { 
-    console.error('❌ [Voice Guide] 음성 아이콘 요소를 찾을 수 없음');
-  }
+    voiceMicIcon.style.cursor = 'pointer';
+    voiceMicIcon.style.transition = 'opacity 0.3s, transform 0.3s';
+    console.log('✅ [Menu Recommend] 클릭 이벤트 리스너 등록 완료');
+  
+  } else { 
+    console.error('❌ [Menu Recommend] 음성 아이콘 요소를 찾을 수 없음');
+  }
 
-  // --- 2. 세션 종료 설정 ---
-  window.addEventListener('beforeunload', () => {
-    closeSession();
-  });
+  // --- 2. 세션 종료 설정 (기존 코드) ---
+  window.addEventListener('beforeunload', () => {
+    closeSession();
+  });
 
-  // --- 3. 모달 관련 코드 ---
-  console.log('✅ [Voice Guide] 모달 이벤트 리스너 등록 시작');
+  // --- 3. 모달 관련 코드 (여기부터 추가됨) ---
+  console.log('✅ [Menu Recommend] 모달 이벤트 리스너 등록 시작');
    
-  const speedBtn = document.getElementById('speedBtn');
-  const speedModal = document.getElementById('speedModal');
-  const repeatBtn = document.getElementById('repeatBtn');
-  const repeatModal = document.getElementById('repeatModal');
-  const closeButtons = document.querySelectorAll('.close-button');
-  const overlay = document.querySelector('.modal-overlay');
+  const speedBtn = document.getElementById('speedBtn');
+  const speedModal = document.getElementById('speedModal');
+  const repeatBtn = document.getElementById('repeatBtn');
+  const repeatModal = document.getElementById('repeatModal');
+  const closeButtons = document.querySelectorAll('.close-button');
+  const overlay = document.querySelector('.modal-overlay');
 
-  if (speedBtn && speedModal && overlay) {
-    speedBtn.addEventListener('click', () => {
-      console.log('🖱️ [Modal] 속도 조절 버튼 클릭');
-      speedModal.classList.add('active');
-      overlay.classList.add('active');
-    });
-  }
+  if (speedBtn && speedModal && overlay) {
+    speedBtn.addEventListener('click', () => {
+      console.log('🖱️ [Modal] 속도 조절 버튼 클릭');
+      speedModal.classList.add('active');
+      overlay.classList.add('active');
+    });
+  }
 
-  if (repeatBtn && repeatModal && overlay) {
-    repeatBtn.addEventListener('click', () => {
-      console.log('🖱️ [Modal] 반복 재생 버튼 클릭');
-      repeatModal.classList.add('active');
-      overlay.classList.add('active');
-    });
-  }
+  if (repeatBtn && repeatModal && overlay) {
+    repeatBtn.addEventListener('click', () => {
+      console.log('🖱️ [Modal] 반복 재생 버튼 클릭');
+      repeatModal.classList.add('active');
+      overlay.classList.add('active');
+    });
+  }
 
-  const closeModal = () => {
-    if (speedModal) speedModal.classList.remove('active');
-    if (repeatModal) repeatModal.classList.remove('active');
-    if (overlay) overlay.classList.remove('active');
-  };
+  const closeModal = () => {
+    if (speedModal) speedModal.classList.remove('active');
+    if (repeatModal) repeatModal.classList.remove('active');
+    if (overlay) overlay.classList.remove('active');
+  };
 
-  closeButtons.forEach(btn => {
-    btn.addEventListener('click', closeModal);
-  });
+  closeButtons.forEach(btn => {
+    btn.addEventListener('click', closeModal);
+  });
 
-  if (overlay) {
-    overlay.addEventListener('click', closeModal);
-  }
+  if (overlay) {
+    overlay.addEventListener('click', closeModal);
+  }
 
-  // 속도 조절 슬라이더
-  const speedPoints = document.querySelectorAll('#speedModal .slider-point');
-  const speedLabels = document.querySelectorAll('#speedModal .label-item');
-  
-  speedPoints.forEach((point, index) => {
-    point.addEventListener('click', () => {
-      speedPoints.forEach(p => p.classList.remove('active'));
-      speedLabels.forEach(item => item.classList.remove('active'));
-      
-      point.classList.add('active');
-      speedLabels[index].classList.add('active');
-      
-      // HTML 순서 (느림, 보통, 빠름)에 맞춰 속도 설정
-      speechRate = [0.8, 1.2, 1.8][index]; 
-      console.log('⚙️ [Modal] 음성 속도 설정:', speechRate);
-    });
-  });
-  
-  // 반복 횟수 슬라이더
-  const repeatPoints = document.querySelectorAll('#repeatModal .slider-point');
-  const repeatLabels = document.querySelectorAll('#repeatModal .label-item');
-  
-  repeatPoints.forEach((point, index) => {
-    point.addEventListener('click', () => {
-      repeatPoints.forEach(p => p.classList.remove('active'));
-      repeatLabels.forEach(item => item.classList.remove('active'));
-      
-      point.classList.add('active');
-      repeatLabels[index].classList.add('active');
-      
-      repeatCount = index + 1; // 1, 2, 3
-      console.log('⚙️ [Modal] 반복 횟수 설정:', repeatCount);
-    });
-  });
+  // 속도 조절 슬라이더
+  const speedPoints = document.querySelectorAll('#speedModal .slider-point');
+  const speedLabels = document.querySelectorAll('#speedModal .label-item');
+  
+  speedPoints.forEach((point, index) => {
+    point.addEventListener('click', () => {
+      speedPoints.forEach(p => p.classList.remove('active'));
+      speedLabels.forEach(item => item.classList.remove('active'));
+      
+      point.classList.add('active');
+      speedLabels[index].classList.add('active');
+      
+      // HTML 순서 (느림, 보통, 빠름)에 맞춰 속도 설정
+      speechRate = [1.0, 1.1, 1.5][index]; 
+      console.log('⚙️ [Modal] 음성 속도 설정:', speechRate);
+    });
+  });
+  
+  // 반복 횟수 슬라이더
+  const repeatPoints = document.querySelectorAll('#repeatModal .slider-point');
+  const repeatLabels = document.querySelectorAll('#repeatModal .label-item');
+  
+  repeatPoints.forEach((point, index) => {
+    point.addEventListener('click', () => {
+      repeatPoints.forEach(p => p.classList.remove('active'));
+      repeatLabels.forEach(item => item.classList.remove('active'));
+      
+      point.classList.add('active');
+      repeatLabels[index].classList.add('active');
+      
+      repeatCount = index + 1; // 1, 2, 3
+      console.log('⚙️ [Modal] 반복 횟수 설정:', repeatCount);
+    });
+  });
 
-  console.log('✅ [Voice Guide] 모달 이벤트 리스너 등록 완료');
+  console.log('✅ [Menu Recommend] 모달 이벤트 리스너 등록 완료');
+   // --- 4. 폰트 크기 조절 버튼 ---
+  // (마이크, 모달과 동일한 레벨에서 페이지 로드 시 1회만 등록)
+  console.log('✅ [Menu Recommend] 폰트 크기 조절 이벤트 리스너 등록 시작');
+    
+  // (참고) HTML에서 버튼 ID를 'font-plus-btn' 와 'font-minus-btn'로 가정합니다.
+  const fontPlusBtn = document.getElementById('font-increase-btn'); 
+  const fontMinusBtn = document.getElementById('font-decrease-btn');
 
-  // --- 4. 음성안내 종료 버튼 ---
-  const exitVoiceGuideBtn = document.getElementById('exitVoiceGuideBtn');
-  if (exitVoiceGuideBtn) {
-    exitVoiceGuideBtn.addEventListener('click', () => {
-      console.log('🛑 [Voice Guide] 음성안내 종료 버튼 클릭');
-      isVoiceActive = false;
-      closeSession();
-      const icon = document.querySelector('.voice-mic-icon');
-      if (icon) icon.style.opacity = '1.0';
-    });
-  }
+  if (fontPlusBtn) {
+      fontPlusBtn.addEventListener('click', () => {
+          if (currentFontSizeStep < maxStep) {
+              currentFontSizeStep++; // 1. 현재 단계를 올리고
+              applyFontSizes();      // 2. 폰트 크기 적용 함수 실행
+              console.log('🖱️ [Font Size] 글자 크기 + (단계: ' + currentFontSizeStep + ')');
+          } else {
+              console.log('⚠️ [Font Size] 최대 크기 도달');
+          }
+      });
+  } else {
+      console.error('❌ [Menu Recommend] 폰트 + 버튼(#font-increase-btn)을 찾을 수 없음');
+  }
+
+  if (fontMinusBtn) {
+      fontMinusBtn.addEventListener('click', () => {
+          if (currentFontSizeStep > minStep) {
+              currentFontSizeStep--; // 1. 현재 단계를 내리고
+              applyFontSizes();      // 2. 폰트 크기 적용 함수 실행
+              console.log('🖱️ [Font Size] 글자 크기 - (단계: ' + currentFontSizeStep + ')');
+          } else {
+               console.log('⚠️ [Font Size] 최소 크기 도달');
+          }
+      });
+  } else {
+      console.error('❌ [Menu Recommend] 폰트 - 버튼(#font-minus-btn)을 찾을 수 없음');
+  }
 }); // <-- DOMContentLoaded 닫는 괄호
-
