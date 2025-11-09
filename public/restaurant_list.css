@@ -161,17 +161,31 @@
     align-items: center;
     margin-bottom: 10px;
     color: #0D2A5C;
+    position: relative;
 }
 
 .close-button {
     background: none;
     border: none;
     cursor: pointer;
-    margin-right: 10px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
 }
 .close-button img {
     width: 24px;
     height: 24px;
+}
+
+.modal-header h2 {
+    flex: 1;
+    text-align: center;
+    margin: 0;
+    padding-right: 30px; /* X 버튼 공간 확보 */
+    margin-top: -0.15cm; /* 제목을 0.15cm 위로 이동 */
 }
 
 /* 모달 내용물 (상세 정보) */

@@ -325,19 +325,20 @@
         }
         
         .info .close {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            width: 20px;
-            height: 20px;
-            background: rgba(255,255,255,0.3);
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            color: white;
+            position: absolute !important;
+            top: calc(15px - 0.5cm) !important;
+            right: 20px !important;
+            width: 20px !important;
+            height: 20px !important;
+            background: rgba(255,255,255,0.3) !important;
+            border-radius: 50% !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 14px !important;
+            color: white !important;
+            transform: none !important;
         }
         
         .info .close:hover {
@@ -1385,7 +1386,7 @@
             document.getElementById('voiceGuideBtn').addEventListener('click', function() {
                 if (!this.disabled) {
                     console.log('키오스크 음성안내 버튼 클릭됨');
-                    window.location.href = 'voice_guide.html';
+                    window.location.href = 'voice_guide_banziha.html';
                 }
             });
 
@@ -1721,7 +1722,7 @@
                 console.log('장소별 음성안내 시작:', place.name);
                 
                 // 음성안내 페이지로 이동
-                window.location.href = 'voice_guide.html?place=' + encodeURIComponent(place.name) + 
+                window.location.href = 'voice_guide_banziha.html?place=' + encodeURIComponent(place.name) + 
                                      '&lat=' + place.lat + '&lon=' + place.lon;
             };
             
