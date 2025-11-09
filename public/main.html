@@ -2,23 +2,25 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0", maximum-scale=1.0, user-scalable=no>
+    <!-- 뷰포트 설정 수정: 속성들을 content 안에 모두 넣기 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>포핸즈 주문 도우미</title>
-    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="main.css?v=2">
 </head>
 <body>
 
     <div class="mobile-container">
+        <!-- 상단 상태바 -->
         <header class="status-bar">
             <div class="status-left"></div>
             <div class="status-right"></div>
         </header>
 
+        <!-- 메인 컨텐츠 -->
         <main class="content">
-            
             <div class="welcome-card">
                 <p>식사를 쉽게 이용할 수 있도록 도와드릴게요</p>
-                <p>어디서 부터 시작할까요 ? ✨</p>
+                <p>어디서부터 시작할까요 ? ✨</p>
             </div>
 
             <a href="menu_recommend.html" class="feature-button" style="text-decoration: none;">
@@ -33,12 +35,15 @@
                 <p>음식점 검색을 하고 싶으시다면<br>위에 있는 그림을 눌러주세요!</p>
             </a>
         </main>
-        
-        <div class="fab-container">
-                        <button id="font-increase-btn" class="fab">+</button>
-            <button id="font-decrease-btn" class="fab">-</button>
-                    </div>
 
+        <!-- 글자 크기 조절 + / - 플로팅 버튼 -->
+        <!-- menu_recommend.html의 volume-controls처럼 모바일 화면 안에서만 절대 위치로 배치할 수 있게 분리 -->
+        <div class="fab-container">
+            <button id="font-increase-btn" class="fab">+</button>
+            <button id="font-decrease-btn" class="fab">-</button>
+        </div>
+
+        <!-- 하단 네비게이션 -->
         <nav class="bottom-nav">
             <a href="#" class="nav-item active">
                 <img src="./images/icon-home-filled.png" alt="홈">
@@ -55,6 +60,6 @@
         </nav>
     </div>
 
-    <script type="module" src="main.js"></script>
+    <script type="module" src="main.js?v=2"></script>
 </body>
 </html>

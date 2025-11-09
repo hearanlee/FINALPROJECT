@@ -14,7 +14,7 @@ cursor: pointer;
 
 .volume-controls {
 position: absolute;
-top: 20%; /* 세로 위치를 정가운데로 맞춥니다. */
+top: 30%; /* 세로 위치를 정가운데로 맞춥니다. */
 right: -80px; /* 오른쪽 바깥으로 35px 만큼 밀어냅니다. */
 transform: translateY(-50%); /* 세로 위치를 미세 조정합니다. */
 display: flex;
