@@ -13,7 +13,7 @@ body {
     align-items: center;
     min-height: 100vh;
     background-color: #333;
-    font-family: -apple-system, BlinkMacMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* 2. 모바일 화면 전체를 감싸는 컨테이너 */
@@ -24,7 +24,7 @@ body {
     border: 8px solid #111;
     border-radius: 40px;
     position: relative;
-    overflow: hidden; /* 컨테이너를 벗어나는 내용은 숨김 (이건 그대로 둡니다) */
+    overflow: hidden; /* 컨테이너를 벗어나는 내용은 숨김 */
     display: flex;
     flex-direction: column;
 }
@@ -44,39 +44,12 @@ body {
     flex-direction: column;
     align-items: center;
     padding: 0 20px;
-    flex-grow: 1; 
+    flex-grow: 1;
 
-    /* ▼▼▼▼▼ [수정] 스크롤바 제거 및 간격 설정 ▼▼▼▼▼ */
-    /* overflow-y: auto; 이 줄을 삭제합니다 */
-    gap: 25px; /* 자식 요소들 사이에 25px 간격을 자동으로 부여 */
-    padding-top: 25px; /* 맨 위에도 간격 추가 */
-    /* ▲▲▲▲▲ 여기까지 수정 ▲▲▲▲▲ */
+    /* 스크롤 제거 & 간격 설정 */
+    gap: 25px;
+    padding-top: 25px;
 }
-
-/* 5. 음성 안내창 (이제 HTML에서 삭제되었으므로, CSS도 삭제합니다) */
-/*
-.speech-display {
-    padding: 15px 20px;
-    background-color: #f0f3f7; 
-    text-align: center;
-    font-size: 1.1rem;
-    color: #0D2A5C; 
-    font-weight: 500;
-    min-height: 50px;
-    border-radius: 12px;
-    margin-bottom: 25px; 
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%; 
-}
-
-.speech-display p {
-    margin: 0;
-}
-*/
-/* ▲▲▲▲▲ 이 .speech-display 블록 전체를 삭제합니다 ▲▲▲▲▲ */
-
 
 /* 6. 환영 메시지 카드 */
 .welcome-card {
@@ -87,13 +60,8 @@ body {
     text-align: center;
     color: #0D2A5C;
     font-weight: bold;
-    font-size: 23px;
+    font-size: 24px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-
-    /* ▼▼▼▼▼ [수정] margin-top 제거, margin-bottom 추가 ▼▼▼▼▼ */
-    /* margin-top: 0; */ /* 이 줄이 있다면 삭제하거나 0으로 설정 */
-    /* margin-bottom: 25px; */ /* .content의 gap이 역할을 대신하므로 이 줄도 제거 또는 0으로 설정 */
-    /* ▲▲▲▲▲ 여기까지 수정 ▲▲▲▲▲ */
 }
 
 .welcome-card p {
@@ -108,9 +76,6 @@ body {
     border: 2px solid #0D2A5C;
     border-radius: 15px;
     padding: 10px;
-    /* ▼▼▼▼▼ [수정] margin-top 제거 ▼▼▼▼▼ */
-    /* margin-top: 25px; */ /* 이 줄을 삭제합니다. .content의 gap이 간격을 제공합니다. */
-    /* ▲▲▲▲▲ 여기까지 수정 ▲▲▲▲▲ */
     text-align: center;
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
@@ -133,26 +98,33 @@ body {
     line-height: 1.4;
 }
 
-/* 8. 우측 플로팅 버튼 */
+/* 8. 우측 플로팅 버튼 (+ / -) */
+/* menu_recommend.css의 volume-controls / volume-btn 스타일을 반영 */
+
 .fab-container {
     position: absolute;
-    right: -15px;
-    bottom: 70px;
+    /* 모바일 화면 안쪽에 고정 */
+    right: 20px;
+    bottom: 90px; /* 하단 네비게이션과 겹치지 않도록 위로 띄움 */
     display: flex;
     flex-direction: column;
 }
 
 .fab {
+    background-color: #0D2A5C;
+    color: white;
     width: 50px;
     height: 50px;
     border-radius: 50%;
-    background-color: #0D2A5C;
-    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     font-size: 24px;
-    border: none;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    margin-top: -10px;
+    font-weight: bold;
+    margin: 5px 0;          /* 위/아래 버튼 간격 */
     cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    border: none;
 }
 
 /* 9. 하단 네비게이션 바 */

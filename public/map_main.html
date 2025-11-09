@@ -270,7 +270,7 @@
             flex: 1;
             padding: 12px 20px;
             border: none;
-            border-radius: 25px;
+            border-radius: 12px; /* <-- 이 값을 12px 정도로 줄입니다 */
             font-size: 14px;
             font-weight: bold;
             cursor: pointer;
@@ -285,6 +285,7 @@
         .btn-secondary {
             background:  white;
             color: #0D2A5C;
+            border: 2px solid #0D2A5C; /* <-- 이 줄을 추가합니다 */
         }
         
         .btn:disabled {
