@@ -10,7 +10,7 @@
         .map-container {
             position: relative;
             width: 100%;
-            height: calc(100vh - 500px); /* 헤더와 네비게이션 높이 제외 */
+            height: 100%;
             margin: 0;
             padding: 0;
             overflow: hidden;
@@ -459,7 +459,8 @@
             <h1>음식점 찾기</h1>
         </header>
 
-        <div class="map-container">
+        <main class="content" style="padding: 0; flex-grow: 1; position: relative; overflow: hidden;">
+            <div class="map-container">
             <div id="map"></div>
 
             <div class="search-bar-floating">
@@ -484,15 +485,15 @@
                 </div>
                 <a href="main.html" class="btn btn-secondary full-width" style="text-decoration: none; text-align: center;">뒤로 가기</a>
             </div>
-            
-        </div>
+        </main>
         
         <nav class="bottom-nav">
-             <a href="main.html" class="nav-item">
+            <a href="main.html" class="nav-item">
                 <img src="./images/icon-home.png" alt="홈">
                 <span>홈</span>
             </a>
-            <a href="map_main.html" class="nav-item active"> <img src="./images/icon-map-filled.png" alt="지도">
+            <a href="map_main.html" class="nav-item active">
+                <img src="./images/icon-map-filled.png" alt="지도">
                 <span>지도</span>
             </a>
             <a href="my_info.html" class="nav-item">
