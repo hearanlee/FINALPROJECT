@@ -109,6 +109,100 @@ export const menuData = [
       },
       {
         "id": 3,
+        "name": "소이 크런치 치킨 세트",
+        "price": 8000,
+        "description": null,
+        "page_no": 1,
+        "grid_row": 1,
+        "grid_col": 3,
+        "grid_location": "(1행, 3열)",
+        "is_featured": false,
+        "is_sold_out": false,
+        "aliases": [],
+        "option_groups": [
+          {
+            "id": 1,
+            "name": "사이드(필수)",
+            "select_min": 1,
+            "select_max": 1,
+            "options": [
+              {"id": 1, "name": "포테이토 팝", "add_price": 0, "is_sold_out": false},
+              {"id": 2, "name": "치즈 팝", "add_price": 700, "is_sold_out": true},
+              {"id": 3, "name": "어니언 포테이토 팝", "add_price": 700, "is_sold_out": true},
+              {"id": 4, "name": "포테이토 팝(버터갈릭)", "add_price": 300, "is_sold_out": false},
+              {"id": 5, "name": "포테이토 팝(칠리)", "add_price": 300, "is_sold_out": false},
+              {"id": 6, "name": "포테이토 팝(치즈즈)", "add_price": 300, "is_sold_out": false},
+              {"id": 7, "name": "코울슬로", "add_price": 800, "is_sold_out": false}
+            ]
+          },
+          {
+            "id": 2,
+            "name": "음료(필수)",
+            "select_min": 1,
+            "select_max": 1,
+            "options": [
+              {"id": 8, "name": "콜라", "add_price": 0, "is_sold_out": false},
+              {"id": 9, "name": "제로 콜라", "add_price": 0, "is_sold_out": false},
+              {"id": 10, "name": "사이다", "add_price": 0, "is_sold_out": false},
+              {"id": 11, "name": "제로 사이다", "add_price": 0, "is_sold_out": false},
+              {"id": 12, "name": "핫 아메리카노", "add_price": 800, "is_sold_out": false},
+              {"id": 13, "name": "아이스 아메리카노", "add_price": 800, "is_sold_out": false},
+              {"id": 14, "name": "핫 디카페인 아메리카노", "add_price": 1300, "is_sold_out": false},
+              {"id": 15, "name": "아이스 디카페인 아메리카노", "add_price": 1300, "is_sold_out": false},
+              {"id": 16, "name": "오렌지주스", "add_price": 400, "is_sold_out": false}
+            ]
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "리얼 양념치킨 세트",
+        "price": 7900,
+        "description": null,
+        "page_no": 1,
+        "grid_row": 1,
+        "grid_col": 4,
+        "grid_location": "(1행, 4열)",
+        "is_featured": false,
+        "is_sold_out": false,
+        "aliases": [],
+        "option_groups": [
+          {
+            "id": 1,
+            "name": "사이드(필수)",
+            "select_min": 1,
+            "select_max": 1,
+            "options": [
+              {"id": 1, "name": "포테이토 팝", "add_price": 0, "is_sold_out": false},
+              {"id": 2, "name": "치즈 팝", "add_price": 700, "is_sold_out": true},
+              {"id": 3, "name": "어니언 포테이토 팝", "add_price": 700, "is_sold_out": true},
+              {"id": 4, "name": "포테이토 팝(버터갈릭)", "add_price": 300, "is_sold_out": false},
+              {"id": 5, "name": "포테이토 팝(칠리)", "add_price": 300, "is_sold_out": false},
+              {"id": 6, "name": "포테이토 팝(치즈즈)", "add_price": 300, "is_sold_out": false},
+              {"id": 7, "name": "코울슬로", "add_price": 800, "is_sold_out": false}
+            ]
+          },
+          {
+            "id": 2,
+            "name": "음료(필수)",
+            "select_min": 1,
+            "select_max": 1,
+            "options": [
+              {"id": 8, "name": "콜라", "add_price": 0, "is_sold_out": false},
+              {"id": 9, "name": "제로 콜라", "add_price": 0, "is_sold_out": false},
+              {"id": 10, "name": "사이다", "add_price": 0, "is_sold_out": false},
+              {"id": 11, "name": "제로 사이다", "add_price": 0, "is_sold_out": false},
+              {"id": 12, "name": "핫 아메리카노", "add_price": 800, "is_sold_out": false},
+              {"id": 13, "name": "아이스 아메리카노", "add_price": 800, "is_sold_out": false},
+              {"id": 14, "name": "핫 디카페인 아메리카노", "add_price": 1300, "is_sold_out": false},
+              {"id": 15, "name": "아이스 디카페인 아메리카노", "add_price": 1300, "is_sold_out": false},
+              {"id": 16, "name": "오렌지주스", "add_price": 400, "is_sold_out": false}
+            ]
+          }
+        ]
+      },
+      {
+        "id": 5,
         "name": "프렌치 에그마요 세트",
         "price": 6800,
         "description": null,
@@ -546,6 +640,60 @@ export const menuData = [
       },
       {
         "id": 13,
+        "name": "소이 크런치 치킨",
+        "price": 5100,
+        "description": null,
+        "page_no": 1,
+        "grid_row": 1,
+        "grid_col": 3,
+        "grid_location": "(1행, 3열)",
+        "is_sold_out": false,
+        "aliases": [],
+        "option_groups": [
+          {
+            "id": 3,
+            "name": "토핑 추가(토스트)",
+            "select_min": 0,
+            "select_max": 10,
+            "options": [
+              {"id": 17, "name": "햄", "add_price": 600, "is_sold_out": false},
+              {"id": 18, "name": "치즈", "add_price": 600, "is_sold_out": false},
+              {"id": 19, "name": "기본 계란", "add_price": 600, "is_sold_out": false},
+              {"id": 20, "name": "야채", "add_price": 600, "is_sold_out": false},
+              {"id": 21, "name": "감자", "add_price": 1200, "is_sold_out": false}
+            ]
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "name": "리얼 양념치킨",
+        "price": 5000,
+        "description": null,
+        "page_no": 1,
+        "grid_row": 1,
+        "grid_col": 4,
+        "grid_location": "(1행, 4열)",
+        "is_sold_out": false,
+        "aliases": [],
+        "option_groups": [
+          {
+            "id": 3,
+            "name": "토핑 추가(토스트)",
+            "select_min": 0,
+            "select_max": 10,
+            "options": [
+              {"id": 17, "name": "햄", "add_price": 600, "is_sold_out": false},
+              {"id": 18, "name": "치즈", "add_price": 600, "is_sold_out": false},
+              {"id": 19, "name": "기본 계란", "add_price": 600, "is_sold_out": false},
+              {"id": 20, "name": "야채", "add_price": 600, "is_sold_out": false},
+              {"id": 21, "name": "감자", "add_price": 1200, "is_sold_out": false}
+            ]
+          }
+        ]
+      },
+      {
+        "id": 15,
         "name": "복숭아잼 에그마요",
         "price": 4400,
         "description": null,

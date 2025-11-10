@@ -56,57 +56,112 @@ function parseSQLFile(sqlFilePath) {
     const menuMatches = sqlContent.match(/INSERT INTO menus[^;]+;/g);
     if (menuMatches) {
         menuMatches.forEach(match => {
-            // SELECT id, '메뉴명', 가격, grid_row, grid_col FROM categories WHERE name_ko='카테고리명'
-            const selectMatch = match.match(/SELECT\s+id,\s*'([^']+)',\s*(\d+),\s*(\d+),\s*(\d+)\s+FROM categories WHERE name_ko='([^']+)'/);
-            if (selectMatch) {
-                const categoryName = selectMatch[5];
-                const category = data.categories.find(c => c.name_ko === categoryName);
-                if (category) {
-                    data.menus.push({
-                        id: data.menus.length + 1,
-                        category_id: category.id,
-                        name_ko: selectMatch[1],
-                        base_price_krw: parseInt(selectMatch[2]),
-                        grid_row: parseInt(selectMatch[3]),
-                        grid_col: parseInt(selectMatch[4]),
-                        is_active: 1
-                    });
+            // WHERE 절에서 카테고리명 추출
+            const categoryMatch = match.match(/WHERE name_ko='([^']+)'/);
+            if (!categoryMatch) return;
+            const categoryName = categoryMatch[1];
+            const category = data.categories.find(c => c.name_ko === categoryName);
+            if (!category) return;
+            
+            // SELECT ... FROM 사이의 부분 추출
+            const selectPartMatch = match.match(/SELECT\s+id,\s*([^F]+)\s+FROM/i);
+            if (!selectPartMatch) return;
+            
+            // 쉼표로 분리 (단, 문자열 내부의 쉼표는 제외)
+            const selectPart = selectPartMatch[1].trim();
+            const values = [];
+            let current = '';
+            let inString = false;
+            
+            for (let i = 0; i < selectPart.length; i++) {
+                const char = selectPart[i];
+                if (char === "'") {
+                    inString = !inString;
+                    current += char;
+                } else if (char === ',' && !inString) {
+                    values.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
                 }
             }
-            // toast 형식: SELECT id,'메뉴명',가격,grid_row,grid_col,is_featured FROM categories WHERE name_ko='카테고리명'
-            const selectMatchToast = match.match(/SELECT\s+id,\s*'([^']+)',\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\s+FROM categories WHERE name_ko='([^']+)'/);
-            if (selectMatchToast) {
-                const categoryName = selectMatchToast[6];
-                const category = data.categories.find(c => c.name_ko === categoryName);
-                if (category) {
-                    data.menus.push({
-                        id: data.menus.length + 1,
-                        category_id: category.id,
-                        name_ko: selectMatchToast[1],
-                        base_price_krw: parseInt(selectMatchToast[2]),
-                        grid_row: parseInt(selectMatchToast[3]),
-                        grid_col: parseInt(selectMatchToast[4]),
-                        is_active: 1
-                    });
-                }
+            if (current.trim()) {
+                values.push(current.trim());
             }
-            // grid_row/grid_col 없는 경우 (toast의 커피/음료)
-            const selectMatchNoGrid = match.match(/SELECT\s+id,\s*'([^']+)',\s*(\d+)\s+FROM categories WHERE name_ko='([^']+)'/);
-            if (selectMatchNoGrid && !selectMatch && !selectMatchToast) {
-                const categoryName = selectMatchNoGrid[3];
-                const category = data.categories.find(c => c.name_ko === categoryName);
-                if (category) {
-                    data.menus.push({
-                        id: data.menus.length + 1,
-                        category_id: category.id,
-                        name_ko: selectMatchNoGrid[1],
-                        base_price_krw: parseInt(selectMatchNoGrid[2]),
-                        grid_row: null,
-                        grid_col: null,
-                        is_active: 1
-                    });
+            
+            if (values.length < 2) return;
+            
+            // 첫 번째 값은 메뉴명 (따옴표 제거)
+            const menuName = values[0].replace(/^'|'$/g, '');
+            // 두 번째 값은 가격
+            const price = parseInt(values[1].trim()) || 0;
+            
+            // 나머지 값들을 파싱
+            const parsedValues = values.slice(2).map(v => {
+                const trimmed = v.trim();
+                if (trimmed === 'NULL' || trimmed === '') return null;
+                if (!isNaN(trimmed)) return parseInt(trimmed);
+                return trimmed;
+            });
+            
+            // 형식별로 파싱
+            let page_no = null;
+            let grid_row = null;
+            let grid_col = null;
+            let is_featured = 0;
+            let is_sold_out = 0;
+            
+            // INSERT 문의 컬럼 목록 확인
+            const insertColsMatch = match.match(/INSERT INTO menus\s*\(([^)]+)\)/);
+            if (insertColsMatch) {
+                const cols = insertColsMatch[1].split(',').map(c => c.trim().toLowerCase());
+                
+                // 형식 1: (category_id, name_ko, base_price_krw, page_no, grid_row, grid_col, is_sold_out, note)
+                if (cols.includes('page_no') && cols.includes('grid_row') && cols.includes('grid_col')) {
+                    if (parsedValues.length >= 5) {
+                        page_no = parsedValues[0] || null;
+                        grid_row = parsedValues[1] || null;
+                        grid_col = parsedValues[2] || null;
+                        is_sold_out = parsedValues[3] || 0;
+                    }
                 }
+                // 형식 2: (category_id, name_ko, base_price_krw, is_featured, grid_row, grid_col)
+                else if (cols.includes('is_featured') && cols.includes('grid_row') && cols.includes('grid_col') && !cols.includes('page_no')) {
+                    if (parsedValues.length >= 3) {
+                        is_featured = parsedValues[0] || 0;
+                        grid_row = parsedValues[1] || null;
+                        grid_col = parsedValues[2] || null;
+                    }
+                }
+                // 형식 3: (category_id, name_ko, base_price_krw, grid_row, grid_col, is_featured)
+                else if (cols.includes('grid_row') && cols.includes('grid_col') && cols.includes('is_featured') && !cols.includes('page_no')) {
+                    if (parsedValues.length >= 3) {
+                        grid_row = parsedValues[0] || null;
+                        grid_col = parsedValues[1] || null;
+                        is_featured = parsedValues[2] || 0;
+                    }
+                }
+                // 형식 4: (category_id, name_ko, base_price_krw, is_sold_out)
+                else if (cols.includes('is_sold_out') && !cols.includes('grid_row') && !cols.includes('grid_col')) {
+                    if (parsedValues.length >= 1) {
+                        is_sold_out = parsedValues[0] || 0;
+                    }
+                }
+                // 형식 5: (category_id, name_ko, base_price_krw) - grid_row, grid_col은 null
             }
+            
+            data.menus.push({
+                id: data.menus.length + 1,
+                category_id: category.id,
+                name_ko: menuName,
+                base_price_krw: price,
+                page_no: page_no,
+                grid_row: grid_row,
+                grid_col: grid_col,
+                is_featured: is_featured,
+                is_sold_out: is_sold_out,
+                is_active: 1
+            });
         });
     }
     
@@ -132,38 +187,43 @@ function parseSQLFile(sqlFilePath) {
     const optionMatches = sqlContent.match(/INSERT INTO options[^;]+;/g);
     if (optionMatches) {
         optionMatches.forEach(match => {
-            // SELECT id, '옵션명', 가격, sort_order FROM option_groups WHERE name_ko='그룹명'
-            const selectMatch = match.match(/SELECT\s+id,\s*'([^']+)',\s*(\d+),\s*(\d+)\s+FROM option_groups WHERE name_ko='([^']+)'/);
-            if (selectMatch) {
-                const groupName = selectMatch[4];
-                const group = data.optionGroups.find(g => g.name_ko === groupName);
-                if (group) {
-                    data.options.push({
-                        id: data.options.length + 1,
-                        option_group_id: group.id,
-                        name_ko: selectMatch[1],
-                        add_price_krw: parseInt(selectMatch[2]),
-                        sort_order: parseInt(selectMatch[3]),
-                        is_active: 1
-                    });
-                }
+            // WHERE 절에서 그룹명 추출
+            const groupMatch = match.match(/WHERE name_ko='([^']+)'/);
+            if (!groupMatch) return;
+            const groupName = groupMatch[1];
+            const group = data.optionGroups.find(g => g.name_ko === groupName);
+            if (!group) return;
+            
+            // SELECT 절에서 값들 추출
+            const selectMatch = match.match(/SELECT\s+id,\s*'([^']+)',\s*([^,]+)(?:,\s*([^,]+))?(?:,\s*([^,]+))?\s+FROM/);
+            if (!selectMatch) return;
+            
+            const optionName = selectMatch[1];
+            const addPrice = parseInt(selectMatch[2].trim());
+            
+            // 나머지 값들 파싱
+            let is_sold_out = 0;
+            let sort_order = 0;
+            
+            // 형식 1: SELECT id, '옵션명', 가격, is_sold_out, sort_order FROM (toast)
+            if (selectMatch[3] && selectMatch[4]) {
+                is_sold_out = parseInt(selectMatch[3].trim()) || 0;
+                sort_order = parseInt(selectMatch[4].trim()) || 0;
             }
-            // SELECT id, '옵션명', 가격, is_sold_out, sort_order FROM option_groups WHERE name_ko='그룹명' (toast)
-            const selectMatchToast = match.match(/SELECT\s+id,\s*'([^']+)',\s*(\d+),\s*(\d+),\s*(\d+)\s+FROM option_groups WHERE name_ko='([^']+)'/);
-            if (selectMatchToast) {
-                const groupName = selectMatchToast[5];
-                const group = data.optionGroups.find(g => g.name_ko === groupName);
-                if (group) {
-                    data.options.push({
-                        id: data.options.length + 1,
-                        option_group_id: group.id,
-                        name_ko: selectMatchToast[1],
-                        add_price_krw: parseInt(selectMatchToast[2]),
-                        sort_order: parseInt(selectMatchToast[4]),
-                        is_active: 1
-                    });
-                }
+            // 형식 2: SELECT id, '옵션명', 가격, sort_order FROM (일반)
+            else if (selectMatch[3]) {
+                sort_order = parseInt(selectMatch[3].trim()) || 0;
             }
+            
+            data.options.push({
+                id: data.options.length + 1,
+                option_group_id: group.id,
+                name_ko: optionName,
+                add_price_krw: addPrice,
+                sort_order: sort_order,
+                is_sold_out: is_sold_out,
+                is_active: 1
+            });
         });
     }
     
@@ -242,10 +302,13 @@ function convertToMenuData(data) {
                     id: menu.id,
                     name: menu.name_ko,
                     price: menu.base_price_krw,
-                    description: menu.description || '',
+                    description: menu.description || null,
+                    page_no: menu.page_no || null,
                     grid_row: menu.grid_row,
                     grid_col: menu.grid_col,
                     grid_location: menu.grid_row && menu.grid_col ? `(${menu.grid_row}행, ${menu.grid_col}열)` : null,
+                    is_featured: menu.is_featured || 0,
+                    is_sold_out: menu.is_sold_out || 0,
                     aliases: [menu.name_ko, ...aliases],
                     option_groups: data.optionGroups
                         .filter(og => relevantGroupIds.includes(og.id))
@@ -259,7 +322,8 @@ function convertToMenuData(data) {
                                 .map(opt => ({
                                     id: opt.id,
                                     name: opt.name_ko,
-                                    add_price: opt.add_price_krw
+                                    add_price: opt.add_price_krw,
+                                    is_sold_out: opt.is_sold_out || 0
                                 }))
                         }))
                 };

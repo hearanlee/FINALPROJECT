@@ -190,7 +190,13 @@ INSERT INTO menus (category_id, name_ko, base_price_krw, page_no, grid_row, grid
 
 SELECT id, '애플 크림 브리오슈', 3700, 1, 1, 2, 0, NULL FROM categories WHERE name_ko='토스트';
 
+INSERT INTO menus (category_id, name_ko, base_price_krw, page_no, grid_row, grid_col, is_sold_out, note)
 
+SELECT id, '소이 크런치 치킨', 5100, 1, 1, 3, 0, NULL FROM categories WHERE name_ko='토스트';
+
+INSERT INTO menus (category_id, name_ko, base_price_krw, page_no, grid_row, grid_col, is_sold_out, note)
+
+SELECT id, '리얼 양념치킨', 5000, 1, 1, 4, 0, NULL FROM categories WHERE name_ko='토스트';
 
 -- SOLD OUT 2칸(사진 도장으로 품절, 정확 상품명/가격 미확정)
 
@@ -322,6 +328,14 @@ SELECT id,'프렌치 크림 브리오슈 세트',7000,1,1,1 FROM categories WHER
 INSERT INTO menus (category_id, name_ko, base_price_krw, is_featured, grid_row, grid_col)
 
 SELECT id,'애플 크림 브리오슈 세트',6600,1,1,2 FROM categories WHERE name_ko='토스트 세트';
+
+INSERT INTO menus (category_id, name_ko, base_price_krw, page_no, grid_row, grid_col, is_sold_out, note)
+
+SELECT id, '소이 크런치 치킨 세트', 8000, 1, 1, 3, 0, NULL FROM categories WHERE name_ko='토스트 세트';
+
+INSERT INTO menus (category_id, name_ko, base_price_krw, page_no, grid_row, grid_col, is_sold_out, note)
+
+SELECT id, '리얼 양념치킨 세트', 7900, 1, 1, 4, 0, NULL FROM categories WHERE name_ko='토스트 세트';
 
 
 
