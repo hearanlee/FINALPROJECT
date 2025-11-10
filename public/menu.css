@@ -4,24 +4,7 @@
     -webkit-tap-highlight-color: transparent; /* 모바일 터치 하이라이트 제거 */
 }
 
-/* 화면 전체 스크롤 원천 봉쇄 (초강력 버전) */
-html {
-    height: 100%;
-    overflow: hidden;
-}
 
-body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    /* ▼▼▼ 핵심: body를 화면에 고정시켜 버립니다 ▼▼▼ */
-    position: fixed; 
-    overflow: hidden;
-    touch-action: none; /* 지도 외의 영역에서 기본 터치 동작 방지 */
-    background-color: #333; /* PC 배경색 */
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-}
 
 /* 모바일 컨테이너 */
 .mobile-container {
@@ -33,7 +16,7 @@ body {
     margin: 0 auto;
     background-color: #f4f4f8;
     position: relative;
-    overflow: hidden;  /* 컨테이너 밖으로 나가는 내용 숨김 */
+    overflow-y: auto;
 }
 
 /* * { margin: 0; padding: 0; box-sizing: border-box; } 는 유지 */
@@ -529,14 +512,16 @@ body {
 }
 
 .voice-action-buttons {
-    padding: 20px;
+    padding: 10px 20px 20px 20px;
     margin-top: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .button-row {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 }
 
 .button-row .btn {
