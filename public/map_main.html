@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0", maximum-scale=1.0, user-scalable=no>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <meta http-equiv="Permissions-Policy" content="accelerometer=(), camera=(), geolocation=(self), gyroscope=(), magnetometer=(), microphone=(self), payment=(), usb=()">
     <title>포핸즈 매장 찾기</title>
     <link rel="stylesheet" href="menu.css">
@@ -26,7 +26,7 @@
             left: 0;
             z-index: 1;
             background-color: #e0e0e0; /* 지도 배경색 */
-            touch-action: pan-x pan-y pinch-zoom; /* 모바일 터치 최적화 */
+            touch-action: pan-x pan-y pinch-zoom; /* 지도 내부는 확대/축소 허용 */
         }
         
         .search-bar-floating {

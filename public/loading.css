@@ -5,14 +5,34 @@
     box-sizing: border-box;
 }
 
+html {
+    height: 100%;
+    overflow: hidden;
+    width: 100%;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
 /* main.css와 동일하게 페이지 배경을 어둡게 설정 */
 body {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    height: 100vh;
+    max-height: 100vh;
+    width: 100%;
+    overflow: hidden;
     background-color: #333;
     font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 /* 핸드폰 모양 틀 + 기존 로딩 화면 스타일 합치기 */
@@ -20,6 +40,7 @@ body {
     /* 핸드폰 모양 틀 스타일 */
     width: 390px;
     height: 844px;
+    max-height: 100vh;
     border: 8px solid #111;
     border-radius: 40px;
     position: relative;
@@ -31,6 +52,10 @@ body {
     justify-content: center;
     align-items: center;
     background-color: #0033A0; /* 파란색 배경 */
+    flex-shrink: 0;
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 /* 아이콘과 텍스트 스타일은 그대로 유지 */
