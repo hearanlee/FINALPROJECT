@@ -5,18 +5,40 @@
     box-sizing: border-box;
 }
 
+html {
+    height: 100%;
+    overflow: hidden;
+    width: 100%;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
 body {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    height: 100vh;
+    max-height: 100vh;
+    width: 100%;
+    overflow: hidden;
     background-color: #333;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 .mobile-container {
     width: 390px;
     height: 844px;
+    max-height: 100vh;
+    min-height: 0;
     background-color: #f4f4f8;
     border: 8px solid #111;
     border-radius: 40px;
@@ -24,6 +46,18 @@ body {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    flex-shrink: 0;
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+/* 뷰포트가 844px보다 작을 때 컨테이너 높이 조정 */
+@media (max-height: 844px) {
+    .mobile-container {
+        height: 100vh;
+    }
 }
 
 .page-header {
@@ -31,6 +65,8 @@ body {
     align-items: center;
     padding: 20px;
     color: #0D2A5C;
+    flex-shrink: 0;
+    box-sizing: border-box;
 }
 
 .page-header img {
@@ -46,6 +82,10 @@ body {
 .content {
     padding: 0 20px;
     flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 .bottom-nav {
@@ -55,7 +95,10 @@ body {
     border-top: 1px solid #eee;
     padding: 10px 0;
     height: 80px;
+    min-height: 80px;
     align-items: center;
+    flex-shrink: 0;
+    box-sizing: border-box;
 }
 
 .nav-item {
