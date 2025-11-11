@@ -32,9 +32,9 @@
                 <button id="speedBtn" class="btn btn-secondary"><img src="./images/icon_slow.png" class="btn-icon" alt=""> 느린 음성</button>
                 <button id="repeatBtn" class="btn btn-secondary"><img src="./images/icon_repeat.png" class="btn-icon" alt=""> 반복 재생</button>
             </div>
-            <button class="btn btn-secondary full-width">⛔ 화면과 음성이 맞지 않음</button>
+                        <button id="mismatchButton" class="btn btn-secondary full-width">⛔ 화면과 음성이 맞지 않음</button>
             
-            <button id="exitVoiceGuideBtn" class="btn btn-primary full-width">음성안내 종료</button>
+                    <button id="exitVoiceGuideBtn" class="btn btn-primary full-width">음성안내 종료</button>
             </div>
         <nav class="bottom-nav">
             <a href="main.html" class="nav-item">
@@ -99,32 +99,49 @@
             </div>
         </div>
     </div>
-    <script type="module" src="voice_guide_toast.js"></script>
+    <script type="module" src="voice_guide_banziha.js"></script>
+    
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
     
     <!-- 페이지 로드 시 자동 음성 안내 -->
     <script>
+        // 1. hasPlayed 플래그를 스크립트 최상단으로 이동시킵니다.
+        let hasPlayed = false;
+
         // 음성 안내 재생 함수
         function playWelcomeMessage() {
-            // 2. 브라우저가 음성 합성을 지원하는지 확인
+            // 2. 이미 재생되었다면 함수를 즉시 종료합니다.
+            if (hasPlayed) return;
+
+            // 3. 브라우저가 음성 합성을 지원하는지 확인
             if ('speechSynthesis' in window) {
                 
-                // 3. 안내할 텍스트 정의
+                // 4. 안내할 텍스트 정의
                 const ttsText = "마이크 버튼을 누르시면, 음성으로 주문을 도와드릴게요";
                 
-                // 4. 음성 메시지 객체 생성
+                // 5. 음성 메시지 객체 생성
                 const utterance = new SpeechSynthesisUtterance(ttsText);
                 
-                // 5. 한국어로 설정 (정확한 발음을 위해 중요)
+                // 6. 한국어로 설정 (정확한 발음을 위해 중요)
                 utterance.lang = 'ko-KR';
                 utterance.rate = 1.0; // 재생 속도 (1이 기본값)
                 
-                // 6. 음성 재생 실행
+                // 7. 음성 재생 실행
                 try {
                     // 기존에 재생 중인 음성이 있으면 중지
                     window.speechSynthesis.cancel();
                     
                     window.speechSynthesis.speak(utterance);
+                    
+                    // 8. [핵심 수정] 재생에 성공하면 플래그를 true로 설정합니다.
+                    hasPlayed = true; 
+                    
                     console.log('TTS 음성 안내 시작');
+
+                    // 9. 재생에 성공했으므로, 불필요한 이벤트 리스너를 제거합니다.
+                    document.removeEventListener('click', handleFirstInteraction);
+                    document.removeEventListener('touchstart', handleFirstInteraction);
+                    
                 } catch (e) {
                     console.error('TTS 재생 오류:', e);
                 }
@@ -144,21 +161,17 @@
         });
         
         // 사용자의 첫 상호작용(클릭/터치) 시 음성 재생
-        // 자동 재생 정책을 우회하기 위한 방법
-        let hasPlayed = false;
+        // 자동 재생 정책을 우회하기 위한 함수
         function handleFirstInteraction() {
-            if (!hasPlayed && 'speechSynthesis' in window) {
-                hasPlayed = true;
-                playWelcomeMessage();
-                // 이벤트 리스너 제거 (한 번만 실행)
-                document.removeEventListener('click', handleFirstInteraction);
-                document.removeEventListener('touchstart', handleFirstInteraction);
-            }
+            // 10. [수정] 이 함수는 단순히 playWelcomeMessage를 호출하기만 하면 됩니다.
+            //    (내부에서 hasPlayed 체크를 이미 하므로)
+            playWelcomeMessage();
         }
         
         // 클릭 및 터치 이벤트 리스너 추가
-        document.addEventListener('click', handleFirstInteraction, { once: true });
-        document.addEventListener('touchstart', handleFirstInteraction, { once: true });
+        // 'once: true' 옵션 대신, 재생 성공 시 리스너를 제거하는 방식으로 변경
+        document.addEventListener('click', handleFirstInteraction);
+        document.addEventListener('touchstart', handleFirstInteraction);
     </script>
 </body>
 </html>
