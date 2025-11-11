@@ -5,6 +5,9 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const OpenAI = require('openai');
 require('dotenv').config();
 
+const multer = require('multer'); // 파일 업로드를 위한 multer
+const { GoogleGenerativeAI } = require('@google/generative-ai'); // Gemini API
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -13,6 +16,18 @@ const openai = new OpenAI({
     apiKey: process.env.GITHUB_PAT,
     baseURL: process.env.AZURE_AI_ENDPOINT || "https://models.github.ai/inference",
 });
+
+// Gemini 클라이언트 설정
+const API_KEY = process.env.GEMINI_API_KEY;
+if (!API_KEY) {
+    console.warn('⚠️ [Server] GEMINI_API_KEY가 .env 파일에 설정되지 않았습니다. 메뉴 분석 API가 작동하지 않습니다.');
+}
+const genAI = new GoogleGenerativeAI(API_KEY);
+const geminiVisionModel = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+
+// Multer 설정 (메모리 저장)
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // 미들웨어
 app.use(cors());
@@ -500,6 +515,136 @@ app.get('/api/tmap/pois/:poiId', async (req, res) => {
         });
     }
 });
+
+function fileToGenerativePart(buffer, mimeType) {
+  return {
+    inlineData: {
+      data: buffer.toString("base64"),
+      mimeType
+    },
+  };
+}
+
+// --- Gemini 헬퍼 함수 2: Gemini 프롬프트 생성 ---
+function getGeminiVisionPrompt(dbMenusData) {
+    // 프론트엔드(2단계)에서 보낸 JSON 문자열을 객체로 파싱
+    let dbMenusList = [];
+    try {
+        // (Banziha 데이터: [{ name: "돈부리", menus: [...] }, ...])
+        dbMenusList = JSON.parse(dbMenusData || '[]');
+    } catch (e) {
+        console.warn('⚠️ [Server] 전달받은 dbMenus 파싱 실패', e);
+    }
+    
+    // [최종 수정] Banziha 데이터 형식 (category.menus)에 맞게 수정
+    const dbMenuNames = dbMenusList.map(category => 
+        category.menus.map(menu => `${menu.name} (${menu.price}원)`)
+    ).flat().join(', ') || '없음';
+
+    // Gemini에게 보낼 프롬프트
+    return `
+        당신은 키오스크 메뉴판 분석 전문가입니다.
+        이 메뉴판 사진을 분석하고, 현재 DB에 있는 메뉴 정보와 비교하여 차이점을 찾아주세요.
+
+        [현재 DB 메뉴 정보]
+        ${dbMenuNames}
+
+        [분석 요청]
+        1. 사진에서 인식된 모든 메뉴 항목과 가격을 리스트로 만드세요.
+        2. [현재 DB 메뉴 정보]와 비교하여 다음 차이점들을 찾아주세요:
+           - [추가]: DB에는 없지만 사진에는 있는 메뉴 (신메뉴)
+           - [삭제]: DB에는 있지만 사진에는 없는 메뉴 (단종)
+           - [가격 변경]: 이름은 같지만 가격이 다른 메뉴
+           - [명칭 변경]: 비슷한 메뉴지만 이름이 약간 다른 경우
+
+        [응답 형식]
+        반드시 다음 JSON 형식으로만 응답해주세요. 부가 설명은 절대 넣지 마세요.
+        {
+            "detectedMenus": [
+                {"name": "인식된 메뉴명", "price": "인식된 가격"},
+                ...
+            ],
+            "differences": [
+                {"type": "추가", "details": "신메뉴: [메뉴명] ([가격]원)"},
+                {"type": "삭제", "details": "단종: [메뉴명]"},
+                {"type": "가격 변경", "details": "[메뉴명]: [DB가격]원 -> [사진가격]원"},
+                ...
+            ],
+            "summary": "전체적인 차이점을 요약한 한 줄 코멘트."
+        }
+    `;
+}
+
+// --- "화면과 음성 불일치" 카메라 분석 API 엔드포인트 ---
+// 2단계의 fetch('/api/analyze-menu', ...) 요청을 여기서 받습니다.
+app.post('/api/analyze-menu', upload.single('menuImage'), async (req, res) => {
+    console.log('🔄 [Server] /api/analyze-menu (Gemini Vision) 요청 수신');
+
+    if (!API_KEY) {
+        console.error('❌ [Server] Gemini API 키가 없어 메뉴 분석을 중단합니다.');
+        return res.status(500).json({ error: '서버에 Gemini API 키가 설정되지 않았습니다.' });
+    }
+
+    try {
+        // 1. 파일이 제대로 첨부되었는지 확인
+        if (!req.file) {
+            console.error('❌ [Server] 이미지 파일이 없습니다.');
+            return res.status(400).json({ error: '이미지 파일이 전송되지 않았습니다.' });
+        }
+        const imageBuffer = req.file.buffer;
+        const mimeType = req.file.mimetype;
+        
+        // 2. 함께 전송된 'dbMenus' 데이터 확인
+        const dbMenusString = req.body.dbMenus;
+        if (!dbMenusString) {
+            console.error('❌ [Server] dbMenus 데이터가 없습니다.');
+            return res.status(400).json({ error: 'DB 메뉴 데이터가 전송되지 않았습니다.' });
+        }
+        
+        console.log('✅ [Server] Gemini Vision: 이미지 및 DB 데이터 수신 완료');
+
+        // 3. 프롬프트 및 이미지 파트 준비
+        const prompt = getGeminiVisionPrompt(dbMenusString); // [수정됨] 올바른 프롬프트 생성
+        const imageParts = [
+            fileToGenerativePart(imageBuffer, mimeType),
+        ];
+
+        // 4. Gemini API 호출
+        console.log('🚀 [Gemini] Vision API 호출 시작...');
+        
+        // [수정됨] 404 에러를 피하기 위해 모델 이름을 최신으로 변경
+        const modelWithLatestName = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+        const result = await modelWithLatestName.generateContent([prompt, ...imageParts]);
+        
+        const responseText = await result.response.text();
+        
+        console.log('🤖 [Gemini] Vision API 응답 수신:', responseText);
+
+        // 5. Gemini 응답 파싱
+        let analysisResult;
+        try {
+            const jsonMatch = responseText.match(/```json([\s\S]*?)```/);
+            if (jsonMatch && jsonMatch[1]) {
+                analysisResult = JSON.parse(jsonMatch[1].trim());
+            } else {
+                analysisResult = JSON.parse(responseText.trim());
+            }
+        } catch (jsonParseError) {
+            console.error("❌ [Server] Gemini 응답 JSON 파싱 실패:", jsonParseError);
+            analysisResult = { 
+                summary: `Gemini가 JSON이 아닌 응답을 반환했습니다: ${responseText}` 
+            };
+        }
+
+        // 6. 클라이언트(HTML)에게 최종 결과 전송
+        res.json(analysisResult);
+
+    } catch (error) {
+        console.error('❌ [Server] /api/analyze-menu 오류 발생:', error);
+        res.status(500).json({ error: '메뉴 분석 중 서버 내부 오류가 발생했습니다.', details: error.message });
+    }
+});
+
 
 // 서버 시작
 app.listen(PORT, () => {

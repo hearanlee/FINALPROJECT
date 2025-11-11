@@ -645,6 +645,80 @@ function closeSession() {
   }
 }
 
+
+async function uploadImageToServer(imageFile) {
+    
+    // 1. FormData 객체를 만들어 이미지를 담습니다.
+    const formData = new FormData();
+    formData.append('menuImage', imageFile); // 'menuImage'는 서버에서 받을 이름
+
+    // 2. (선택 사항) 현재 DB 메뉴 데이터를 함께 보냅니다.
+    // (파일 상단의 import { menuData } from './menuData_banziha.js'; 를 통해 menuData 변수 사용)
+    try {
+        formData.append('dbMenus', JSON.stringify(menuData));
+        console.log('[Camera] dbMenus 데이터를 함께 전송합니다.');
+    } catch (e) {
+        console.warn('[Camera] dbMenus 데이터를 JSON으로 변환 실패', e);
+    }
+
+    // 3. 사용자에게 로딩 중임을 알립니다 (간단한 alert)
+    alert('사진을 서버로 전송하여 메뉴판을 분석 중입니다. 잠시만 기다려주세요...');
+    console.log('🔄 [Camera] 이미지 파일을 서버로 전송 시작...');
+
+    try {
+        // 4. fetch API를 사용해 서버에 POST 요청을 보냅니다.
+        //    (주의: '/api/analyze-menu'는 3단계에서 만들 서버 주소입니다)
+        const response = await fetch('/api/analyze-menu', {
+            method: 'POST',
+            body: formData, 
+        });
+
+        // 5. 서버 응답 처리
+        if (response.ok) {
+            const result = await response.json(); // 서버가 보낸 JSON 결과
+            console.log('✅ [Server] 분석 결과 수신:', result);
+            
+            // 6. 결과를 사용자에게 보여주는 함수 호출
+            displayAnalysisResult(result);
+
+        } else {
+            // 서버가 404, 500 등 에러 응답을 줬을 때
+            console.error('❌ [Server] 이미지 분석 실패:', response.statusText);
+            alert('메뉴 분석에 실패했습니다. (서버 오류)');
+        }
+    } catch (error) {
+        // 네트워크 연결 오류 등
+        console.error('❌ [Network] 네트워크 오류:', error);
+        alert('네트워크 오류로 메뉴 분석을 요청할 수 없습니다.');
+    }
+}
+
+// [함수 2 추가] 서버 분석 결과를 사용자에게 보여주는 함수 (임시)
+function displayAnalysisResult(result) {
+    // 3단계에서 Gemini API의 응답을 받아오면
+    // 이 함수가 더 구체적으로 작동하게 됩니다.
+    
+    let message = "메뉴 분석 결과:\n";
+    if (result && result.summary) {
+        message += result.summary; // Gemini가 요약해준 내용
+    } else if (result && result.differences && result.differences.length > 0) {
+        message += "다음과 같은 차이점이 발견되었습니다:\n";
+        result.differences.forEach(diff => {
+            message += `- ${diff.details}\n`;
+        });
+    } else if (result && result.error) {
+        message += `오류 발생: ${result.error}`;
+    }
+     else {
+        // 404 에러 등이 발생했을 때
+        message += "분석 결과를 받지 못했습니다. 서버가 실행 중인지 확인해주세요.";
+    }
+    
+    // 지금은 간단히 alert으로 띄웁니다.
+    alert(message);
+}
+
+
 // --- 5. DOM 이벤트 리스너 ---
 document.addEventListener('DOMContentLoaded', () => {
   console.log('📄 [Voice Guide] 페이지 로드 완료');
@@ -820,4 +894,48 @@ document.addEventListener('DOMContentLoaded', () => {
       if (icon) icon.style.opacity = '1.0';
     });
   }
+
+  // --- 5. [여기에 추가] 화면과 음성 불일치 버튼 (카메라) ---
+  console.log('✅ [Voice Guide] 카메라 버튼 이벤트 리스너 등록 시작');
+
+  // 1. HTML에서 ID를 이용해 요소들을 찾습니다.
+  // (mismatchButton과 cameraInput은 voice_guide_banziha.html 파일에 추가되어 있어야 합니다)
+  const mismatchButton = document.getElementById('mismatchButton');
+  const cameraInput = document.getElementById('cameraInput');
+
+  // 2. 요소들이 정상적으로 찾아졌는지 확인합니다.
+  if (mismatchButton && cameraInput) {
+      
+      // 3. '화면과 음성이 맞지 않음' 버튼에 클릭 이벤트 리스너를 추가합니다.
+      mismatchButton.addEventListener('click', () => {
+          console.log('🖱️ [Camera] 불일치 버튼 클릭됨. 숨겨진 cameraInput을 클릭합니다.');
+          
+          // 4. 버튼을 누르면, 숨겨진 <input type="file">을 대신 클릭해 줍니다.
+          cameraInput.click(); 
+      });
+
+      // 5. 숨겨진 <input>에 'change' 이벤트 리스너를 추가합니다.
+      //    (사용자가 사진 촬영을 완료하면 'change' 이벤트가 발생합니다)
+      cameraInput.addEventListener('change', async (event) => { // async 추가
+            const file = event.target.files[0]; 
+            if (file) {
+                console.log('📸 [Camera] 사진 파일 촬영 완료:', file.name, file.type);
+                
+                // [수정] alert 대신 uploadImageToServer 함수를 호출합니다.
+                // (await를 사용하여 업로드가 끝날 때까지 기다립니다)
+                await uploadImageToServer(file); 
+                
+                console.log('✅ [Camera] 파일 업로드 및 분석 프로세스 완료.');
+
+                event.target.value = '';
+            } else {
+                console.log('📷 [Camera] 카메라 촬영이 취소되었습니다.');
+            }
+        });
+
+  } else {
+      // HTML에서 id를 못 찾았을 경우 오류 로그
+      console.error('❌ [Camera] 필수 요소(mismatchButton 또는 cameraInput)를 찾지 못했습니다.');
+  }
+  // --- [여기까지 추가] ---
 }); // <-- DOMContentLoaded 닫는 괄호
